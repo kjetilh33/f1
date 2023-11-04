@@ -1,10 +1,11 @@
-package com.kinnovatio.examples;
+package com.kinnovatio.signalr;
 
+import com.microsoft.signalr.HubConnection;
+import com.microsoft.signalr.HubConnectionBuilder;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.PushGateway;
 //import io.prometheus.metrics.core.metrics.Gauge;
-import io.prometheus.metrics.instrumentation.jvm.JvmMetrics;
 import io.prometheus.metrics.model.snapshots.Unit;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
@@ -14,8 +15,8 @@ import java.net.URL;
 import java.util.Optional;
 
 
-public class Demo {
-    private static final Logger LOG = LoggerFactory.getLogger(Demo.class);
+public class Client {
+    private static final Logger LOG = LoggerFactory.getLogger(Client.class);
 
     /*
     Configuration section. The configuration values are read from the following locations (in order of precedence):
@@ -86,6 +87,11 @@ public class Demo {
     private static void run() throws Exception {
         LOG.info("Starting container...");
         Gauge.Timer jobDurationTimer = jobDurationSeconds.startTimer();
+
+        LOG.info("Connect to hub...");
+        HubConnection hubConnection = HubConnectionBuilder.create("https://livetiming.formula1.com/signalr")
+                        .build();
+        hubConnection.start();
 
         LOG.info("Starting some work...");
         Thread.sleep(3000);
