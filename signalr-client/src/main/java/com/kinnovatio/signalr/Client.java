@@ -7,10 +7,14 @@ import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.PushGateway;
 //import io.prometheus.metrics.core.metrics.Gauge;
 import io.prometheus.metrics.model.snapshots.Unit;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.plaf.TableHeaderUI;
 import java.net.URL;
 import java.util.Optional;
 
@@ -91,11 +95,17 @@ public class Client {
         LOG.info("Connect to hub...");
         HubConnection hubConnection = HubConnectionBuilder.create("https://livetiming.formula1.com/signalr")
                         .build();
-        hubConnection.start();
+        hubConnection.start().blockingAwait();
+        LOG.info("Hub connection state: {}", hubConnection.getConnectionState().toString());
 
-        LOG.info("Starting some work...");
+        Disposable messageStreamDisposable = hubConnection.stream(String.class, "Subscribe", "Heartbeat")
+                .onErrorReturnItem("Error in stream")
+                .subscribe(message -> System.out.println("Message received:/n" + message + "/n"));
+
         Thread.sleep(3000);
+        messageStreamDisposable.dispose();
 
+        hubConnection.close();
         LOG.info("Finished work");
         jobDurationTimer.setDuration();
 
