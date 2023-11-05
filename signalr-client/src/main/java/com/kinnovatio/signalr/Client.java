@@ -139,6 +139,8 @@ public class Client {
                     .send(negotiateRequest, HttpResponse.BodyHandlers.ofString());
 
             LOG.info("Negotiate response:\n {}", negotiateResponse.toString());
+            LOG.info("Response headers: \n{}", negotiateResponse.headers().toString());
+            LOG.info("Response body: \n{}", negotiateResponse.body());
         } catch (Exception e) {
             e.printStackTrace();
         }
