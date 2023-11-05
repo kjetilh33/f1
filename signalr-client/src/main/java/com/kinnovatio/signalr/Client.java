@@ -15,7 +15,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.plaf.TableHeaderUI;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 
@@ -104,10 +111,37 @@ public class Client {
         jobCompletionTimeStamp.setToCurrentTime();
     }
 
-    private static void useSignalrCustomClient() {
+    private static void useSignalrCustomClient() throws Exception {
         String baseUrl = "https://livetiming.formula1.com/signalr";
         final String negotiatePath = "negotiate";
+        final String clientProtocolKey = "clientProtocol";
+        final String clientProtocol = "1.5";
+        final String connectionDataKey = "connectionData";
+        final String connectionData = """
+                [{"name": "streaming"}]
+                """;
 
+        URI negotiateURI = new URI(String.format(baseUrl + "/%s?%s=%s&%s=%s",
+                negotiatePath,
+                connectionDataKey,
+                URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
+                clientProtocolKey,
+                clientProtocol));
+        LOG.info("Negotiate URI: {}", negotiateURI.toString());
+
+        HttpRequest negotiateRequest = HttpRequest.newBuilder()
+                .uri(negotiateURI)
+                .GET()
+                .build();
+
+        try (HttpClient httpClient = HttpClient.newHttpClient()) {
+            HttpResponse<String> negotiateResponse = httpClient
+                    .send(negotiateRequest, HttpResponse.BodyHandlers.ofString());
+
+            LOG.info("Negotiate response:\n {}", negotiateResponse.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 
