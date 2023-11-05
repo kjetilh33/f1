@@ -92,9 +92,29 @@ public class Client {
         LOG.info("Starting container...");
         Gauge.Timer jobDurationTimer = jobDurationSeconds.startTimer();
 
+        useSignalrCustomClient();
+        //useSignalrCoreClient();
+        LOG.info("Finished work");
+        jobDurationTimer.setDuration();
+
+        // The job completion metric is only added to the registry after job success,
+        // so that a previous success in the Pushgateway isn't overwritten on failure.
+        Gauge jobCompletionTimeStamp = Gauge.build()
+                .name("job_completion_timestamp").help("Job completion time stamp").register(collectorRegistry);
+        jobCompletionTimeStamp.setToCurrentTime();
+    }
+
+    private static void useSignalrCustomClient() {
+        String baseUrl = "https://livetiming.formula1.com/signalr";
+        final String negotiatePath = "negotiate";
+
+
+    }
+
+    private static void useSignalrCoreClient() throws InterruptedException {
         LOG.info("Connect to hub...");
         HubConnection hubConnection = HubConnectionBuilder.create("https://livetiming.formula1.com/signalr")
-                        .build();
+                .build();
         hubConnection.start().blockingAwait();
         LOG.info("Hub connection state: {}", hubConnection.getConnectionState().toString());
 
@@ -106,14 +126,6 @@ public class Client {
         messageStreamDisposable.dispose();
 
         hubConnection.close();
-        LOG.info("Finished work");
-        jobDurationTimer.setDuration();
-
-        // The job completion metric is only added to the registry after job success,
-        // so that a previous success in the Pushgateway isn't overwritten on failure.
-        Gauge jobCompletionTimeStamp = Gauge.build()
-                .name("job_completion_timestamp").help("Job completion time stamp").register(collectorRegistry);
-        jobCompletionTimeStamp.setToCurrentTime();
     }
 
     /*
