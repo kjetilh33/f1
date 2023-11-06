@@ -27,8 +27,12 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 
 public class Client {
@@ -175,7 +179,9 @@ public class Client {
                     .header("User-Agent", "BestHTTP")
                     .header("Accept-Encoding", "gzip,identity")
                     .header("Cookie", cookie)
-                    .buildAsync(wssURI, null);
+                    .buildAsync(wssURI, new SignalrWssListener());
+            
+            Thread.sleep(5000);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -219,5 +225,34 @@ public class Client {
         }
 
         return isSuccess;
+    }
+
+    public static class SignalrWssListener implements WebSocket.Listener {
+        private List<CharSequence> parts = new ArrayList<>();
+        private CompletableFuture<?> accumulatedMessage = new CompletableFuture<>();
+
+        public CompletionStage<?> onText(WebSocket webSocket,
+                                        CharSequence message,
+                                        boolean last) {
+            parts.add(message);
+            webSocket.request(1);
+            if (last) {
+                processMessage(parts);
+                parts = new ArrayList<>();
+                accumulatedMessage.complete(null);
+                CompletionStage<?> cf = accumulatedMessage;
+                accumulatedMessage = new CompletableFuture<>();
+                return cf;
+            }
+            return accumulatedMessage;
+        }
+        
+        private void processMessage(List<CharSequence> parts) {
+            String message = parts.stream()
+                    .map(CharSequence::toString)
+                    .collect(Collectors.joining());
+
+            LOG.info("Received wss message:\n {}", message);
+        }
     }
 }
