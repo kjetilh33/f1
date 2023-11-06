@@ -25,8 +25,10 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.WebSocket;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 
 public class Client {
@@ -160,18 +162,20 @@ public class Client {
                 throw new RuntimeException("Unable to get connection token to the SignalR service.");
             }
 
-            URI wssURI = new URI(String.format(baseUrl + "?%s=%s&%s=%s",
+            URI wssURI = new URI(String.format(baseUrl + "?%s=%s&%s=%s&%s=%s",
                 connectionDataKey,
                 URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
                 clientProtocolKey,
-                clientProtocol));
+                clientProtocol,
+                "connectionToken",
+                URLEncoder.encode(connectionToken, StandardCharsets.UTF_8)));
             
             LOG.info("Set up websocket connection...");
-            httpClient.newWebSocketBuilder()
+            CompletableFuture<WebSocket> webSocket = httpClient.newWebSocketBuilder()
                     .header("User-Agent", "BestHTTP")
                     .header("Accept-Encoding", "gzip,identity")
                     .header("Cookie", cookie)
-                    .buildAsync(URI, null);
+                    .buildAsync(wssURI, null);
 
         } catch (Exception e) {
             e.printStackTrace();
