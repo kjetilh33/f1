@@ -1,0 +1,9 @@
+.idea/
+target/
+.settings/
+.vscode/
+.project
+.classpath
+.factorypath
+*.iml
+/dependency-reduced-pom.xml
