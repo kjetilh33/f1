@@ -1,5 +1,8 @@
 package com.kinnovatio.signalr;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
 import io.prometheus.client.CollectorRegistry;
@@ -28,6 +31,8 @@ import java.util.Optional;
 
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     /*
     Configuration section. The configuration values are read from the following locations (in order of precedence):
@@ -112,6 +117,8 @@ public class Client {
     }
 
     private static void useSignalrCustomClient() throws Exception {
+        final ObjectReader objectReader = objectMapper.reader();
+
         String baseUrl = "https://livetiming.formula1.com/signalr";
         final String negotiatePath = "negotiate";
         final String clientProtocolKey = "clientProtocol";
@@ -137,10 +144,35 @@ public class Client {
         try (HttpClient httpClient = HttpClient.newHttpClient()) {
             HttpResponse<String> negotiateResponse = httpClient
                     .send(negotiateRequest, HttpResponse.BodyHandlers.ofString());
+            String responseBody = negotiateResponse.body();
 
             LOG.info("Negotiate response:\n {}", negotiateResponse.toString());
             LOG.info("Response headers: \n{}", negotiateResponse.headers().toString());
-            LOG.info("Response body: \n{}", negotiateResponse.body());
+            LOG.info("Response body: \n{}", responseBody);
+
+            // Parse the response
+            String connectionToken = "";
+            String cookie = negotiateResponse.headers().firstValue("set-cookie").orElse("");
+            JsonNode responseBodyRoot = objectReader.readTree(responseBody);
+            if (responseBodyRoot.path("ConnectionToken").isTextual()) {
+                connectionToken = responseBodyRoot.path("ConnectionToken").asText();
+            } else {
+                throw new RuntimeException("Unable to get connection token to the SignalR service.");
+            }
+
+            URI wssURI = new URI(String.format(baseUrl + "?%s=%s&%s=%s",
+                connectionDataKey,
+                URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
+                clientProtocolKey,
+                clientProtocol));
+            
+            LOG.info("Set up websocket connection...");
+            httpClient.newWebSocketBuilder()
+                    .header("User-Agent", "BestHTTP")
+                    .header("Accept-Encoding", "gzip,identity")
+                    .header("Cookie", cookie)
+                    .buildAsync(URI, null);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
