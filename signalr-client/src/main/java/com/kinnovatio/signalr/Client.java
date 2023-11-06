@@ -123,69 +123,8 @@ public class Client {
     }
 
     private static void useSignalrCustomClient() throws Exception {
-        final ObjectReader objectReader = objectMapper.reader();
-
-        String baseUrl = "https://livetiming.formula1.com/signalr";
-        final String negotiatePath = "negotiate";
-        final String clientProtocolKey = "clientProtocol";
-        final String clientProtocol = "1.5";
-        final String connectionDataKey = "connectionData";
-        final String connectionData = """
-                [{"name": "streaming"}]
-                """;
-
-        URI negotiateURI = new URI(String.format(baseUrl + "/%s?%s=%s&%s=%s",
-                negotiatePath,
-                connectionDataKey,
-                URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
-                clientProtocolKey,
-                clientProtocol));
-        LOG.info("Negotiate URI: {}", negotiateURI.toString());
-
-        HttpRequest negotiateRequest = HttpRequest.newBuilder()
-                .uri(negotiateURI)
-                .GET()
-                .build();
-
-        try (HttpClient httpClient = HttpClient.newHttpClient()) {
-            HttpResponse<String> negotiateResponse = httpClient
-                    .send(negotiateRequest, HttpResponse.BodyHandlers.ofString());
-            String responseBody = negotiateResponse.body();
-
-            LOG.info("Negotiate response:\n {}", negotiateResponse.toString());
-            LOG.info("Response headers: \n{}", negotiateResponse.headers().toString());
-            LOG.info("Response body: \n{}", responseBody);
-
-            // Parse the response
-            String connectionToken = "";
-            String cookie = negotiateResponse.headers().firstValue("set-cookie").orElse("");
-            JsonNode responseBodyRoot = objectReader.readTree(responseBody);
-            if (responseBodyRoot.path("ConnectionToken").isTextual()) {
-                connectionToken = responseBodyRoot.path("ConnectionToken").asText();
-            } else {
-                throw new RuntimeException("Unable to get connection token to the SignalR service.");
-            }
-
-            URI wssURI = new URI(String.format(baseUrl + "?%s=%s&%s=%s&%s=%s",
-                connectionDataKey,
-                URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
-                clientProtocolKey,
-                clientProtocol,
-                "connectionToken",
-                URLEncoder.encode(connectionToken, StandardCharsets.UTF_8)));
-            
-            LOG.info("Set up websocket connection...");
-            CompletableFuture<WebSocket> webSocket = httpClient.newWebSocketBuilder()
-                    .header("User-Agent", "BestHTTP")
-                    .header("Accept-Encoding", "gzip,identity")
-                    .header("Cookie", cookie)
-                    .buildAsync(wssURI, new SignalrWssListener());
-            
-            Thread.sleep(5000);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        F1HubConnection hub = new F1HubConnection();
+        hub.negotiateWebsocket();
 
     }
 
@@ -231,6 +170,11 @@ public class Client {
         private List<CharSequence> parts = new ArrayList<>();
         private CompletableFuture<?> accumulatedMessage = new CompletableFuture<>();
 
+        public void onOpen(WebSocket webSocket) {
+            webSocket.request(1);
+            LOG.info("Websocket open: {}", webSocket.toString());
+        }
+
         public CompletionStage<?> onText(WebSocket webSocket,
                                         CharSequence message,
                                         boolean last) {
@@ -253,6 +197,19 @@ public class Client {
                     .collect(Collectors.joining());
 
             LOG.info("Received wss message:\n {}", message);
+        }
+
+        public CompletionStage<?> onClose(WebSocket webSocket,
+                                           int statusCode,
+                                           String reason) {
+            LOG.info("Websocket closed. Status code: {}. Reason: {}",
+                    statusCode,
+                    reason);
+            return null;
+        }
+
+        public void onError(WebSocket webSocket, Throwable error) {
+            LOG.info("Websocket error: \n {}", error.toString());
         }
     }
 }
