@@ -123,7 +123,7 @@ public class Client {
     }
 
     private static void useSignalrCustomClient() throws Exception {
-        F1HubConnection hub = new F1HubConnection();
+        F1HubConnection hub = F1HubConnection.create();
         hub.negotiateWebsocket();
 
     }
@@ -164,52 +164,5 @@ public class Client {
         }
 
         return isSuccess;
-    }
-
-    public static class SignalrWssListener implements WebSocket.Listener {
-        private List<CharSequence> parts = new ArrayList<>();
-        private CompletableFuture<?> accumulatedMessage = new CompletableFuture<>();
-
-        public void onOpen(WebSocket webSocket) {
-            webSocket.request(1);
-            LOG.info("Websocket open: {}", webSocket.toString());
-        }
-
-        public CompletionStage<?> onText(WebSocket webSocket,
-                                        CharSequence message,
-                                        boolean last) {
-            parts.add(message);
-            webSocket.request(1);
-            if (last) {
-                processMessage(parts);
-                parts = new ArrayList<>();
-                accumulatedMessage.complete(null);
-                CompletionStage<?> cf = accumulatedMessage;
-                accumulatedMessage = new CompletableFuture<>();
-                return cf;
-            }
-            return accumulatedMessage;
-        }
-        
-        private void processMessage(List<CharSequence> parts) {
-            String message = parts.stream()
-                    .map(CharSequence::toString)
-                    .collect(Collectors.joining());
-
-            LOG.info("Received wss message:\n {}", message);
-        }
-
-        public CompletionStage<?> onClose(WebSocket webSocket,
-                                           int statusCode,
-                                           String reason) {
-            LOG.info("Websocket closed. Status code: {}. Reason: {}",
-                    statusCode,
-                    reason);
-            return null;
-        }
-
-        public void onError(WebSocket webSocket, Throwable error) {
-            LOG.info("Websocket error: \n {}", error.toString());
-        }
     }
 }

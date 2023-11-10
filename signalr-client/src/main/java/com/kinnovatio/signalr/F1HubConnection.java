@@ -3,6 +3,7 @@ package com.kinnovatio.signalr;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.google.auto.value.AutoValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +22,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-public class F1HubConnection {
+@AutoValue
+public abstract class F1HubConnection {
     private static final Logger LOG = LoggerFactory.getLogger(F1HubConnection.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -34,6 +36,14 @@ public class F1HubConnection {
     private final String connectionData = """
                 [{"name": "streaming"}]
                 """;
+
+    private static F1HubConnection.Builder builder() {
+        return new AutoValue_F1HubConnection.Builder();
+    }
+
+    public static F1HubConnection create() {
+        return F1HubConnection.builder().build();
+    }
 
 
     public WebSocket negotiateWebsocket() throws IOException, URISyntaxException {
@@ -87,7 +97,7 @@ public class F1HubConnection {
                     .header("User-Agent", "BestHTTP")
                     .header("Accept-Encoding", "gzip,identity")
                     .header("Cookie", cookie)
-                    .buildAsync(wssURI, new Client.SignalrWssListener())
+                    .buildAsync(wssURI, new F1HubConnection.SignalrWssListener())
                     .join();
 
             return webSocket;
@@ -145,5 +155,12 @@ public class F1HubConnection {
         public void onError(WebSocket webSocket, Throwable error) {
             LOG.info("Websocket error: \n {}", error.toString());
         }
+    }
+
+    @AutoValue.Builder
+    abstract static class Builder {
+        //abstract Builder setClient(CogniteClient value);
+
+        abstract F1HubConnection build();
     }
 }
