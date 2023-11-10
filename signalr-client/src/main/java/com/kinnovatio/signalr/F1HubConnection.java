@@ -55,7 +55,8 @@ public abstract class F1HubConnection {
                 URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
                 clientProtocolKey,
                 clientProtocol));
-        LOG.info("Negotiate URI: {}", negotiateURI.toString());
+        LOG.info("Negotiating connection to {}", negotiateURI.getAuthority());
+        LOG.trace("Negotiate URI: {}", negotiateURI.toString());
 
         HttpRequest negotiateRequest = HttpRequest.newBuilder()
                 .uri(negotiateURI)
@@ -67,9 +68,17 @@ public abstract class F1HubConnection {
                     .send(negotiateRequest, HttpResponse.BodyHandlers.ofString());
             String responseBody = negotiateResponse.body();
 
-            LOG.info("Negotiate response:\n {}", negotiateResponse.toString());
-            LOG.info("Response headers: \n{}", negotiateResponse.headers().toString());
-            LOG.info("Response body: \n{}", responseBody);
+            LOG.debug("Negotiate response:\n {}", negotiateResponse.toString());
+            LOG.debug("Response headers: \n{}", negotiateResponse.headers().toString());
+            LOG.debug("Response body: \n{}", responseBody);
+            if (negotiateResponse.statusCode() >= 300) {
+                String message = "Failed to negotiate connection to %s. Response: %s".formatted(
+                        negotiateURI.getAuthority(),
+                        negotiateResponse.toString()
+                );
+                LOG.error(message);
+                throw new IOException(message);
+            }
 
             // Parse the response
             String connectionToken = "";
@@ -90,9 +99,9 @@ public abstract class F1HubConnection {
                     "connectionToken",
                     URLEncoder.encode(connectionToken, StandardCharsets.UTF_8)));
 
-            LOG.info("Websocket URI: {}", wssURI.toString());
+            LOG.debug("Websocket URI: {}", wssURI.toString());
 
-            LOG.info("Set up websocket connection...");
+            LOG.info("Setting up websocket connection...");
             WebSocket webSocket = httpClient.newWebSocketBuilder()
                     .header("User-Agent", "BestHTTP")
                     .header("Accept-Encoding", "gzip,identity")
