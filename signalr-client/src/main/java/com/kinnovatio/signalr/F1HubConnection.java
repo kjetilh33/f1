@@ -16,6 +16,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -27,15 +28,18 @@ public abstract class F1HubConnection {
     private static final Logger LOG = LoggerFactory.getLogger(F1HubConnection.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    private String baseUrl = "https://livetiming.formula1.com/signalr";
-    private String wssUrl = "wss://livetiming.formula1.com/signalr/connect";
-    private final String negotiatePath = "negotiate";
-    private final String clientProtocolKey = "clientProtocol";
-    private final String clientProtocol = "1.5";
-    private final String connectionDataKey = "connectionData";
-    private final String connectionData = """
+    private static final String baseUrl = "https://livetiming.formula1.com/signalr";
+    private static final String wssUrl = "wss://livetiming.formula1.com/signalr/connect";
+    private static final String negotiatePath = "negotiate";
+    private static final String clientProtocolKey = "clientProtocol";
+    private static final String clientProtocol = "1.5";
+    private static final String connectionDataKey = "connectionData";
+    private static final String connectionData = """
                 [{"name": "streaming"}]
                 """;
+
+    private State connectionState = State.READY;
+    private Instant lastHeartbeat = null;
 
     private static F1HubConnection.Builder builder() {
         return new AutoValue_F1HubConnection.Builder();
@@ -47,6 +51,7 @@ public abstract class F1HubConnection {
 
 
     public WebSocket negotiateWebsocket() throws IOException, URISyntaxException {
+        connectionState = State.CONNECTING;
         final ObjectReader objectReader = objectMapper.reader();
 
         URI negotiateURI = new URI(String.format(baseUrl + "/%s?%s=%s&%s=%s",
@@ -113,13 +118,48 @@ public abstract class F1HubConnection {
 
         } catch (Exception e) {
             LOG.error("Error connecting to hub: {}", e.toString());
+            connectionState = State.READY;
             throw new IOException(e);
         }
 
     }
 
+    /*
+    Process a received wss message.
+     */
+    private void processMessage(String message) {
+        try {
+            switch (connectionState) {
+                case READY -> LOG.error("Message received before connection is ready. Should not happen.");
+                case CONNECTING -> {
+                    if (MessageDecoder.isInitMessage(message)) {
+                        connectionState = State.CONNECTED;
+                        LOG.info("Websocket connection established.");
+                    }
+                }
+                case CONNECTED -> {
+                    LOG.debug("Connected, message received.");
+                    if (MessageDecoder.isKeepAliveMessage(message)) {
+                        lastHeartbeat = Instant.now();
+                    } else {
+                        notifySubscribers(message);
+                    }
+                }
+                case DISCONNECTED -> LOG.debug("Message received while disconnected. Should not happen.");
+            }
+        } catch (Exception e) {
+            LOG.error("Failed parsing message from the hub: {}", e.toString());
+            throw new RuntimeException(e);
+        }
 
-    public static class SignalrWssListener implements WebSocket.Listener {
+        LOG.trace("Received wss message:\n {}", message);
+    }
+
+    private void notifySubscribers(String message) {
+        LOG.info("Notify subscribers. Message: {}", message);
+    }
+
+    public class SignalrWssListener implements WebSocket.Listener {
         private List<CharSequence> parts = new ArrayList<>();
         private CompletableFuture<?> accumulatedMessage = new CompletableFuture<>();
 
@@ -134,7 +174,7 @@ public abstract class F1HubConnection {
             parts.add(message);
             webSocket.request(1);
             if (last) {
-                processMessage(parts);
+                processMessage(assembleMessage(parts));
                 parts = new ArrayList<>();
                 accumulatedMessage.complete(null);
                 CompletionStage<?> cf = accumulatedMessage;
@@ -144,17 +184,16 @@ public abstract class F1HubConnection {
             return accumulatedMessage;
         }
 
-        private void processMessage(List<CharSequence> parts) {
-            String message = parts.stream()
+        private String assembleMessage(List<CharSequence> parts) {
+            return parts.stream()
                     .map(CharSequence::toString)
                     .collect(Collectors.joining());
-
-            LOG.info("Received wss message:\n {}", message);
         }
 
         public CompletionStage<?> onClose(WebSocket webSocket,
                                           int statusCode,
                                           String reason) {
+            connectionState = State.READY;
             LOG.info("Websocket closed. Status code: {}. Reason: {}",
                     statusCode,
                     reason);
@@ -162,8 +201,16 @@ public abstract class F1HubConnection {
         }
 
         public void onError(WebSocket webSocket, Throwable error) {
-            LOG.info("Websocket error: \n {}", error.toString());
+            connectionState = State.DISCONNECTED;
+            LOG.warn("Websocket error: \n {}", error.toString());
         }
+    }
+
+    enum State {
+        READY,
+        CONNECTING,
+        CONNECTED,
+        DISCONNECTED
     }
 
     @AutoValue.Builder
