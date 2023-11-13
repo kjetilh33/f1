@@ -151,7 +151,6 @@ public abstract class F1HubConnection {
                     URLEncoder.encode(connectionToken, StandardCharsets.UTF_8)));
 
             LOG.debug("Websocket URI: {}", wssURI.toString());
-
             LOG.info("Setting up websocket connection...");
 
             return httpClient.newWebSocketBuilder()
