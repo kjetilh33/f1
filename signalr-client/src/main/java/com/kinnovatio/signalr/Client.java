@@ -124,7 +124,9 @@ public class Client {
 
     private static void useSignalrCustomClient() throws Exception {
         F1HubConnection hub = F1HubConnection.create();
-        hub.negotiateWebsocket();
+        if (hub.connect()) {
+            LOG.info("Received connection confirmation");
+        }
 
     }
 

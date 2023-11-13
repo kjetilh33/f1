@@ -16,6 +16,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,10 @@ public abstract class F1HubConnection {
                 """;
 
     private State connectionState = State.READY;
-    private Instant lastHeartbeat = null;
+    private OperationalState operationalState = OperationalState.CLOSED;
+    private Instant lastKeepAliveMessage = null;
+    private Duration keepAliveTimeout = Duration.ofSeconds(30);
+    private WebSocket webSocket = null;
 
     private static F1HubConnection.Builder builder() {
         return new AutoValue_F1HubConnection.Builder();
@@ -49,8 +53,42 @@ public abstract class F1HubConnection {
         return F1HubConnection.builder().build();
     }
 
+    public boolean connect() throws IOException, URISyntaxException, InterruptedException {
+        if (operationalState == OperationalState.OPEN) {
+            LOG.warn("The connection is already open. Connect() has no effect.");
+            return false;
+        }
 
-    public WebSocket negotiateWebsocket() throws IOException, URISyntaxException {
+        // In case we have an open websocket, close it
+        if (null != webSocket) webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
+
+        try {
+            Instant startInstant = Instant.now();
+            connectionState = State.READY;
+            operationalState = OperationalState.OPEN;
+            webSocket = negotiateWebsocket();
+
+            // try for 20 seconds to establish a connection
+            while (Duration.between(startInstant, Instant.now()).compareTo(Duration.ofSeconds(20)) < 1
+                    && connectionState != State.CONNECTED) {
+                Thread.sleep(1000);
+            }
+            if (connectionState != State.CONNECTED) {
+                throw new IOException("Timeout. Unable to establish connection to hub.");
+            }
+
+        } catch (Exception e) {
+            operationalState = OperationalState.CLOSED;
+            connectionState = State.READY;
+            webSocket = null;
+            throw e;
+        }
+
+        return true;
+    }
+
+
+    private WebSocket negotiateWebsocket() throws IOException, URISyntaxException {
         connectionState = State.CONNECTING;
         final ObjectReader objectReader = objectMapper.reader();
 
@@ -95,6 +133,14 @@ public abstract class F1HubConnection {
             } else {
                 throw new RuntimeException("Unable to get connection token to the SignalR service.");
             }
+            if (responseBodyRoot.path("KeepAliveTimeout").isNumber()) {
+                keepAliveTimeout = Duration.ofSeconds(responseBodyRoot.path("KeepAliveTimeout").asInt());
+                LOG.debug("Found keep alive timeout spec in connection negotiation: {}",
+                        responseBodyRoot.path("KeepAliveTimeout").asText());
+            } else if (responseBodyRoot.path("KeepAliveTimeout").isNull()) {
+                keepAliveTimeout = Duration.ofDays(365);
+                LOG.debug("KeepAliveTimeout = null. Setting the reconnect timeout to one year.");
+            }
 
             URI wssURI = new URI(String.format(wssUrl + "?transport=webSockets&%s=%s&%s=%s&%s=%s",
                     connectionDataKey,
@@ -107,14 +153,13 @@ public abstract class F1HubConnection {
             LOG.debug("Websocket URI: {}", wssURI.toString());
 
             LOG.info("Setting up websocket connection...");
-            WebSocket webSocket = httpClient.newWebSocketBuilder()
+
+            return httpClient.newWebSocketBuilder()
                     .header("User-Agent", "BestHTTP")
                     .header("Accept-Encoding", "gzip,identity")
                     .header("Cookie", cookie)
-                    .buildAsync(wssURI, new F1HubConnection.SignalrWssListener())
+                    .buildAsync(wssURI, new SignalrWssListener())
                     .join();
-
-            return webSocket;
 
         } catch (Exception e) {
             LOG.error("Error connecting to hub: {}", e.toString());
@@ -140,7 +185,7 @@ public abstract class F1HubConnection {
                 case CONNECTED -> {
                     LOG.debug("Connected, message received.");
                     if (MessageDecoder.isKeepAliveMessage(message)) {
-                        lastHeartbeat = Instant.now();
+                        lastKeepAliveMessage = Instant.now();
                     } else {
                         notifySubscribers(message);
                     }
@@ -165,7 +210,8 @@ public abstract class F1HubConnection {
 
         public void onOpen(WebSocket webSocket) {
             webSocket.request(1);
-            LOG.info("Websocket open: {}", webSocket.toString());
+            LOG.info("Websocket open.");
+            LOG.debug("Websocket open: {}", webSocket.toString());
         }
 
         public CompletionStage<?> onText(WebSocket webSocket,
@@ -211,6 +257,11 @@ public abstract class F1HubConnection {
         CONNECTING,
         CONNECTED,
         DISCONNECTED
+    }
+
+    enum OperationalState {
+        CLOSED,
+        OPEN
     }
 
     @AutoValue.Builder
