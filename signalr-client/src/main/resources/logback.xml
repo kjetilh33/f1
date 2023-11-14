@@ -26,6 +26,8 @@
         </encoder>
     </appender>
 
+    <logger name="com.kinnovatio.signalr" level="DEBUG" />
+
     <root level="info">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="STDERR" />

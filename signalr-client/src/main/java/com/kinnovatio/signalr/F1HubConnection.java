@@ -43,6 +43,7 @@ public abstract class F1HubConnection {
     private OperationalState operationalState = OperationalState.CLOSED;
     private Instant lastKeepAliveMessage = null;
     private Duration keepAliveTimeout = Duration.ofSeconds(30);
+    private HttpClient httpClient = null;
     private WebSocket webSocket = null;
 
     private static F1HubConnection.Builder builder() {
@@ -62,6 +63,9 @@ public abstract class F1HubConnection {
         // In case we have an open websocket, close it
         if (null != webSocket) webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
 
+        // Check if we need to instantiate the http client
+        if (null == httpClient) httpClient = HttpClient.newHttpClient();
+
         try {
             Instant startInstant = Instant.now();
             connectionState = State.READY;
@@ -71,6 +75,7 @@ public abstract class F1HubConnection {
             // try for 20 seconds to establish a connection
             while (Duration.between(startInstant, Instant.now()).compareTo(Duration.ofSeconds(20)) < 1
                     && connectionState != State.CONNECTED) {
+                LOG.debug("Checking connection state. State: {}, duration: {}", connectionState, Duration.between(startInstant, Instant.now()));
                 Thread.sleep(1000);
             }
             if (connectionState != State.CONNECTED) {
@@ -106,7 +111,7 @@ public abstract class F1HubConnection {
                 .GET()
                 .build();
 
-        try (HttpClient httpClient = HttpClient.newHttpClient()) {
+        try {
             HttpResponse<String> negotiateResponse = httpClient
                     .send(negotiateRequest, HttpResponse.BodyHandlers.ofString());
             String responseBody = negotiateResponse.body();
@@ -157,6 +162,7 @@ public abstract class F1HubConnection {
                     .header("User-Agent", "BestHTTP")
                     .header("Accept-Encoding", "gzip,identity")
                     .header("Cookie", cookie)
+                    .connectTimeout(Duration.ofSeconds(30))
                     .buildAsync(wssURI, new SignalrWssListener())
                     .join();
 
