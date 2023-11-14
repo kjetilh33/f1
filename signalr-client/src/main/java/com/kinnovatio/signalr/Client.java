@@ -1,8 +1,6 @@
 package com.kinnovatio.signalr;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
 import io.prometheus.client.CollectorRegistry;
@@ -10,30 +8,13 @@ import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.PushGateway;
 //import io.prometheus.metrics.core.metrics.Gauge;
 import io.prometheus.metrics.model.snapshots.Unit;
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.plaf.TableHeaderUI;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.WebSocket;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
-
 
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
