@@ -22,6 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @AutoValue
@@ -41,6 +45,8 @@ public abstract class F1HubConnection {
 
     private State connectionState = State.READY;
     private OperationalState operationalState = OperationalState.CLOSED;
+    private ScheduledExecutorService executorService = null;
+
     private Instant lastKeepAliveMessage = null;
     private Duration keepAliveTimeout = Duration.ofSeconds(30);
     private HttpClient httpClient = null;
@@ -82,6 +88,10 @@ public abstract class F1HubConnection {
                 throw new IOException("Timeout. Unable to establish connection to hub.");
             }
 
+            // Check the executor service
+            if (null == executorService || executorService.isShutdown()) executorService = Executors.newSingleThreadScheduledExecutor();
+            executorService.scheduleAtFixedRate(this::asyncKeepAliveLoop, 1, 1, TimeUnit.SECONDS);
+
         } catch (Exception e) {
             operationalState = OperationalState.CLOSED;
             connectionState = State.READY;
@@ -92,6 +102,21 @@ public abstract class F1HubConnection {
         return true;
     }
 
+    public void close() {
+        operationalState = OperationalState.CLOSED;
+        executorService.shutdown();
+    }
+
+    private void asyncKeepAliveLoop() {
+        if (operationalState == OperationalState.CLOSED) {
+            LOG.warn("hub connection--just checking loop... But status is CLOSED... should not be here.");
+            //executorService.shutdown();
+        } else {
+            LOG.info("hub connection--just checking loop...");
+        }
+    }
+
+    
 
     private WebSocket negotiateWebsocket() throws IOException, URISyntaxException {
         connectionState = State.CONNECTING;

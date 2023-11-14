@@ -109,6 +109,8 @@ public class Client {
             LOG.info("Received connection confirmation");
         }
 
+        Thread.sleep(5000);
+        hub.close();
     }
 
     private static void useSignalrCoreClient() throws InterruptedException {
