@@ -51,6 +51,7 @@ public abstract class F1HubConnection {
     private Duration keepAliveTimeout = Duration.ofSeconds(30);
     private HttpClient httpClient = null;
     private WebSocket webSocket = null;
+    private SignalrWssListener wssListener = new SignalrWssListener();
 
     private static F1HubConnection.Builder builder() {
         return new AutoValue_F1HubConnection.Builder();
@@ -188,7 +189,7 @@ public abstract class F1HubConnection {
                     .header("Accept-Encoding", "gzip,identity")
                     .header("Cookie", cookie)
                     .connectTimeout(Duration.ofSeconds(30))
-                    .buildAsync(wssURI, new SignalrWssListener())
+                    .buildAsync(wssURI, wssListener)
                     .join();
 
         } catch (Exception e) {
