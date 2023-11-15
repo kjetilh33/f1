@@ -109,7 +109,13 @@ public class Client {
             LOG.info("Received connection confirmation");
         }
 
-        Thread.sleep(5000);
+        Thread.sleep(12000);
+
+        for (int i = 0; i < 10; i++) {
+            //LOG.info("Send ping.");
+            Thread.sleep(1200);
+        }
+        
         hub.close();
     }
 

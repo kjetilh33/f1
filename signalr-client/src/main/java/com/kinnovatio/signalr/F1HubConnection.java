@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.nio.ByteBuffer;
 
 @AutoValue
 public abstract class F1HubConnection {
@@ -114,6 +115,7 @@ public abstract class F1HubConnection {
             //executorService.shutdown();
         } else {
             LOG.info("hub connection--just checking loop...");
+            //webSocket.sendPing(ByteBuffer.wrap("ping".getBytes()));
         }
     }
 
@@ -197,7 +199,6 @@ public abstract class F1HubConnection {
             connectionState = State.READY;
             throw new IOException(e);
         }
-
     }
 
     /*
