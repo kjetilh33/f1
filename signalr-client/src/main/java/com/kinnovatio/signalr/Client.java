@@ -104,7 +104,9 @@ public class Client {
     }
 
     private static void useSignalrCustomClient() throws Exception {
-        F1HubConnection hub = F1HubConnection.create();
+        F1HubConnection hub = F1HubConnection.create()
+                .enableMessageLogging(true)
+                ;
         if (hub.connect()) {
             LOG.info("Received connection confirmation");
         }

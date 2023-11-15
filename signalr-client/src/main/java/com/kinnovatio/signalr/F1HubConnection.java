@@ -16,6 +16,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -33,6 +36,7 @@ import java.nio.ByteBuffer;
 public abstract class F1HubConnection {
     private static final Logger LOG = LoggerFactory.getLogger(F1HubConnection.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static Path defaultPathMessageLog = Path.of("./received-messages.log");
 
     private static final String baseUrl = "https://livetiming.formula1.com/signalr";
     private static final String wssUrl = "wss://livetiming.formula1.com/signalr/connect";
@@ -55,11 +59,20 @@ public abstract class F1HubConnection {
     private SignalrWssListener wssListener = new SignalrWssListener();
 
     private static F1HubConnection.Builder builder() {
-        return new AutoValue_F1HubConnection.Builder();
+        return new AutoValue_F1HubConnection.Builder()
+                .setMessageLogEnabled(false);
     }
 
     public static F1HubConnection create() {
         return F1HubConnection.builder().build();
+    }
+
+    protected abstract Builder toBuilder();
+
+    public abstract boolean isMessageLogEnabled();
+
+    public F1HubConnection enableMessageLogging(boolean enable) {
+        return toBuilder().setMessageLogEnabled(enable).build();
     }
 
     public boolean connect() throws IOException, URISyntaxException, InterruptedException {
@@ -111,15 +124,16 @@ public abstract class F1HubConnection {
 
     private void asyncKeepAliveLoop() {
         if (operationalState == OperationalState.CLOSED) {
-            LOG.warn("hub connection--just checking loop... But status is CLOSED... should not be here.");
-            //executorService.shutdown();
+            LOG.warn("Hub is struggling to close properly. Will try to force close...");
+            LOG.debug("Hub executor service isShutdown: {}, isTerminated: {}",
+                    executorService.isShutdown(),
+                    executorService.isTerminated());
+            executorService.shutdownNow();
         } else {
-            LOG.info("hub connection--just checking loop...");
+            LOG.debug("hub connection--just checking loop...");
             //webSocket.sendPing(ByteBuffer.wrap("ping".getBytes()));
         }
     }
-
-    
 
     private WebSocket negotiateWebsocket() throws IOException, URISyntaxException {
         connectionState = State.CONNECTING;
@@ -205,6 +219,14 @@ public abstract class F1HubConnection {
     Process a received wss message.
      */
     private void processMessage(String message) {
+        if (isMessageLogEnabled()) {
+            try {
+                Files.writeString(defaultPathMessageLog, message + "\n",
+                        StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                LOG.warn("Failed to write message to log file: {}", e.toString());
+            }
+        }
         try {
             switch (connectionState) {
                 case READY -> LOG.error("Message received before connection is ready. Should not happen.");
@@ -298,7 +320,7 @@ public abstract class F1HubConnection {
 
     @AutoValue.Builder
     abstract static class Builder {
-        //abstract Builder setClient(CogniteClient value);
+        abstract Builder setMessageLogEnabled(boolean value);
 
         abstract F1HubConnection build();
     }
