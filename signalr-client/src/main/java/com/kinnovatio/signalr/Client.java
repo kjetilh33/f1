@@ -1,6 +1,5 @@
 package com.kinnovatio.signalr;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
 import io.prometheus.client.CollectorRegistry;
@@ -18,8 +17,6 @@ import java.util.Optional;
 
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
-
-    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     /*
     Configuration section. The configuration values are read from the following locations (in order of precedence):
@@ -111,13 +108,8 @@ public class Client {
             LOG.info("Received connection confirmation");
         }
 
-        Thread.sleep(12000);
+        Thread.sleep(25000);
 
-        for (int i = 0; i < 10; i++) {
-            //LOG.info("Send ping.");
-            Thread.sleep(1200);
-        }
-        
         hub.close();
     }
 
