@@ -48,6 +48,13 @@ public abstract class F1HubConnection {
                 [{"name": "streaming"}]
                 """;
 
+    private static final String[] dataStreams = {"Heartbeat", "CarData.z", "Position.z",
+            "ExtrapolatedClock", "TopThree", "RcmSeries",
+            "TimingStats", "TimingAppData",
+            "WeatherData", "TrackStatus", "DriverList",
+            "RaceControlMessages", "SessionInfo",
+            "SessionData", "LapCount", "TimingData"};
+
     private State connectionState = State.READY;
     private OperationalState operationalState = OperationalState.CLOSED;
     private ScheduledExecutorService executorService = null;
@@ -105,6 +112,8 @@ public abstract class F1HubConnection {
 
             // Check the executor service
             if (null == executorService || executorService.isShutdown()) executorService = Executors.newSingleThreadScheduledExecutor();
+            
+            // Start a scheduled task to check state (close, reconnect)
             executorService.scheduleAtFixedRate(this::asyncKeepAliveLoop, 1, 1, TimeUnit.SECONDS);
 
         } catch (Exception e) {
