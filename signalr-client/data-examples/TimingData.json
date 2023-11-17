@@ -1,0 +1,329 @@
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A7|BG,13D5|a,5|Y,28|D3,0|5,242|W,BD|c,56|BJ,9|X,42|BH,14|6,3|7,E|Z,0|8,B6B",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingData",
+                {
+                    "Lines": {
+                        "14": {
+                            "Sectors": {
+                                "1": {
+                                    "Segments": {
+                                        "2": {
+                                            "Status": 2049
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:20.354Z"
+            ]
+        }
+    ]
+}
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A7|BG,13D5|a,5|Y,28|D3,0|5,242|W,BD|c,56|BJ,9|X,42|BH,14|6,3|7,E|Z,0|8,B6C",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingData",
+                {
+                    "Lines": {
+                        "18": {
+                            "Sectors": {
+                                "0": {
+                                    "Value": "32.987",
+                                    "PersonalFastest": true
+                                },
+                                "1": {
+                                    "Value": "",
+                                    "PersonalFastest": false
+                                },
+                                "2": {
+                                    "Value": "",
+                                    "PersonalFastest": false
+                                }
+                            },
+                            "Speeds": {
+                                "I1": {
+                                    "Value": "160"
+                                },
+                                "I2": {
+                                    "Value": "",
+                                    "PersonalFastest": false
+                                },
+                                "FL": {
+                                    "Value": "",
+                                    "PersonalFastest": false
+                                },
+                                "ST": {
+                                    "Value": "",
+                                    "PersonalFastest": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:20.588Z"
+            ]
+        }
+    ]
+}
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A7|BG,13D5|a,5|Y,28|D3,0|5,242|W,BD|c,56|BJ,9|X,42|BH,14|6,3|7,E|Z,0|8,B6D",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingData",
+                {
+                    "Lines": {
+                        "55": {
+                            "Sectors": {
+                                "2": {
+                                    "Segments": {
+                                        "7": {
+                                            "Status": 2049
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:20.651Z"
+            ]
+        }
+    ]
+}
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A8|BG,13D6|a,5|Y,28|D3,0|5,247|W,BE|c,56|BJ,9|X,43|BH,14|6,3|7,E|Z,0|8,B71",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingData",
+                {
+                    "Lines": {
+                        "1": {
+                            "Sectors": {
+                                "0": {
+                                    "Segments": {
+                                        "5": {
+                                            "Status": 2051
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:21.65Z"
+            ]
+        }
+    ]
+}
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A8|BG,13D6|a,5|Y,28|D3,0|5,247|W,BE|c,56|BJ,9|X,43|BH,14|6,3|7,E|Z,0|8,B72",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingData",
+                {
+                    "Lines": {
+                        "1": {
+                            "Sectors": {
+                                "0": {
+                                    "Value": "29.327"
+                                },
+                                "1": {
+                                    "Value": "",
+                                    "PersonalFastest": false
+                                },
+                                "2": {
+                                    "Value": "",
+                                    "OverallFastest": false,
+                                    "PersonalFastest": false
+                                }
+                            },
+                            "Speeds": {
+                                "I1": {
+                                    "Value": "177",
+                                    "OverallFastest": true
+                                },
+                                "I2": {
+                                    "Value": "",
+                                    "PersonalFastest": false
+                                },
+                                "FL": {
+                                    "Value": "",
+                                    "OverallFastest": false,
+                                    "PersonalFastest": false
+                                },
+                                "ST": {
+                                    "Value": "",
+                                    "PersonalFastest": false
+                                }
+                            }
+                        },
+                        "14": {
+                            "Speeds": {
+                                "I1": {
+                                    "OverallFastest": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:21.775Z"
+            ]
+        }
+    ]
+}
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A8|BG,13D6|a,5|Y,28|D3,0|5,247|W,BE|c,56|BJ,9|X,43|BH,14|6,3|7,E|Z,0|8,B73",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingData",
+                {
+                    "Lines": {
+                        "22": {
+                            "Sectors": {
+                                "0": {
+                                    "Segments": {
+                                        "1": {
+                                            "Status": 2049
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:21.823Z"
+            ]
+        }
+    ]
+}
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A8|BG,13D6|a,5|Y,28|D3,0|5,247|W,BE|c,56|BJ,9|X,43|BH,14|6,3|7,E|Z,0|8,B74",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingData",
+                {
+                    "Lines": {
+                        "44": {
+                            "Sectors": {
+                                "2": {
+                                    "Segments": {
+                                        "6": {
+                                            "Status": 2049
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:21.9Z"
+            ]
+        }
+    ]
+}
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A8|BG,13D6|a,5|Y,28|D3,0|5,247|W,BE|c,56|BJ,9|X,43|BH,14|6,3|7,E|Z,0|8,B75",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingData",
+                {
+                    "Lines": {
+                        "1": {
+                            "Sectors": {
+                                "0": {
+                                    "PreviousValue": "29.327"
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:22.088Z"
+            ]
+        }
+    ]
+}
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A8|BG,13D6|a,5|Y,28|D3,0|5,247|W,BE|c,56|BJ,9|X,43|BH,14|6,3|7,E|Z,0|8,B76",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingData",
+                {
+                    "Lines": {
+                        "10": {
+                            "Sectors": {
+                                "2": {
+                                    "Segments": {
+                                        "3": {
+                                            "Status": 2049
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:22.182Z"
+            ]
+        }
+    ]
+}
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A8|BG,13D6|a,5|Y,28|D3,0|5,247|W,BE|c,56|BJ,9|X,43|BH,14|6,3|7,E|Z,0|8,B77",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingData",
+                {
+                    "Lines": {
+                        "63": {
+                            "Sectors": {
+                                "2": {
+                                    "Segments": {
+                                        "0": {
+                                            "Status": 2049
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:22.213Z"
+            ]
+        }
+    ]
+}

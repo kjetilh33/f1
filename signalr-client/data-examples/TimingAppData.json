@@ -1,0 +1,160 @@
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A7|BG,13D5|a,5|Y,28|D3,0|5,242|W,BE|c,56|BJ,9|X,43|BH,14|6,3|7,E|Z,0|8,B6E",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingAppData",
+                {
+                    "Lines": {
+                        "4": {
+                            "Line": 6
+                        },
+                        "22": {
+                            "Line": 5
+                        },
+                        "55": {
+                            "Line": 4
+                        }
+                    }
+                },
+                "2023-11-17T10:35:20.697Z"
+            ]
+        },
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingData",
+                {
+                    "Lines": {
+                        "4": {
+                            "Line": 6,
+                            "Position": "6"
+                        },
+                        "18": {
+                            "Sectors": {
+                                "0": {
+                                    "PreviousValue": "32.987"
+                                }
+                            }
+                        },
+                        "22": {
+                            "TimeDiffToPositionAhead": "+0.165",
+                            "Line": 5,
+                            "Position": "5"
+                        },
+                        "24": {
+                            "Sectors": {
+                                "0": {
+                                    "PreviousValue": "32.675"
+                                }
+                            }
+                        },
+                        "55": {
+                            "TimeDiffToFastest": "+4.776",
+                            "TimeDiffToPositionAhead": "+0.262",
+                            "Line": 4,
+                            "Position": "4",
+                            "NumberOfLaps": 3,
+                            "Sectors": {
+                                "2": {
+                                    "Value": "43.723",
+                                    "PersonalFastest": true
+                                }
+                            },
+                            "Speeds": {
+                                "FL": {
+                                    "Value": "301"
+                                }
+                            },
+                            "BestLapTime": {
+                                "Value": "1:46.681",
+                                "Lap": 2
+                            },
+                            "LastLapTime": {
+                                "Value": "1:46.681",
+                                "PersonalFastest": true
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:20.697Z"
+            ]
+        }
+    ]
+}
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A9|BG,13D7|a,5|Y,28|D3,0|5,248|W,BF|c,56|BJ,9|X,43|BH,14|6,3|7,E|Z,0|8,B7B",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingAppData",
+                {
+                    "Lines": {
+                        "55": {
+                            "Stints": {
+                                "0": {
+                                    "TotalLaps": 6
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:23.15Z"
+            ]
+        }
+    ]
+}
+{
+    "C": "d-404FCCE6-B,0|IMv,0|IMw,11|d,1A9|BB,13A9|BG,13D7|a,5|Y,28|D3,0|5,248|W,C0|c,56|BJ,9|X,43|BH,14|6,3|7,E|Z,0|8,B7C",
+    "M": [
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingAppData",
+                {
+                    "Lines": {
+                        "55": {
+                            "Stints": {
+                                "0": {
+                                    "LapTime": "1:46.681",
+                                    "LapNumber": 3,
+                                    "LapFlags": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:23.244Z"
+            ]
+        },
+        {
+            "H": "Streaming",
+            "M": "feed",
+            "A": [
+                "TimingData",
+                {
+                    "Lines": {
+                        "31": {
+                            "Sectors": {
+                                "1": {
+                                    "Segments": {
+                                        "4": {
+                                            "Status": 2049
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "2023-11-17T10:35:23.244Z"
+            ]
+        }
+    ]
+}
