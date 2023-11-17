@@ -16,7 +16,7 @@ public class MessageDecoderIntegrationTest {
         final List<Object> arguments = List.of(List.of("Heartbeat", "CarData.z"));
         final int identifier = 1;
 
-        String json = MessageDecoder.toJson(hub, method, arguments, identifier);
+        String json = MessageDecoder.toMessageJson(hub, method, arguments, identifier);
         LOG.info("Returned json: \n {}", json);
 
     }

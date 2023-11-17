@@ -105,12 +105,14 @@ public class Client {
                 .enableMessageLogging(true)
                 ;
         if (hub.connect()) {
-            LOG.info("Received connection confirmation");
+            LOG.info("Received connection confirmation.");
+            LOG.info("Start subscription.");
+            hub.subscribeToAll();
         }
 
-        Thread.sleep(25000);
+        //Thread.sleep(25000);
 
-        hub.close();
+        //hub.close();
     }
 
     private static void useSignalrCoreClient() throws InterruptedException {

@@ -126,6 +126,25 @@ public abstract class F1HubConnection {
         return true;
     }
 
+    public void subscribeToAll() {
+        if (operationalState != OperationalState.OPEN || connectionState != State.CONNECTED) {
+            LOG.warn("The connection is not ready. Operational state = {}, connection state = {}",
+                    operationalState, connectionState);
+
+            return;
+        }
+        final String hub = "streaming";
+        final String method = "subscribe";
+        final List<Object> arguments = List.of(List.of(dataStreams));
+        final int identifier = 1;
+        try {
+            webSocket.sendText(MessageDecoder.toMessageJson(hub, method, arguments, identifier), true);
+        } catch (Exception e) {
+            LOG.warn("Failed to start subscription: {}", e.toString());
+        }
+        
+    }
+
     public void close() {
         operationalState = OperationalState.CLOSED;
         executorService.shutdown();

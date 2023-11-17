@@ -24,7 +24,7 @@ public class MessageDecoder {
         return message.equalsIgnoreCase("{}");
     }
 
-    public static String toJson(String hub, String method, List<Object> arguments, int identifier) throws JsonProcessingException {
+    public static String toMessageJson(String hub, String method, List<Object> arguments, int identifier) throws JsonProcessingException {
         Map<String, Object> root = Map.of(
             "H", hub,
             "M", method,
