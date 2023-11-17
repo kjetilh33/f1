@@ -25,6 +25,7 @@
         <io.prometheus.version>1.1.0</io.prometheus.version>
         <io.prometheus.legacy.version>0.16.0</io.prometheus.legacy.version>
         <jib.maven.plugin.version>3.4.0</jib.maven.plugin.version>
+        <junit.version>5.10.1</junit.version>
     </properties>
 
     <dependencyManagement>
@@ -100,7 +101,13 @@
             <version>${io.prometheus.version}</version>
         </dependency>
         -->
-    
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>    
     </dependencies>
     <build>
         <plugins>
