@@ -4,9 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Objects;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.DataFormatException;
+import java.util.zip.Inflater;
 
 public class MessageDecoder {
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -33,5 +37,19 @@ public class MessageDecoder {
         );
 
         return objectMapper.writeValueAsString(root);
+    }
+
+    public static String inflate(String compressedStringData) throws DataFormatException {
+        StringBuilder result = new StringBuilder();
+        Inflater inflater = new Inflater(true);
+        inflater.setInput(Base64.getDecoder().decode(compressedStringData));
+
+        while (!inflater.finished()) {
+            byte[] outputBytes = new byte[1024];
+            int resultLenght = inflater.inflate(outputBytes);
+            result.append(new String(outputBytes, 0, resultLenght, StandardCharsets.UTF_8));
+        }
+
+        return result.toString();
     }
 }
