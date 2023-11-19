@@ -36,7 +36,7 @@ import java.nio.ByteBuffer;
 public abstract class F1HubConnection {
     private static final Logger LOG = LoggerFactory.getLogger(F1HubConnection.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static Path defaultPathMessageLog = Path.of("./received-messages.log");
+    private static Path defaultPathMessageLog = Path.of("./received-messages-practice3.log");
 
     private static final String baseUrl = "https://livetiming.formula1.com/signalr";
     private static final String wssUrl = "wss://livetiming.formula1.com/signalr/connect";
