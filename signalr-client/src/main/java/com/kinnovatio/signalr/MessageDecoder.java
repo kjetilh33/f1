@@ -75,8 +75,8 @@ public class MessageDecoder {
 
         while (!inflater.finished()) {
             byte[] outputBytes = new byte[1024];
-            int resultLenght = inflater.inflate(outputBytes);
-            result.append(new String(outputBytes, 0, resultLenght, StandardCharsets.UTF_8));
+            int resultLength = inflater.inflate(outputBytes);
+            result.append(new String(outputBytes, 0, resultLength, StandardCharsets.UTF_8));
         }
 
         return result.toString();
