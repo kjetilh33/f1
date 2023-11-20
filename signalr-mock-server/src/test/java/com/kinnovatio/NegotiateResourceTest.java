@@ -4,18 +4,19 @@ import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
-public class GreetingResourceTest {
+public class NegotiateResourceTest {
 
     @Test
-    public void testHelloEndpoint() {
+    public void testNegotiateEndpoint() {
         given()
-          .when().get("/hello")
+          .when().get("/negotiate")
           .then()
              .statusCode(200)
-             .body(is("Hello from RESTEasy Reactive"));
+             .body(containsString("\"ConnectionToken\": \"blahblah\""));
     }
 
 }
