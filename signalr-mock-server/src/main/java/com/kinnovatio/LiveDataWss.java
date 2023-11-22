@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.websocket.OnClose;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
@@ -33,9 +34,20 @@ public class LiveDataWss {
 
     @OnMessage
     public void onMessage(Session session, String message) {
-        if (message.contains(streamSubscribe)) {
-            // Set up a new file stream reader
+        if (message.contains(streamSubscribe) && !sessions.containsKey(session)) {
+            LiveDataFeed feed = new LiveDataFeed(session);
+            sessions.put(session, feed);
+            feed.start();
         }
+    }
 
+    @OnClose
+    public void onClose(Session session) {
+        if (sessions.containsKey(session)) {
+            sessions.get(session).close();
+            sessions.remove(session);
+
+            LOG.info("Closing session: {}", session.getId());
+        }
     }
 }
