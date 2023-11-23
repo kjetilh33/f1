@@ -64,6 +64,7 @@ public abstract class F1HubConnection {
     private HttpClient httpClient = null;
     private WebSocket webSocket = null;
     private SignalrWssListener wssListener = new SignalrWssListener();
+    private int errorCounter = 0;
 
     private static F1HubConnection.Builder builder() {
         return new AutoValue_F1HubConnection.Builder()
@@ -159,7 +160,19 @@ public abstract class F1HubConnection {
             executorService.shutdownNow();
         } else {
             LOG.debug("hub connection--just checking loop...");
-            //webSocket.sendPing(ByteBuffer.wrap("ping".getBytes()));
+            if (connectionState != State.CONNECTING || connectionState != State.CONNECTED) {
+                try {
+                    connect();
+                    errorCounter = 0;
+                } catch (Exception e) {
+                    errorCounter++;
+                    LOG.warn("Error connecting to hub: {}", e.toString());
+                    if (errorCounter > 9) {
+                        LOG.error("Too many subsequent connections errors: {}. Will shut down the listener", 10);
+                        close();
+                    }
+                }     
+            }
         }
     }
 
