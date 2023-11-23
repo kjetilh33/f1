@@ -27,7 +27,7 @@ public class LiveDataWss {
     public void onOpen(Session session) {
         session.getAsyncRemote().sendText(initMessage, result -> {
                     if (result.getException() != null) {
-                        LOG.warn("Unable to send message: {}", result.getException());
+                        LOG.warnf("Unable to send message: %s", result.getException());
                     }
                 });
     }
@@ -47,7 +47,7 @@ public class LiveDataWss {
             sessions.get(session).close();
             sessions.remove(session);
 
-            LOG.info("Closing session: {}", session.getId());
+            LOG.infof("Closing session: %s", session.getId());
         }
     }
 }

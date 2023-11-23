@@ -41,7 +41,7 @@ public class LiveDataFeed implements Runnable {
             }
 
         } catch (Exception e) {
-            LOG.warn("Error while reading message file: {}", e.toString(), e);
+            LOG.warnf("Error while reading message file: %s", e.toString());
         }        
     }
 }
