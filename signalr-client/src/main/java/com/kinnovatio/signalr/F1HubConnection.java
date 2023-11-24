@@ -152,15 +152,17 @@ public abstract class F1HubConnection {
     }
 
     private void asyncKeepAliveLoop() {
+        String loggingPrefix = "Hub connection loop - ";
+        LOG.debug(loggingPrefix + "Operational state = {}", operationalState);
         if (operationalState == OperationalState.CLOSED) {
-            LOG.warn("Hub is struggling to close properly. Will try to force close...");
-            LOG.debug("Hub executor service isShutdown: {}, isTerminated: {}",
+            LOG.warn(loggingPrefix + "Hub is struggling to close properly. Will try to force close...");
+            LOG.debug(loggingPrefix + "Hub executor service isShutdown: {}, isTerminated: {}",
                     executorService.isShutdown(),
                     executorService.isTerminated());
             executorService.shutdownNow();
         } else {
-            LOG.debug("hub connection--just checking loop...");
-            if (connectionState != State.CONNECTING || connectionState != State.CONNECTED) {
+            if (connectionState != State.CONNECTING && connectionState != State.CONNECTED) {
+                LOG.debug(loggingPrefix + "Hub connection state: {}", connectionState);
                 try {
                     connect();
                     errorCounter = 0;
