@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Objects;
-import java.util.List;
-import java.util.Map;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.*;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
@@ -59,6 +59,24 @@ public class MessageDecoder {
         );
 
         return objectMapper.writeValueAsString(root);
+    }
+
+    public static List<Message> parseMessage(String messageJson) throws JsonProcessingException {
+        JsonNode root = objectMapper.readTree(messageJson);
+
+        if (root.path("R").isObject()) {
+            return Collections.emptyList();
+        } else if (root.path("C").isTextual() && root.path("M").isArray()) {
+            return Collections.emptyList();
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    private Message parseSingleMessage(String messageJson) throws JsonProcessingException {
+        JsonNode root = objectMapper.readTree(messageJson);
+
+        return new Message("test", "my message", ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC")));
     }
 
     /**
