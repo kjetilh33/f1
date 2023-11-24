@@ -25,18 +25,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.nio.ByteBuffer;
 
 @AutoValue
 public abstract class F1HubConnection {
     private static final Logger LOG = LoggerFactory.getLogger(F1HubConnection.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static Path defaultPathMessageLog = Path.of("./received-messages-practice3.log");
+    private static final Path defaultPathMessageLog = Path.of("./received-messages.log");
 
     private static final String baseUrl = "https://livetiming.formula1.com/signalr";
     private static final String wssUrl = "wss://livetiming.formula1.com/signalr/connect";
@@ -174,6 +172,25 @@ public abstract class F1HubConnection {
                         close();
                     }
                 }     
+            } else {
+                // Check if we have received a keep alive message recently
+                if (Duration.between(lastKeepAliveMessage, Instant.now()).compareTo(keepAliveTimeout) > 0) {
+                    // In case we have an open websocket, close it
+                    if (null != webSocket) webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
+
+                    // reconnect
+                    try {
+                        connect();
+                        errorCounter = 0;
+                    } catch (Exception e) {
+                        errorCounter++;
+                        LOG.warn("Error connecting to hub: {}", e.toString());
+                        if (errorCounter > 9) {
+                            LOG.error("Too many subsequent connections errors: {}. Will shut down the listener", 10);
+                            close();
+                        }
+                    }
+                }
             }
         }
     }
