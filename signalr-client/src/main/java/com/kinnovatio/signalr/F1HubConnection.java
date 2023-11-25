@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.auto.value.AutoValue;
+import com.kinnovatio.signalr.messages.MessageDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

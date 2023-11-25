@@ -1,8 +1,9 @@
-package com.kinnovatio.signalr;
+package com.kinnovatio.signalr.messages;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -61,7 +62,49 @@ public class MessageDecoder {
         return objectMapper.writeValueAsString(root);
     }
 
-    public static List<Message> parseMessage(String messageJson) throws JsonProcessingException {
+    public SignalRMessage parseSignalRMessage(String messageJson) throws JsonProcessingException {
+        Objects.requireNonNull(messageJson);
+
+        // Let's just shortcut if it is a keep alive message
+        if (messageJson.equalsIgnoreCase("{}")) return new KeepAliveMessage();
+
+        // Checking the other message types. We need to inspect the Json contents
+        JsonNode root = objectMapper.readTree(messageJson);
+
+        // Init messages contains "S" property
+        if (root.path("S").isIntegralNumber() && root.path("S").asInt() == 1) {
+            return new InitMessage(
+                    root.path("C").asText(""),
+                    root.path("S").asInt(),
+                    parserJsonObjectArray(root.path("M")));
+        }
+
+
+
+
+        // If we don't have a match with any of the known types, return the raw input as an unknown message type
+        return new UnknownMessage(messageJson);
+    }
+
+    private List<String> parserJsonObjectArray(JsonNode node) {
+        List<String> objects = new ArrayList<>();
+
+        if (node instanceof ArrayNode array) {
+            for (JsonNode n : array) {
+                if (n.isObject()) objects.add(n.toString());
+            }
+        }
+        return objects;
+    }
+
+    /**
+     * Parse a SignalR message envelope and extract the contents.
+     *
+     * @param messageJson The SignalR message envelope (the raw message)
+     * @return a list of messages contained in the envelope.
+     * @throws JsonProcessingException if the json is malformed
+     */
+    public static List<Message> parseMessages(String messageJson) throws JsonProcessingException {
         JsonNode root = objectMapper.readTree(messageJson);
 
         if (root.path("R").isObject()) {

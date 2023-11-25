@@ -1,4 +1,4 @@
-package com.kinnovatio.signalr;
+package com.kinnovatio.signalr.messages;
 
 import java.time.ZonedDateTime;
 
