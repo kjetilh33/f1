@@ -79,7 +79,7 @@ public class MessageDecoder {
                     parserJsonObjectArray(root.path("M")));
         }
 
-
+        // Hub reply messages (replies to client calling the hub) contains the "R" property
 
 
         // If we don't have a match with any of the known types, return the raw input as an unknown message type
