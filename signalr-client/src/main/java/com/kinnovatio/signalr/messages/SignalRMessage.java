@@ -1,4 +1,5 @@
 package com.kinnovatio.signalr.messages;
 
-public sealed interface SignalRMessage permits KeepAliveMessage, InitMessage, UnknownMessage {
+public sealed interface SignalRMessage permits KeepAliveMessage, InitMessage, GroupMembershipMessage,
+        HubResponseMessage, ClientMethodInvocationMessage, UnknownMessage {
 }

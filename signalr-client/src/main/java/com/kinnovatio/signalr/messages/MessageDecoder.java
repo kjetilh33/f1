@@ -76,17 +76,36 @@ public class MessageDecoder {
             return new InitMessage(
                     root.path("C").asText(""),
                     root.path("S").asInt(),
-                    parserJsonObjectArray(root.path("M")));
+                    parseJsonObjectArray(root.path("M")));
+        }
+
+        // Group membership messages contains the "G" property
+        if (root.path("G").isTextual()) {
+            return new GroupMembershipMessage(
+                    root.path("C").asText(""),
+                    root.path("G").asText(""),
+                    parseJsonObjectArray(root.path("M")));
         }
 
         // Hub reply messages (replies to client calling the hub) contains the "R" property
+        if (!root.path("R").isObject()) {
+            return new HubResponseMessage(
+                    root.path("I").asText(""),
+                    root.path("R").toString());
+        }
 
+        // Client side hub method invocation carries the payload in an "M" property.
+        if (!root.path("M").isArray()) {
+            return new ClientMethodInvocationMessage(
+                    root.path("C").asText(""),
+                    parseJsonObjectArray(root.path("M")));
+        }
 
         // If we don't have a match with any of the known types, return the raw input as an unknown message type
         return new UnknownMessage(messageJson);
     }
 
-    private List<String> parserJsonObjectArray(JsonNode node) {
+    private List<String> parseJsonObjectArray(JsonNode node) {
         List<String> objects = new ArrayList<>();
 
         if (node instanceof ArrayNode array) {
