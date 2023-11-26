@@ -62,7 +62,7 @@ public abstract class F1HubConnection {
     private Duration keepAliveTimeout = Duration.ofSeconds(30);
     private HttpClient httpClient = null;
     private WebSocket webSocket = null;
-    private SignalrWssListener wssListener = new SignalrWssListener();
+    private final SignalrWssListener wssListener = new SignalrWssListener();
     private int errorCounter = 0;
 
     private static F1HubConnection.Builder builder() {
