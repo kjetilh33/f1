@@ -21,13 +21,10 @@ public class MessageDecoder {
      *
      * @param message The json message to check.
      * @return true if the message is an init message.
+     * @throws JsonProcessingException if the input is not a valid json string.
      */
-    public static boolean isInitMessage(String message) throws Exception {
-        boolean returnValue = false;
-        JsonNode root = objectMapper.readTree(message);
-        if (root.path("S").isIntegralNumber() && root.path("S").asInt() == 1) returnValue = true;
-
-        return returnValue;
+    public static boolean isInitMessage(String message) throws JsonProcessingException {
+        return parseSignalRMessage(message) instanceof InitMessage;
     }
 
     /**
@@ -35,10 +32,10 @@ public class MessageDecoder {
      *
      * @param message The Json message to check.
      * @return true if the message is a keep alive message.
+     * @throws JsonProcessingException if the input is not a valid json string.
      */
-    public static boolean isKeepAliveMessage(String message) {
-        Objects.requireNonNull(message);
-        return message.equalsIgnoreCase("{}");
+    public static boolean isKeepAliveMessage(String message) throws JsonProcessingException {
+        return parseSignalRMessage(message) instanceof KeepAliveMessage;
     }
 
     /**
@@ -49,7 +46,7 @@ public class MessageDecoder {
      * @param arguments The arguments to supply to the method.
      * @param identifier An identifier for the method call.
      * @return The Json message representation of SignalR message.
-     * @throws JsonProcessingException
+     * @throws JsonProcessingException if the input is not a valid json string.
      */
     public static String toMessageJson(String hub, String method, List<Object> arguments, int identifier) throws JsonProcessingException {
         Map<String, Object> root = Map.of(
@@ -62,7 +59,17 @@ public class MessageDecoder {
         return objectMapper.writeValueAsString(root);
     }
 
-    public SignalRMessage parseSignalRMessage(String messageJson) throws JsonProcessingException {
+    /**
+     * Parse a raw SignalR message into one of its basic message types. The parsed message can then be interrogated
+     * further for content.
+     *
+     * The returned message can be interrogated by using pattern matching to test the "type" of message.
+     *
+     * @param messageJson the raw SignalR message in Json format.
+     * @return the message parsed into one of the basic {@code SignalRMessage} types.
+     * @throws JsonProcessingException if the input is not a valid json string.
+     */
+    public static SignalRMessage parseSignalRMessage(String messageJson) throws JsonProcessingException {
         Objects.requireNonNull(messageJson);
 
         // Let's just shortcut if it is a keep alive message
@@ -105,7 +112,7 @@ public class MessageDecoder {
         return new UnknownMessage(messageJson);
     }
 
-    private List<String> parseJsonObjectArray(JsonNode node) {
+    private static List<String> parseJsonObjectArray(JsonNode node) {
         List<String> objects = new ArrayList<>();
 
         if (node instanceof ArrayNode array) {

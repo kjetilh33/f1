@@ -21,12 +21,12 @@ The minimum requirements for running the module locally:
 
 On Linux/MaxOS:
 ```console
-$ mvn compile exec:java -Dexec.mainClass="com.kinnovatio.signalr.Client"
+$ mvn compile exec:java -Dexec.mainClass="com.kinnovatio.f1.livetiming.Client"
 ```
 
 On Windows Powershell:
 ```ps
-> mvn compile exec:java -D exec.mainClass="com.kinnovatio.signalr.Client"
+> mvn compile exec:java -D exec.mainClass="com.kinnovatio.f1.livetiming.Client"
 ```
 
 ### Run as a container on Kubernetes

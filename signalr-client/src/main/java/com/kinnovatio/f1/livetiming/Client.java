@@ -1,5 +1,6 @@
-package com.kinnovatio.signalr;
+package com.kinnovatio.f1.livetiming;
 
+import com.kinnovatio.signalr.F1HubConnection;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
 import io.prometheus.client.CollectorRegistry;
