@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import org.jboss.logging.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -14,6 +15,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
 public class MessageDecoder {
+    private static final Logger LOG = Logger.getLogger(MessageDecoder.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -131,21 +133,49 @@ public class MessageDecoder {
      * @throws JsonProcessingException if the json is malformed
      */
     public static List<Message> parseMessages(String messageJson) throws JsonProcessingException {
-        JsonNode root = objectMapper.readTree(messageJson);
+        SignalRMessage signalRMessage = parseSignalRMessage(messageJson);
 
-        if (root.path("R").isObject()) {
-            return Collections.emptyList();
-        } else if (root.path("C").isTextual() && root.path("M").isArray()) {
-            return Collections.emptyList();
-        } else {
-            return Collections.emptyList();
-        }
+        return switch (signalRMessage) {
+            case null -> Collections.emptyList();
+            case InitMessage i -> Collections.emptyList();
+            case KeepAliveMessage k -> Collections.emptyList();
+            case GroupMembershipMessage g -> Collections.emptyList();
+            case HubResponseMessage h -> {
+
+            }
+            case ClientMethodInvocationMessage c -> {
+                c.messageData().stream()
+                        .map(MessageDecoder::parseSingleMessage)
+                        .flatMap(Optional::stream)
+                        .toList();
+            }
+        };
+
     }
 
-    private Message parseSingleMessage(String messageJson) throws JsonProcessingException {
-        JsonNode root = objectMapper.readTree(messageJson);
+    private static Optional<Message> parseSingleMessage(String messageJson) {
+        Optional<Message> returnValue = Optional.empty();
+        try {
+            JsonNode root = objectMapper.readTree(messageJson);
+                if (root.path("H").asText().equalsIgnoreCase("Streaming")
+                        && root.path("M").asText().equalsIgnoreCase("feed")
+                        && root.path("A") instanceof ArrayNode array) {
+                    String category = array.get(0).asText();
+                    String messageValue = array.get(1).toString();
+                    ZonedDateTime timeStamp = ZonedDateTime.parse(array.get(2).asText());
 
-        return new Message("test", "my message", ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC")));
+                    // Check if the message body is compressed
+                    if (category.endsWith(".z")) {
+                        messageValue = inflate(messageValue);
+                    }
+
+                    returnValue = Optional.of(new Message(category, messageValue, timeStamp));
+                }
+            } catch (Exception e) {
+            LOG.warnf("Error while parsing streaming message: %s", e.toString());
+        }
+
+        return returnValue;
     }
 
     /**
