@@ -20,7 +20,7 @@
         <signalr.version>8.0.0</signalr.version>
         <jackson.version>2.16.0</jackson.version>
         <slf4j-api.version>2.0.9</slf4j-api.version>
-        <logback-classic.version>1.4.12</logback-classic.version>
+        <logback-classic.version>1.4.13</logback-classic.version>
         <smallrye.config.version>3.4.4</smallrye.config.version>
         <io.prometheus.version>1.1.0</io.prometheus.version>
         <io.prometheus.legacy.version>0.16.0</io.prometheus.legacy.version>
