@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.auto.value.AutoValue;
 import com.kinnovatio.signalr.messages.MessageDecoder;
+import com.kinnovatio.signalr.messages.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +30,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @AutoValue
@@ -76,10 +78,15 @@ public abstract class F1HubConnection {
 
     protected abstract Builder toBuilder();
 
+    public abstract Consumer<Message> getConsumer();
     public abstract boolean isMessageLogEnabled();
 
     public F1HubConnection enableMessageLogging(boolean enable) {
         return toBuilder().setMessageLogEnabled(enable).build();
+    }
+
+    public F1HubConnection withConsumer(Consumer<Message> consumer) {
+        return toBuilder().setConsumer(consumer).build();
     }
 
     public boolean connect() throws IOException, URISyntaxException, InterruptedException {
@@ -176,6 +183,7 @@ public abstract class F1HubConnection {
             } else {
                 // Check if we have received a keep alive message recently
                 if (Duration.between(lastKeepAliveMessage, Instant.now()).compareTo(keepAliveTimeout) > 0) {
+                    // It has been too long since the last keep alive message. We need to try and reconnect.
                     // In case we have an open websocket, close it
                     if (null != webSocket) webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
 
@@ -382,6 +390,7 @@ public abstract class F1HubConnection {
     @AutoValue.Builder
     abstract static class Builder {
         abstract Builder setMessageLogEnabled(boolean value);
+        abstract Builder setConsumer(Consumer<Message> value);
 
         abstract F1HubConnection build();
     }
