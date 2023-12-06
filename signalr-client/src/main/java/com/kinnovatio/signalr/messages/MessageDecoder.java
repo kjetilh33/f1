@@ -169,7 +169,7 @@ public class MessageDecoder {
 
                 // Check if the message body is compressed
                 if (category.endsWith(".z")) {
-                    messageValue = inflate(messageValue);
+                    messageValue = inflate(array.get(1).textValue());
                 }
 
                 returnValue = Optional.of(new LiveTimingMessage(category, messageValue, timeStamp));
@@ -201,7 +201,7 @@ public class MessageDecoder {
                         String messageValue = entry.getValue().toString();
                         // Check if the message body is compressed
                         if (entry.getKey().endsWith(".z")) {
-                                messageValue = inflate(messageValue);
+                                messageValue = inflate(entry.getValue().textValue());
                         }
                         returnList.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp));
 
