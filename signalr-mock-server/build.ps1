@@ -1,0 +1,1 @@
+./mvnw install "-Dquarkus.container-image.build=true -Dquarkus.container-image.image=$Env:IMAGE -Dquarkus.container-image.push=$Env:PUSH_IMAGE"

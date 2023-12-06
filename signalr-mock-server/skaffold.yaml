@@ -9,7 +9,7 @@ build:
   - image: signalr-mock-server                                         # Image name
     context: .
     custom:
-      buildCommand: mvnw install -Dquarkus.container-image.build=true -Dquarkus.container-image.push=$PUSH_IMAGE -Duarkus.container-image.image=$IMAGE
+      buildCommand: 'mvnw install "-Dquarkus.container-image.build=true -Dquarkus.container-image.image=$Env:IMAGE -Dquarkus.container-image.push=$Env:PUSH_IMAGE"'
     #jib:                                                   # Use Jib as the container builder
     #  args:
     #    - Dquarkus.container-image.build=true
