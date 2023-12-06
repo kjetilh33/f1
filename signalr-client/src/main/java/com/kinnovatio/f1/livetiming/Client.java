@@ -1,6 +1,7 @@
 package com.kinnovatio.f1.livetiming;
 
 import com.kinnovatio.signalr.F1HubConnection;
+import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
 import io.prometheus.client.CollectorRegistry;
@@ -107,7 +108,8 @@ public class Client {
 
     private static void useSignalrCustomClient() throws Exception {
         F1HubConnection hub = F1HubConnection.of(signalRBaseUrl)
-                .enableMessageLogging(true)
+                //.enableMessageLogging(true)
+                .withConsumer(Client::processMessage)
                 ;
         if (hub.connect()) {
             LOG.info("Received connection confirmation.");
@@ -135,6 +137,10 @@ public class Client {
         messageStreamDisposable.dispose();
 
         hubConnection.close();
+    }
+
+    private static void processMessage(LiveTimingMessage message) {
+        LOG.info("Received live timing message: {}", message);
     }
 
     /*
