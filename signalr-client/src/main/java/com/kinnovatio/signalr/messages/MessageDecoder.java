@@ -62,6 +62,49 @@ public class MessageDecoder {
     }
 
     /**
+     * Parse a SignalR message envelope and extract the contents.
+     *
+     * @param messageJson The SignalR message envelope (the raw message)
+     * @return a list of messages contained in the envelope.
+     * @throws JsonProcessingException if the json is malformed
+     */
+    public static List<LiveTimingMessage> parseLiveTimingMessages(String messageJson) throws JsonProcessingException {
+        SignalRMessage signalRMessage = parseSignalRMessage(messageJson);
+
+        return switch (signalRMessage) {
+            case UnknownMessage u -> Collections.emptyList();
+            case InitMessage i -> Collections.emptyList();
+            case KeepAliveMessage k -> Collections.emptyList();
+            case GroupMembershipMessage g -> Collections.emptyList();
+            case HubResponseMessage h -> {
+                List<LiveTimingMessage> returnList = new ArrayList<>();
+                JsonNode root = objectMapper.readTree(h.result());
+                ZonedDateTime timeStamp;
+
+                // Check if we have timestamp data in the payload
+                if (root.path("ExtrapolatedClock").path("Utc").isTextual()) {
+                    timeStamp = ZonedDateTime.parse(root.path("ExtrapolatedClock").path("Utc").textValue());
+                } else {
+                    // If no timestamp in the payload, set a default
+                    timeStamp = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC"));
+                }
+
+                root.fields().forEachRemaining(entry ->
+                        returnList.add(new LiveTimingMessage(entry.getKey(), entry.getValue().toString(), timeStamp)));
+
+                yield returnList;
+            }
+            case ClientMethodInvocationMessage c -> {
+                yield c.messageData().stream()
+                        .map(MessageDecoder::parseSingleMethodInvocationMessage)
+                        .flatMap(Optional::stream)
+                        .toList();
+            }
+        };
+
+    }
+
+    /**
      * Parse a raw SignalR message into one of its basic message types. The parsed message can then be interrogated
      * further for content.
      *
@@ -125,53 +168,30 @@ public class MessageDecoder {
         return objects;
     }
 
-    /**
-     * Parse a SignalR message envelope and extract the contents.
-     *
-     * @param messageJson The SignalR message envelope (the raw message)
-     * @return a list of messages contained in the envelope.
-     * @throws JsonProcessingException if the json is malformed
+    /*
+
      */
-    public static List<Message> parseMessages(String messageJson) throws JsonProcessingException {
-        SignalRMessage signalRMessage = parseSignalRMessage(messageJson);
-
-        return switch (signalRMessage) {
-            case null -> Collections.emptyList();
-            case InitMessage i -> Collections.emptyList();
-            case KeepAliveMessage k -> Collections.emptyList();
-            case GroupMembershipMessage g -> Collections.emptyList();
-            case HubResponseMessage h -> {
-                Collections.emptyList();
-            }
-            case ClientMethodInvocationMessage c -> {
-                c.messageData().stream()
-                        .map(MessageDecoder::parseSingleMessage)
-                        .flatMap(Optional::stream)
-                        .toList();
-            }
-        };
-
-    }
-
-    private static Optional<Message> parseSingleMessage(String messageJson) {
-        Optional<Message> returnValue = Optional.empty();
+    private static Optional<LiveTimingMessage> parseSingleMethodInvocationMessage(String messageJson) {
+        Optional<LiveTimingMessage> returnValue = Optional.empty();
         try {
             JsonNode root = objectMapper.readTree(messageJson);
-                if (root.path("H").asText().equalsIgnoreCase("Streaming")
-                        && root.path("M").asText().equalsIgnoreCase("feed")
-                        && root.path("A") instanceof ArrayNode array) {
-                    String category = array.get(0).asText();
-                    String messageValue = array.get(1).toString();
-                    ZonedDateTime timeStamp = ZonedDateTime.parse(array.get(2).asText());
+            
+            // If the message is a streaming feed, unpack the envelope and extract the message data.
+            if (root.path("H").asText().equalsIgnoreCase("Streaming")
+                    && root.path("M").asText().equalsIgnoreCase("feed")
+                    && root.path("A") instanceof ArrayNode array) {
+                String category = array.get(0).asText();
+                String messageValue = array.get(1).toString();
+                ZonedDateTime timeStamp = ZonedDateTime.parse(array.get(2).asText());
 
-                    // Check if the message body is compressed
-                    if (category.endsWith(".z")) {
-                        messageValue = inflate(messageValue);
-                    }
-
-                    returnValue = Optional.of(new Message(category, messageValue, timeStamp));
+                // Check if the message body is compressed
+                if (category.endsWith(".z")) {
+                    messageValue = inflate(messageValue);
                 }
-            } catch (Exception e) {
+
+                returnValue = Optional.of(new LiveTimingMessage(category, messageValue, timeStamp));
+            }
+        } catch (Exception e) {
             LOG.warnf("Error while parsing streaming message: %s", e.toString());
         }
 

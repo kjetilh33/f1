@@ -32,6 +32,10 @@ public class Client {
         bar: "the-value"
     "
      */
+    // Connection variables
+    private static final String signalRBaseUrl = "https://livetiming.formula1.com/signalr/";
+
+
     // Metrics configs. From config file / env variables
     private static final boolean enableMetrics =
             ConfigProvider.getConfig().getValue("metrics.enable", Boolean.class);
@@ -102,7 +106,7 @@ public class Client {
     }
 
     private static void useSignalrCustomClient() throws Exception {
-        F1HubConnection hub = F1HubConnection.create()
+        F1HubConnection hub = F1HubConnection.of(signalRBaseUrl)
                 .enableMessageLogging(true)
                 ;
         if (hub.connect()) {

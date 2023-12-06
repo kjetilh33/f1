@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.auto.value.AutoValue;
+import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.MessageDecoder;
-import com.kinnovatio.signalr.messages.Message;
 import io.smallrye.common.constraint.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +40,7 @@ public abstract class F1HubConnection {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Path defaultPathMessageLog = Path.of("./received-messages.log");
 
-    private static final String baseUrl = "https://livetiming.formula1.com/signalr";
-    private static final String wssUrl = "wss://livetiming.formula1.com/signalr/connect";
+    private static final String baseUrl = "https://livetiming.formula1.com/signalr/";
     private static final String negotiatePath = "negotiate";
     private static final String clientProtocolKey = "clientProtocol";
     private static final String clientProtocol = "1.5";
@@ -97,14 +96,14 @@ public abstract class F1HubConnection {
     public abstract URI getBaseUri();
 
     @Nullable
-    public abstract Consumer<Message> getConsumer();
+    public abstract Consumer<LiveTimingMessage> getConsumer();
     public abstract boolean isMessageLogEnabled();
 
     public F1HubConnection enableMessageLogging(boolean enable) {
         return toBuilder().setMessageLogEnabled(enable).build();
     }
 
-    public F1HubConnection withConsumer(Consumer<Message> consumer) {
+    public F1HubConnection withConsumer(Consumer<LiveTimingMessage> consumer) {
         return toBuilder().setConsumer(consumer).build();
     }
 
@@ -227,7 +226,7 @@ public abstract class F1HubConnection {
         connectionState = State.CONNECTING;
         final ObjectReader objectReader = objectMapper.reader();
 
-        URI negotiateURI = getBaseUri().resolve(String.format("/%s?%s=%s&%s=%s",
+        URI negotiateURI = getBaseUri().resolve(String.format("%s?%s=%s&%s=%s",
                 negotiatePath,
                 connectionDataKey,
                 URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
@@ -278,8 +277,7 @@ public abstract class F1HubConnection {
             }
 
             URI wssURI = new URI(getBaseUri().toString().replaceFirst(getBaseUri().getScheme(), "wss"))
-                    .resolve("connect")
-                    .resolve(String.format("?transport=webSockets&%s=%s&%s=%s&%s=%s",
+                    .resolve(String.format("connect?transport=webSockets&%s=%s&%s=%s&%s=%s",
                             connectionDataKey,
                             URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
                             clientProtocolKey,
@@ -413,7 +411,7 @@ public abstract class F1HubConnection {
     abstract static class Builder {
         abstract Builder setMessageLogEnabled(boolean value);
         abstract Builder setBaseUri(URI value);
-        abstract Builder setConsumer(Consumer<Message> value);
+        abstract Builder setConsumer(Consumer<LiveTimingMessage> value);
 
         abstract F1HubConnection build();
     }
