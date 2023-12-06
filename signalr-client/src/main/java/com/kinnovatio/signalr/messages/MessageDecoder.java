@@ -76,27 +76,10 @@ public class MessageDecoder {
             case InitMessage i -> Collections.emptyList();
             case KeepAliveMessage k -> Collections.emptyList();
             case GroupMembershipMessage g -> Collections.emptyList();
-            case HubResponseMessage h -> {
-                List<LiveTimingMessage> returnList = new ArrayList<>();
-                JsonNode root = objectMapper.readTree(h.result());
-                ZonedDateTime timeStamp;
-
-                // Check if we have timestamp data in the payload
-                if (root.path("ExtrapolatedClock").path("Utc").isTextual()) {
-                    timeStamp = ZonedDateTime.parse(root.path("ExtrapolatedClock").path("Utc").textValue());
-                } else {
-                    // If no timestamp in the payload, set a default
-                    timeStamp = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC"));
-                }
-
-                root.fields().forEachRemaining(entry ->
-                        returnList.add(new LiveTimingMessage(entry.getKey(), entry.getValue().toString(), timeStamp)));
-
-                yield returnList;
-            }
+            case HubResponseMessage h -> parseHubResponseMessageBody(h.result());
             case ClientMethodInvocationMessage c -> {
                 yield c.messageData().stream()
-                        .map(MessageDecoder::parseSingleMethodInvocationMessage)
+                        .map(MessageDecoder::parseSingleMethodInvocationMessageBody)
                         .flatMap(Optional::stream)
                         .toList();
             }
@@ -140,14 +123,14 @@ public class MessageDecoder {
         }
 
         // Hub reply messages (replies to client calling the hub) contains the "R" property
-        if (!root.path("R").isObject()) {
+        if (root.path("R").isObject()) {
             return new HubResponseMessage(
                     root.path("I").asText(""),
                     root.path("R").toString());
         }
 
         // Client side hub method invocation carries the payload in an "M" property.
-        if (!root.path("M").isArray()) {
+        if (root.path("M").isArray()) {
             return new ClientMethodInvocationMessage(
                     root.path("C").asText(""),
                     parseJsonObjectArray(root.path("M")));
@@ -171,7 +154,7 @@ public class MessageDecoder {
     /*
 
      */
-    private static Optional<LiveTimingMessage> parseSingleMethodInvocationMessage(String messageJson) {
+    private static Optional<LiveTimingMessage> parseSingleMethodInvocationMessageBody(String messageJson) {
         Optional<LiveTimingMessage> returnValue = Optional.empty();
         try {
             JsonNode root = objectMapper.readTree(messageJson);
@@ -196,6 +179,44 @@ public class MessageDecoder {
         }
 
         return returnValue;
+    }
+
+    private static List<LiveTimingMessage> parseHubResponseMessageBody(String messageJson) {
+        List<LiveTimingMessage> returnList = new ArrayList<>();
+
+        try {
+            JsonNode root = objectMapper.readTree(messageJson);
+            ZonedDateTime timeStamp;
+
+            // Check if we have timestamp data in the payload
+            if (root.path("ExtrapolatedClock").path("Utc").isTextual()) {
+                timeStamp = ZonedDateTime.parse(root.path("ExtrapolatedClock").path("Utc").textValue());
+            } else {
+                // If no timestamp in the payload, set a default
+                timeStamp = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC"));
+            }
+
+            root.fields().forEachRemaining(entry -> {
+                    try {
+                        String messageValue = entry.getValue().toString();
+                        // Check if the message body is compressed
+                        if (entry.getKey().endsWith(".z")) {
+                                messageValue = inflate(messageValue);
+                        }
+                        returnList.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp));
+
+                    } catch (DataFormatException e) {
+                        LOG.warnf("Error while deflating data in message with category %s: %s",
+                                entry.getKey(),
+                                e.toString());
+                    }
+            }
+            );
+        } catch (Exception e) {
+            LOG.warnf("Error while parsing hub response message: %s", e.toString());
+        }
+
+        return returnList;
     }
 
     /**

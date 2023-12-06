@@ -327,10 +327,11 @@ public abstract class F1HubConnection {
                     }
                 }
                 case CONNECTED -> {
-                    LOG.debug("Connected, message received.");
                     if (MessageDecoder.isKeepAliveMessage(message)) {
                         lastKeepAliveMessage = Instant.now();
+                        LOG.debug("Client in state _connected_, received keep alive message.");
                     } else {
+                        LOG.debug("Client in state _connected_, received subscription message.");
                         notifySubscribers(message);
                     }
                 }
@@ -344,13 +345,15 @@ public abstract class F1HubConnection {
         LOG.trace("Received wss message:\n {}", message);
     }
 
-    private void notifySubscribers(String message) {
-        LOG.debug("Notify subscribers. Raw message: {}", message);
+    private void notifySubscribers(String rawMessage) {
+        String loggingPrefix = "notifySubscribers() - ";
+        LOG.debug(loggingPrefix + "Raw message: {}", rawMessage);
         try {
             // Need to make sure we have a registered consumer for the messages
             if (null != getConsumer()) {
-                List<LiveTimingMessage> messages = MessageDecoder.parseLiveTimingMessages(message);
-                messages.forEach(getConsumer());
+                List<LiveTimingMessage> messages = MessageDecoder.parseLiveTimingMessages(rawMessage);
+                LOG.debug(loggingPrefix + "Parsed raw message into {} live timing messages", messages.size());
+                messages.forEach(message -> getConsumer().accept(message));
             }
         } catch (JsonProcessingException e) {
             LOG.warn("Error when processing received signalR message: {}", e.toString());
