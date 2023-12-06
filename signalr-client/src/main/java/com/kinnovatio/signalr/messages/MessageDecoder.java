@@ -141,7 +141,7 @@ public class MessageDecoder {
             case KeepAliveMessage k -> Collections.emptyList();
             case GroupMembershipMessage g -> Collections.emptyList();
             case HubResponseMessage h -> {
-
+                Collections.emptyList();
             }
             case ClientMethodInvocationMessage c -> {
                 c.messageData().stream()

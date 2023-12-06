@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.auto.value.AutoValue;
 import com.kinnovatio.signalr.messages.MessageDecoder;
 import com.kinnovatio.signalr.messages.Message;
+import io.smallrye.common.constraint.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,11 +74,29 @@ public abstract class F1HubConnection {
     }
 
     public static F1HubConnection create() {
-        return F1HubConnection.builder().build();
+        try {
+            return F1HubConnection.of(baseUrl);
+        } catch (URISyntaxException e) {
+            LOG.error("Unable to create connection to the default base URL: {}", e.toString());
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static F1HubConnection of(String baseUri) throws URISyntaxException {
+        return F1HubConnection.of(new URI(baseUri));
+    }
+
+    public static F1HubConnection of(URI baseUri) {
+        return F1HubConnection.builder()
+                .setBaseUri(baseUri)
+                .build();
     }
 
     protected abstract Builder toBuilder();
 
+    public abstract URI getBaseUri();
+
+    @Nullable
     public abstract Consumer<Message> getConsumer();
     public abstract boolean isMessageLogEnabled();
 
@@ -208,7 +227,7 @@ public abstract class F1HubConnection {
         connectionState = State.CONNECTING;
         final ObjectReader objectReader = objectMapper.reader();
 
-        URI negotiateURI = new URI(String.format(baseUrl + "/%s?%s=%s&%s=%s",
+        URI negotiateURI = getBaseUri().resolve(String.format("/%s?%s=%s&%s=%s",
                 negotiatePath,
                 connectionDataKey,
                 URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
@@ -258,13 +277,16 @@ public abstract class F1HubConnection {
                 LOG.debug("KeepAliveTimeout = null. Setting the reconnect timeout to one year.");
             }
 
-            URI wssURI = new URI(String.format(wssUrl + "?transport=webSockets&%s=%s&%s=%s&%s=%s",
-                    connectionDataKey,
-                    URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
-                    clientProtocolKey,
-                    clientProtocol,
-                    "connectionToken",
-                    URLEncoder.encode(connectionToken, StandardCharsets.UTF_8)));
+            URI wssURI = new URI(getBaseUri().toString().replaceFirst(getBaseUri().getScheme(), "wss"))
+                    .resolve("connect")
+                    .resolve(String.format("?transport=webSockets&%s=%s&%s=%s&%s=%s",
+                            connectionDataKey,
+                            URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
+                            clientProtocolKey,
+                            clientProtocol,
+                            "connectionToken",
+                            URLEncoder.encode(connectionToken, StandardCharsets.UTF_8))
+                    );
 
             LOG.debug("Websocket URI: {}", wssURI.toString());
             LOG.info("Setting up websocket connection...");
@@ -390,6 +412,7 @@ public abstract class F1HubConnection {
     @AutoValue.Builder
     abstract static class Builder {
         abstract Builder setMessageLogEnabled(boolean value);
+        abstract Builder setBaseUri(URI value);
         abstract Builder setConsumer(Consumer<Message> value);
 
         abstract F1HubConnection build();
