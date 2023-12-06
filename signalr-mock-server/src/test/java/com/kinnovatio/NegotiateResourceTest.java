@@ -13,7 +13,7 @@ public class NegotiateResourceTest {
     @Test
     public void testNegotiateEndpoint() {
         given()
-          .when().get("/negotiate")
+          .when().get("/signalr/negotiate")
           .then()
              .statusCode(200)
              .body(containsString("\"ConnectionToken\": \"blahblah\""));
