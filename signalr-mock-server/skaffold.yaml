@@ -1,0 +1,24 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: signalr-mock-server
+build:
+  local:
+    push: false                                            # When building locally, do not push the image to a repository
+  artifacts:
+  - image: signalr-mock-server                                         # Image name
+    context: .
+    custom:
+      buildCommand: mvnw install -Dquarkus.container-image.build=true -Dquarkus.container-image.push=$PUSH_IMAGE -Duarkus.container-image.image=$IMAGE
+    #jib:                                                   # Use Jib as the container builder
+    #  args:
+    #    - Dquarkus.container-image.build=true
+      #fromImage: "gcr.io/distroless/java21-debian12"       # Use a "distroless" base image
+  tagPolicy:
+    dateTime:                                              # The image will be tagged with the build timestamp
+      format: "20060102T150405"
+      timezone: "UTC"
+manifests:
+  kustomize:
+    paths:
+      - ./kubernetes-manifests/
