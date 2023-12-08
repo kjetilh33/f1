@@ -13,7 +13,7 @@ resources:
 configMapGenerator:
   - name: signalr-mock-server-config
     files:
-      - config.yaml=application.yaml
+      - application.yaml=config.yaml
 
 generatorOptions:
   disableNameSuffixHash: true
