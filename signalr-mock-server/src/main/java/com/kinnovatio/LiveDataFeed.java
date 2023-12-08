@@ -15,6 +15,8 @@ public class LiveDataFeed implements Runnable {
     private static final Path qualifyingPath = Path.of("/data/received-messages-qualifying.log");
     private static final Path racePath = Path.of("/data/received-messages-race.log");
 
+    private static final String resourceLogFile = "/received-messages-race-short.log";
+
     private final Logger LOG = Logger.getLogger(this.getClass());
     private final Session session;
     private AtomicBoolean run = new AtomicBoolean(false);
@@ -43,5 +45,11 @@ public class LiveDataFeed implements Runnable {
         } catch (Exception e) {
             LOG.warnf("Error while reading message file: %s", e.toString());
         }        
+    }
+
+    private static Path getFilePath() {
+        List<Path> pathList = List.of(practicePath, qualifyingPath, racePath);
+        Path filePath = pathList.get(ThreadLocalRandom.current().nextInt(0, 3));
+
     }
 }
