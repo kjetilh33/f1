@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: signalr-mock-server
-          image: signalr-mock-server
+          image: local/signalr-mock-server
           env:
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:MaxRAMPercentage=75.0"
