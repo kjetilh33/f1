@@ -1,9 +1,12 @@
 package com.kinnovatio;
 
 import java.io.BufferedReader;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
@@ -11,6 +14,7 @@ import org.jboss.logging.Logger;
 import jakarta.websocket.Session;
 
 public class LiveDataFeed implements Runnable {
+    private static final Logger LOG = Logger.getLogger(LiveDataFeed.class);
     private static final Path practicePath = Path.of("/data/received-messages-practice3.log");
     private static final Path qualifyingPath = Path.of("/data/received-messages-qualifying.log");
     private static final Path racePath = Path.of("/data/received-messages-race.log");
@@ -36,7 +40,7 @@ public class LiveDataFeed implements Runnable {
 
     @Override
     public void run() {
-        try (BufferedReader reader = Files.newBufferedReader(racePath, StandardCharsets.UTF_8)) {
+        try (BufferedReader reader = Files.newBufferedReader(getFilePath(), StandardCharsets.UTF_8)) {
             while (run.get()) {
                 session.getAsyncRemote().sendText(reader.readLine());
                 Thread.sleep(500);
@@ -47,9 +51,14 @@ public class LiveDataFeed implements Runnable {
         }        
     }
 
-    private static Path getFilePath() {
+    private Path getFilePath() throws URISyntaxException {
         List<Path> pathList = List.of(practicePath, qualifyingPath, racePath);
         Path filePath = pathList.get(ThreadLocalRandom.current().nextInt(0, 3));
+        if (!Files.exists(filePath)) {
+            LOG.warnf("Unable to read file %s. Will use bundled file instead.", filePath);
+            filePath = Path.of(this.getClass().getResource(resourceLogFile).toURI());
+        }
 
+        return filePath;
     }
 }
