@@ -6,7 +6,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.RestResponse;
 
-@Path("/signalr/negotiate")
+@Path("signalr/negotiate")
 public class NegotiateResource {
 
     @GET
