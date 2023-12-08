@@ -21,7 +21,6 @@ public class LiveDataFeed implements Runnable {
 
     private static final String resourceLogFile = "/received-messages-race-short.log";
 
-    private final Logger LOG = Logger.getLogger(this.getClass());
     private final Session session;
     private AtomicBoolean run = new AtomicBoolean(false);
 
