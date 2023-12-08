@@ -7,6 +7,7 @@ commonLabels:
 
 resources:
   - signalr-mock-server.deployment.yaml
+  - signalr-mock-server.service.yaml
 
 # The generator will convert the config.yaml file into a K8 config map which can be mapped
 # into the container
