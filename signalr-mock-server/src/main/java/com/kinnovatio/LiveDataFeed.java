@@ -22,7 +22,7 @@ public class LiveDataFeed implements Runnable {
     private static final String resourceLogFile = "/received-messages-race-short.log";
 
     private final Session session;
-    private AtomicBoolean run = new AtomicBoolean(false);
+    private final AtomicBoolean run = new AtomicBoolean(false);
 
     LiveDataFeed(Session session) {
         this.session = session;

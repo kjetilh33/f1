@@ -25,6 +25,7 @@ public class LiveDataWss {
 
     @OnOpen
     public void onOpen(Session session) {
+        LOG.debugf("onOpen() called with session: %s", session.toString());
         session.getAsyncRemote().sendText(initMessage, result -> {
                     if (result.getException() != null) {
                         LOG.warnf("Unable to send message: %s", result.getException());
@@ -34,7 +35,9 @@ public class LiveDataWss {
 
     @OnMessage
     public void onMessage(Session session, String message) {
+        LOG.debugf("onMessage() called with message: %s%n and session: %s", message, session.toString());
         if (message.contains(streamSubscribe) && !sessions.containsKey(session)) {
+            LOG.debugf("onMessage() start live feed for session: %s", session.toString());
             LiveDataFeed feed = new LiveDataFeed(session);
             sessions.put(session, feed);
             feed.start();
