@@ -1,0 +1,46 @@
+# Builds 
+name: java-maven-skaffold-build-push-ghcr
+on:
+  workflow_call:
+    inputs:
+      repositoryFolder: 
+        description: "The code repository folder to build. '.' for the root folder, './folder1/mavenRoot/' for a sub-folder"
+        default: '.'
+        required: false
+        type: string
+      javaVersion:
+        description: 'The Java version to build and deploy. Default is Java 21'
+        default: '21'
+        required: false
+        type: string
+env:
+  REGISTRY: ghcr.io
+jobs:
+  build-push-skaffold:
+    runs-on: ubuntu-latest
+    #defaults:
+    #  run: 
+    #    working-directory: ${{ inputs.repositoryFolder }} 
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK ${{ inputs.javaVersion }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ inputs.javaVersion }}
+          distribution: "temurin"
+          cache: "maven"
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build image with Skaffold
+        uses: hiberbee/github-action-skaffold@1.27.0
+        with:
+          skaffold-version: 2.8.0
+          working-directory: ${{ inputs.repositoryFolder }}
+          command: build
+          push: true
+          repository: ${{ env.REGISTRY }}/kjetilh33
+          tag: "latest"
