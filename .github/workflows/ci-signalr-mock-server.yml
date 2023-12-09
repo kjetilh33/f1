@@ -7,6 +7,6 @@ on:
       
 jobs:
   build-signalr-mock-server:
-    uses: "signalr-mock-server/.github/workflows/java-maven-skaffold-build.yml"
+    uses: "signalr-mock-server/.github/workflows/java-maven-skaffold-build.yml@main"
     with:
       repositoryFolder: "./signalr-mock-server/" 

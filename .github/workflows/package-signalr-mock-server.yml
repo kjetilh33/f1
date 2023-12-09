@@ -9,7 +9,7 @@ on:
       
 jobs:
   package-signalr-mock-server:
-    uses: "signalr-mock-server/.github/workflows/java-maven-skaffold-build-push-ghcr.yml"
+    uses: "signalr-mock-server/.github/workflows/java-maven-skaffold-build-push-ghcr.yml@main"
     with:
       repositoryFolder: "./signalr-mock-server/"
     secrets: inherit
