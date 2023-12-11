@@ -10,6 +10,10 @@ build:
     context: .
     custom:
       buildCommand: ./build.sh
+      dependencies:
+        paths:
+          - src/**
+          - kubernetes-manifests/**
     #jib:                                                   # Use Jib as the container builder
     #  args:
     #    - Dquarkus.container-image.build=true
