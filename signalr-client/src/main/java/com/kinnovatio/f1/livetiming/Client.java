@@ -35,6 +35,7 @@ public class Client {
      */
     // Connection variables
     private static final String signalRBaseUrl = "https://livetiming.formula1.com/signalr/";
+    private static final String testBaseUrl = "http://livetiming.kinnovatio.local/signalr/";
 
 
     // Metrics configs. From config file / env variables
@@ -107,7 +108,7 @@ public class Client {
     }
 
     private static void useSignalrCustomClient() throws Exception {
-        F1HubConnection hub = F1HubConnection.of(signalRBaseUrl)
+        F1HubConnection hub = F1HubConnection.of(testBaseUrl)
                 //.enableMessageLogging(true)
                 .withConsumer(Client::processMessage)
                 ;

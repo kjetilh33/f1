@@ -276,8 +276,13 @@ public abstract class F1HubConnection {
                 keepAliveTimeout = Duration.ofDays(365);
                 LOG.debug("KeepAliveTimeout = null. Setting the reconnect timeout to one year.");
             }
+            // Build the websocket URI. If the base URI was http, we need to use the ws scheme. Else, use wss.
+            String websocketScheme = "wss";     // Default to wss / secure connection
+            if (getBaseUri().getScheme().equalsIgnoreCase("http")) {
+                websocketScheme = "ws";
+            }
 
-            URI wssURI = new URI(getBaseUri().toString().replaceFirst(getBaseUri().getScheme(), "wss"))
+            URI wssURI = new URI(getBaseUri().toString().replaceFirst(getBaseUri().getScheme(), websocketScheme))
                     .resolve(String.format("connect?transport=webSockets&%s=%s&%s=%s&%s=%s",
                             connectionDataKey,
                             URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
