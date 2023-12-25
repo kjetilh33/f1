@@ -159,8 +159,8 @@ public abstract class F1HubConnection {
 
             return;
         }
-        final String hub = "streaming";
-        final String method = "subscribe";
+        final String hub = "Streaming";
+        final String method = "Subscribe";
         final List<Object> arguments = List.of(List.of(dataStreams));
         final int identifier = 1;
         try {
@@ -276,6 +276,7 @@ public abstract class F1HubConnection {
                 keepAliveTimeout = Duration.ofDays(365);
                 LOG.debug("KeepAliveTimeout = null. Setting the reconnect timeout to one year.");
             }
+
             // Build the websocket URI. If the base URI was http, we need to use the ws scheme. Else, use wss.
             String websocketScheme = "wss";     // Default to wss / secure connection
             if (getBaseUri().getScheme().equalsIgnoreCase("http")) {
