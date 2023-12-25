@@ -108,6 +108,16 @@ public abstract class F1HubConnection {
         return toBuilder().setConsumer(consumer).build();
     }
 
+    /**
+     * Initiate a SignalR connection. This method will try to setup a connection over websocket. Once the
+     * connection is ready, you have to call {@link #subscribeToAll()} to start receiving live timing
+     * messages.
+     *
+     * @return {@code true} if the connection was set up successfully. {@code false} otherwise.
+     * @throws IOException
+     * @throws URISyntaxException
+     * @throws InterruptedException
+     */
     public boolean connect() throws IOException, URISyntaxException, InterruptedException {
         if (operationalState == OperationalState.OPEN) {
             LOG.warn("The connection is already open. Connect() has no effect.");
@@ -152,6 +162,9 @@ public abstract class F1HubConnection {
         return true;
     }
 
+    /**
+     * Start subscribing to the live timing data (all data streams/types)
+     */
     public void subscribeToAll() {
         if (operationalState != OperationalState.OPEN || connectionState != State.CONNECTED) {
             LOG.warn("The connection is not ready. Operational state = {}, connection state = {}",
