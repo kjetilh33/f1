@@ -114,9 +114,9 @@ public abstract class F1HubConnection {
      * messages.
      *
      * @return {@code true} if the connection was set up successfully. {@code false} otherwise.
-     * @throws IOException
-     * @throws URISyntaxException
-     * @throws InterruptedException
+     * @throws IOException if something goes wrong at the network layer.
+     * @throws URISyntaxException if the target URI is invalid.
+     * @throws InterruptedException if the working thread gets interrupted.
      */
     public boolean connect() throws IOException, URISyntaxException, InterruptedException {
         if (operationalState == OperationalState.OPEN) {
