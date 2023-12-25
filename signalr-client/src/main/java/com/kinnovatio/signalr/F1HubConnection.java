@@ -324,11 +324,11 @@ public abstract class F1HubConnection {
         }
         try {
             switch (connectionState) {
-                case READY -> LOG.error("Message received before connection is ready. Should not happen.");
+                case READY -> LOG.error("Message received before connection has been set up. Should not happen.");
                 case CONNECTING -> {
                     if (MessageDecoder.isInitMessage(message)) {
                         connectionState = State.CONNECTED;
-                        LOG.info("Websocket connection established.");
+                        LOG.info("SignalR hub connection established over websocket.");
                     }
                 }
                 case CONNECTED -> {
