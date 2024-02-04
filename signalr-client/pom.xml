@@ -26,7 +26,7 @@
         <io.prometheus.legacy.version>0.16.0</io.prometheus.legacy.version>
         <maven-compiler.version>3.12.1</maven-compiler.version>
         <jib.maven.plugin.version>3.4.0</jib.maven.plugin.version>
-        <junit.version>5.10.1</junit.version>
+        <junit.version>5.10.2</junit.version>
     </properties>
 
     <dependencyManagement>
