@@ -4,10 +4,8 @@ import com.kinnovatio.signalr.F1HubConnection;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.exporter.PushGateway;
-//import io.prometheus.metrics.core.metrics.Gauge;
+import io.prometheus.metrics.core.metrics.Gauge;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import io.prometheus.metrics.model.snapshots.Unit;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -49,21 +47,15 @@ public class Client {
     Metrics section. Define the metrics to expose.
      */
     //JvmMetrics.builder().register(); // initialize the out-of-the-box JVM metrics
-    static final io.prometheus.metrics.core.metrics.Gauge newJobDurationSeconds = io.prometheus.metrics.core.metrics.Gauge.builder()
+    static final PrometheusRegistry collectorRegistry = new PrometheusRegistry();
+    static final Gauge newJobDurationSeconds = Gauge.builder()
             .name("job.duration_seconds").help("Job duration in seconds")
             .unit(Unit.SECONDS)
-            .register();
+            .register(collectorRegistry);
 
-    static final io.prometheus.metrics.core.metrics.Gauge newErrorGauge= io.prometheus.metrics.core.metrics.Gauge.builder()
+    static final Gauge newErrorGauge= Gauge.builder()
             .name("job.errors").help("Total job errors")
-            .register();
-
-    // Legacy metrics--replace by new metrics once pushgateway is supported in the new client library
-    static final CollectorRegistry collectorRegistry = new CollectorRegistry();
-    static final io.prometheus.client.Gauge jobDurationSeconds = Gauge.build()
-            .name("job_duration_seconds").help("Job duration in seconds").register(collectorRegistry);
-    static final io.prometheus.client.Gauge errorGauge = Gauge.build()
-            .name("job_errors").help("Total job errors").register(collectorRegistry);
+            .register(collectorRegistry);
 
     /*
     The entry point of the code. It executes the main logic and push job metrics upon completion.
