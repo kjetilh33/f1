@@ -4,7 +4,9 @@ import com.kinnovatio.signalr.F1HubConnection;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
+import io.prometheus.metrics.core.datapoints.Timer;
 import io.prometheus.metrics.core.metrics.Gauge;
+import io.prometheus.metrics.exporter.pushgateway.PushGateway;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import io.prometheus.metrics.model.snapshots.Unit;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -13,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URL;
+import java.time.Instant;
 import java.util.Optional;
 
 public class Client {
@@ -48,12 +51,12 @@ public class Client {
      */
     //JvmMetrics.builder().register(); // initialize the out-of-the-box JVM metrics
     static final PrometheusRegistry collectorRegistry = new PrometheusRegistry();
-    static final Gauge newJobDurationSeconds = Gauge.builder()
+    static final Gauge jobDurationSeconds = Gauge.builder()
             .name("job.duration_seconds").help("Job duration in seconds")
             .unit(Unit.SECONDS)
             .register(collectorRegistry);
 
-    static final Gauge newErrorGauge= Gauge.builder()
+    static final Gauge errorGauge= Gauge.builder()
             .name("job.errors").help("Total job errors")
             .register(collectorRegistry);
 
@@ -85,18 +88,20 @@ public class Client {
      */
     private static void run() throws Exception {
         LOG.info("Starting container...");
-        Gauge.Timer jobDurationTimer = jobDurationSeconds.startTimer();
+        Timer jobDurationTimer = jobDurationSeconds.startTimer();
 
         useSignalrCustomClient();
         //useSignalrCoreClient();
         LOG.info("Finished work");
-        jobDurationTimer.setDuration();
+        // automatically records the duration onto the jobDurationSeconds gauge.
+        jobDurationTimer.observeDuration();
 
         // The job completion metric is only added to the registry after job success,
         // so that a previous success in the Pushgateway isn't overwritten on failure.
-        Gauge jobCompletionTimeStamp = Gauge.build()
-                .name("job_completion_timestamp").help("Job completion time stamp").register(collectorRegistry);
-        jobCompletionTimeStamp.setToCurrentTime();
+        Gauge jobCompletionTimeStamp = Gauge.builder()
+                .name("job_completion_timestamp").help("Job completion time stamp")
+                .register(collectorRegistry);
+        jobCompletionTimeStamp.set(Instant.now().getEpochSecond());
     }
 
     private static void useSignalrCustomClient() throws Exception {
@@ -144,8 +149,12 @@ public class Client {
         if (pushGatewayUrl.isPresent()) {
             try {
                 LOG.info("Pushing metrics to {}", pushGatewayUrl);
-                PushGateway pg = new PushGateway(new URL(pushGatewayUrl.get())); //9091
-                pg.pushAdd(collectorRegistry, metricsJobName);
+                PushGateway pg = PushGateway.builder()
+                        .address(pushGatewayUrl.get())
+                        .job(metricsJobName)
+                        .registry(collectorRegistry)
+                        .build();
+                pg.push();
                 isSuccess = true;
             } catch (Exception e) {
                 LOG.warn("Error when trying to push metrics: {}", e.toString());
