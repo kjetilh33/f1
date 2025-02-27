@@ -40,8 +40,9 @@ public class LiveDataFeed implements Runnable {
     @Override
     public void run() {
         try (BufferedReader reader = Files.newBufferedReader(getFilePath(), StandardCharsets.UTF_8)) {
-            while (run.get()) {
-                session.getAsyncRemote().sendText(reader.readLine());
+            String line;
+            while (run.get() && (line = reader.readLine()) != null) {
+                session.getAsyncRemote().sendText(line);
                 Thread.sleep(500);
             }
 
