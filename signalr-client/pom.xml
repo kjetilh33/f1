@@ -17,7 +17,7 @@
         <maven.compiler.release>21</maven.compiler.release>
 
         <auto-value.version>1.11.0</auto-value.version>
-        <signalr.version>9.0.4</signalr.version>
+        <signalr.version>9.0.5</signalr.version>
         <jackson.version>2.19.0</jackson.version>
         <slf4j-api.version>2.0.17</slf4j-api.version>
         <logback-classic.version>1.5.18</logback-classic.version>
