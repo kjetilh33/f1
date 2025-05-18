@@ -18,6 +18,7 @@ public class LiveDataFeed implements Runnable {
     private static final Path practicePath = Path.of("/data/received-messages-practice3.log");
     private static final Path qualifyingPath = Path.of("/data/received-messages-qualifying.log");
     private static final Path racePath = Path.of("/data/received-messages-race.log");
+    private static final Path raceImolaPath = Path.of("/data/2025-050-18-italy-imola-race-received-messages.log");
 
     private static final String resourceLogFile = "/received-messages-race-short.log";
 
@@ -52,8 +53,8 @@ public class LiveDataFeed implements Runnable {
     }
 
     private Path getFilePath() throws URISyntaxException {
-        List<Path> pathList = List.of(practicePath, qualifyingPath, racePath);
-        Path filePath = pathList.get(ThreadLocalRandom.current().nextInt(0, 3));
+        List<Path> pathList = List.of(practicePath, qualifyingPath, racePath, raceImolaPath);
+        Path filePath = pathList.get(ThreadLocalRandom.current().nextInt(0, 4));
         if (!Files.exists(filePath)) {
             LOG.warnf("Unable to read file %s. Will use bundled file instead.", filePath);
             filePath = Path.of(this.getClass().getResource(resourceLogFile).toURI());
