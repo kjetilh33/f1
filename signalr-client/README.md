@@ -76,8 +76,6 @@ A config source with a higher number will override a config source with a smalle
 
 You should always provide a default config file packaged with the code at `./src/main/resources/META-INF/microprofile.yaml`. This file ensures you provide your module with sensible running defaults as well as serve as the configuration template for deployments. In the default config file you should also define the auth config keys, but not populate them with any values. Check the example [2-raw-to-clean-batch-job](../2-raw-to-clean-batch-job) for an illustration of how to deal with auth.
 
-[Demo.java](./src/main/java/com/cognite/sa/Demo.java) illustrates how to access the configuration settings in your code. Have a look at the static members near the top of the file.
-
 `./kubernetes-manifests/*` illustrate how to supply a configuration file when running this module as a container on K8s. The basic steps are as follows:
 1) Define the `config.yaml` file with the settings you want to apply. This would typically be all the configuration settings except the secrets (i.e. keys, passwords, etc.).
 2) Define the main application manifest, `k8-demo.job.yaml`. In this example, we use `Job` as the workload. You would typically use `CronJob`or `Deployment` in test/prod while `Job` is a good option for dev. In the manifest, we mount the configuration as a file for the container (your code) to read.
@@ -122,7 +120,7 @@ build:
     - image: k8-demo                                         # Image name
       context: .
       jib:                                                   # Use Jib as the container builder
-        fromImage: "gcr.io/distroless/java17-debian11"       # Use a "distroless" base image
+        fromImage: "gcr.io/distroless/java21-debian12"       # Use a "distroless" base image
   tagPolicy:
     dateTime:                                              # The image will be tagged with the build timestamp
       format: "20060102T150405"
