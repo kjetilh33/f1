@@ -16,8 +16,9 @@ https://livetiming.formula1.com/signalr/negotiate?connectionData=%5B%7B%22name%2
 clientProtocol is hardcoded to 1.5.
 
 connectionData is a urlencoded json object of the form:
-
+```
 [{"name": "Streaming"}]
+```
 where “Streaming” is the name of the hub we want to connect to. Currently only the streaming hub is known.
 
 This’ll return a response with a bunch of data, like KeepAliveTimeout and LongPollDelay, but the only body value we’re interested in is the ConnectionToken.
