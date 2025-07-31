@@ -73,7 +73,7 @@ User-Agent: BestHTTP
 Accept-Encoding: gzip,identity
 Cookie: <cookie from negotiation>
 ```
-NOTE: The headers are case sensitive for some reason, and the server will 500 if you pass in the wrong case. It’ll 400 if some required header is missing.
+>NOTE: The headers are case sensitive for some reason, and the server will 500 if you pass in the wrong case. It’ll 400 if some required header is missing.
 
 ```
 received {"C":"d-DB2F4380-B,0|FlOl,0|FlOm,1","S":1,"M":[]}
@@ -118,9 +118,9 @@ For the subscribe method the following datastreams are available:
 - `"DriverList"`
 - `"RaceControlMessages"`
 - `"SessionInfo"`
- -`"SessionData"`
- - `"LapCount"`
- - `"TimingData"`
+-`"SessionData"`
+- `"LapCount"`
+- `"TimingData"`
 
 After invoking the method, you should be seeing data coming back if there’s a session going 
 
