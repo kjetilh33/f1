@@ -1,5 +1,8 @@
 API notes
 
+SignalR protocol:
+- https://blog.3d-logic.com/2015/03/29/signalr-on-the-wire-an-informal-description-of-the-signalr-protocol/
+
 Decoding messages:
 - https://openf1.org/#api-methods
 - https://biggo.com/news/202504191313_F1_Fans_Embrace_Open_Source_Live_Timing_Tool
@@ -70,33 +73,34 @@ Accept-Encoding: gzip,identity
 Cookie: <cookie from negotiation>
 NOTE: The headers are case sensitive for some reason, and the server will 500 if you pass in the wrong case. It’ll 400 if some required header is missing.
 
-
-
 received {"C":"d-DB2F4380-B,0|FlOl,0|FlOm,1","S":1,"M":[]}
 received {}
 Invoking methods
 If all went well, you should have a websocket connection with the signalr endpoint at this point, what’s left is to invoke the Subscribe method with the data you want to receive. This is done by sending a json message over the websocket connection with the following body:
 
+```
 {
 	"H": "Streaming",
 	"M": "Subscribe",
 	"A": [["TimingData", "Heartbeat"]],
 	"I": 1
 }
-NOTE: The “A” field really is an array of array of string.
+```
+>NOTE: The “A” field really is an array of array of string.
 
 The structure is as follows:
-
+```
 {
 	H: The hub to invoke the method on
 	M: The method to invoke
 	A: The arguments to pass to the method
 	I: Client side id for the request/response
 }
+```
 For the f1 endpoint, hub is always Streaming, the method is always: Subscribe.
 
 With the code above, this looks as follows:
-
+```
 sock.send(JSON.stringify(
 	{
 		"H": "Streaming",
@@ -105,6 +109,7 @@ sock.send(JSON.stringify(
 		"I": 1
 	}
 ));
+```
 For the subscribe method the following datastreams are available:
 
 "Heartbeat", "CarData.z", "Position.z",
@@ -114,3 +119,25 @@ For the subscribe method the following datastreams are available:
 "RaceControlMessages", "SessionInfo",
 "SessionData", "LapCount", "TimingData"
 After invoking the method, you should be seeing data coming back if there’s a session going 
+
+## SignalR
+
+### Messages from server
+The properties you can find in the message are as follows:
+
+- C – message id, present for all non-KeepAlive messages. 
+- M – an array containing actual data.
+
+`{"C":"d-9B7A6976-B,2|C,2","M":["Welcome!"]}`
+
+- S – indicates that the transport was initialized (a.k.a. init message)
+
+```
+{"C":"s-0,2CDDE7A|1,23ADE88|2,297B01B|3,3997404|4,33239B5","S":1,"M":[]}
+```
+
+- G – groups token – an encrypted string representing group membership
+
+```
+{"C":"d-6CD4082D-B,0|C,2|D,0","G":"92OXaCStiSZGy5K83cEEt8aR2ocER=","M":[]}
+```
