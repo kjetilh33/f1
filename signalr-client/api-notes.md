@@ -146,3 +146,48 @@ The properties you can find in the message are as follows:
 ```
 {"C":"d-6CD4082D-B,0|C,2|D,0","G":"92OXaCStiSZGy5K83cEEt8aR2ocER=","M":[]}
 ```
+### KeepAlive messages
+KeepAlive messages are empty object JSon strings (i.e. `{}`) and can be used by SignalR clients to detect network problems. SignalR server will send keep alive messages at the configured time interval. If the client has not received any message (including a keep alive message) from the server within a certain period of time it will try to restart the connection.
+Sending keep alive messages by the server can be turned off by setting the KeepAlive server configuration property to null.
+
+### Hubs messages
+Hubs API makes it possible to invoke server methods from the client and client methods from the server.
+When a client invokes a server method it no longer sends a free-flow string as it was for persistent connections. Instead it sends a JSon string containing all necessary information needed to invoke the method. Here is a sample message a client would send to invoke a server method:
+
+```Json
+{"H":"chathub","M":"Send","A":["JS Client","Test message"],"I":0, "S":{"customProperty" : "abc"}}
+```
+
+The payload has the following properties:
+I – invocation identifier – allows to match up responses with requests
+H – the name of the hub
+M – the name of the method
+A – arguments (an array, can be empty if the method does not have any parameters)
+S – state – a dictionary containing additional custom data (optional, currently not supported by the C++ client)
+
+The message sent from the server to the client can be one of the following:
+- a result of a server method call
+- an invocation of a client method
+- a progress message
+
+Here are sample results of a server method call:
+`{"I":"0"}`
+A server void method whose invocation identifier was "0" completed successfully.
+
+`{"I":"0", "R":42}`
+A server method returning a number whose invocation identifier was "0" completed successfully and returned the value 42.
+
+`{"I":"0", "E":"Error occurred"}`
+A server method whose invocation identifier was "0" failed with the error "Error occurred"
+
+`{"I":"0","E":"Hub error occurred", "H":true, "D":{"ErrorNumber":42}}`
+A server method whose invocation identifier was "0" failed with the hub error "Hub error occurred" and sent some additional error data.
+
+Here is the full list of properties that can be present in the result of server method invocation:
+
+I – invocation Id (always present)
+R – the value returned by the server method (present if the method is not void)
+E – error message
+H – true if this is a hub error
+D – an object containing additional error data (can only be present for hub errors)
+T – stack trace (if detailed error reporting (i.e. the HubConfiguration.EnableDetailedErrors property) is turned on on the server).
