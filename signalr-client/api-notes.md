@@ -19,9 +19,9 @@ connectionData is a urlencoded json object of the form:
 ```
 [{"name": "Streaming"}]
 ```
-where “Streaming” is the name of the hub we want to connect to. Currently only the streaming hub is known.
+where `“Streaming”` is the name of the hub we want to connect to. Currently only the streaming hub is known.
 
-This’ll return a response with a bunch of data, like KeepAliveTimeout and LongPollDelay, but the only body value we’re interested in is the ConnectionToken.
+This returns a response with a bunch of data, like KeepAliveTimeout and LongPollDelay, but the only body value we’re interested in is the ConnectionToken.
 
 The headers contain a cookie we have to use to connect to the hub, so grab the Set-Cookie header value as well.
 
@@ -61,7 +61,7 @@ function negotiate() {
 Websocket connection
 Connecting
 ```
-Once you have the data from the negotiation, you’ll need to build a websocket connection to the server. This happens over wss, The url is as follows:
+Once you have the data from the negotiation, you  need to build a websocket connection to the server. This happens over wss, The url is as follows:
 
 ```
 wss://livetiming.formula1.com/signalr/connect?clientProtocol=1.5&transport=webSockets&connectionToken=<sometoken>&connectionData=%5B%7B%22name%22%3A%22Streaming%22%7D%5D
@@ -119,7 +119,7 @@ For the subscribe method the following datastreams are available:
 - `"DriverList"`
 - `"RaceControlMessages"`
 - `"SessionInfo"`
--`"SessionData"`
+- `"SessionData"`
 - `"LapCount"`
 - `"TimingData"`
 
