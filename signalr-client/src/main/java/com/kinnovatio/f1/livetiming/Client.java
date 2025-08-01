@@ -14,7 +14,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URL;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -105,7 +104,7 @@ public class Client {
     }
 
     private static void useSignalrCustomClient() throws Exception {
-        F1HubConnection hub = F1HubConnection.of(testBaseUrl)
+        F1HubConnection hub = F1HubConnection.of(signalRBaseUrl) //.of(signalRBaseUrl) of(testBaseUrl)
                 //.enableMessageLogging(true)
                 .withConsumer(Client::processMessage)
                 ;

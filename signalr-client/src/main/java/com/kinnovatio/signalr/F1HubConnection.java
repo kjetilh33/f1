@@ -35,12 +35,27 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+/**
+ * Represents a connection to the Formula 1 SignalR live timing hub.
+ * This class handles the negotiation, connection, and communication with the F1 SignalR service
+ * over WebSockets. It manages the connection lifecycle, including keep-alive messages and
+ * automatic reconnection.
+ * <p>
+ * Use the static factory methods {@link #create()} or {@link #of(String)} to instantiate.
+ * Once created, configure it using methods like {@link #withConsumer(Consumer)} and then
+ * call {@link #connect()} to establish the connection. After connecting, call
+ * {@link #subscribeToAll()} to start receiving data.
+ *
+ * This class is designed to be immutable through the use of AutoValue. Configuration methods
+ * return a new instance with the updated configuration.
+ */
 @AutoValue
 public abstract class F1HubConnection {
     private static final Logger LOG = LoggerFactory.getLogger(F1HubConnection.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Path defaultPathMessageLog = Path.of("./received-messages.log");
 
+    // Constants for the F1 SignalR service
     private static final String baseUrl = "https://livetiming.formula1.com/signalr/";
     private static final String negotiatePath = "negotiate";
     private static final String clientProtocolKey = "clientProtocol";
@@ -50,6 +65,9 @@ public abstract class F1HubConnection {
                 [{"name": "streaming"}]
                 """;
 
+    /**
+     * The data streams to subscribe to for receiving all live timing data.
+     */
     private static final String[] dataStreams = {"Heartbeat", "CarData.z", "Position.z",
             "ExtrapolatedClock", "TopThree", "RcmSeries",
             "TimingStats", "TimingAppData",
@@ -57,10 +75,12 @@ public abstract class F1HubConnection {
             "RaceControlMessages", "SessionInfo",
             "SessionData", "LapCount", "TimingData"};
 
+    // Internal state management
     private State connectionState = State.READY;
     private OperationalState operationalState = OperationalState.CLOSED;
     private ScheduledExecutorService executorService = null;
 
+    // Keep-alive and connection management fields
     private Instant lastKeepAliveMessage = null;
     private Duration keepAliveTimeout = Duration.ofSeconds(30);
     private HttpClient httpClient = null;
@@ -73,6 +93,12 @@ public abstract class F1HubConnection {
                 .setMessageLogEnabled(false);
     }
 
+    /**
+     * Creates a new F1HubConnection with the default base URL.
+     *
+     * @return a new instance of {@link F1HubConnection}.
+     * @throws RuntimeException if the default base URL is invalid.
+     */
     public static F1HubConnection create() {
         try {
             return F1HubConnection.of(baseUrl);
@@ -82,10 +108,23 @@ public abstract class F1HubConnection {
         }
     }
 
+    /**
+     * Creates a new F1HubConnection with a specified base URI.
+     *
+     * @param baseUri The base URI string for the SignalR service.
+     * @return a new instance of {@link F1HubConnection}.
+     * @throws URISyntaxException if the provided baseUri string is not a valid URI.
+     */
     public static F1HubConnection of(String baseUri) throws URISyntaxException {
         return F1HubConnection.of(new URI(baseUri));
     }
 
+    /**
+     * Creates a new F1HubConnection with a specified base URI.
+     *
+     * @param baseUri The base URI for the SignalR service.
+     * @return a new instance of {@link F1HubConnection}.
+     */
     public static F1HubConnection of(URI baseUri) {
         return F1HubConnection.builder()
                 .setBaseUri(baseUri)
@@ -100,10 +139,22 @@ public abstract class F1HubConnection {
     public abstract Consumer<LiveTimingMessage> getConsumer();
     public abstract boolean isMessageLogEnabled();
 
+    /**
+     * Enables or disables logging of all received raw messages to a file.
+     *
+     * @param enable {@code true} to enable logging, {@code false} to disable.
+     * @return a new instance with the updated setting.
+     */
     public F1HubConnection enableMessageLogging(boolean enable) {
         return toBuilder().setMessageLogEnabled(enable).build();
     }
 
+    /**
+     * Sets the consumer that will receive {@link LiveTimingMessage}s.
+     *
+     * @param consumer The consumer to process incoming messages.
+     * @return a new instance with the updated consumer.
+     */
     public F1HubConnection withConsumer(Consumer<LiveTimingMessage> consumer) {
         return toBuilder().setConsumer(consumer).build();
     }
@@ -184,11 +235,36 @@ public abstract class F1HubConnection {
         
     }
 
+    /**
+     * Gracefully closes the connection to the F1 SignalR hub and cleans up resources.
+     * <p>
+     * This method signals the client to shut down by setting the operational state to {@code CLOSED},
+     * which prevents the background keep-alive task from attempting any new reconnections. It then
+     * initiates an orderly shutdown of the scheduled executor service that manages the connection.
+     */
     public void close() {
         operationalState = OperationalState.CLOSED;
         executorService.shutdown();
     }
 
+    /**
+     * A periodic task that runs in the background to monitor and maintain the hub connection.
+     * This method is designed to be executed by a {@link ScheduledExecutorService}.
+     * <p>
+     * Its responsibilities include:
+     * <ul>
+     *     <li><b>Reconnecting:</b> If the connection state is not {@code CONNECTED} or {@code CONNECTING},
+     *         it attempts to re-establish the connection by calling {@link #connect()}.</li>
+     *     <li><b>Keep-Alive Check:</b> If the connection is active, it checks if a keep-alive message
+     *         has been received within the {@link #keepAliveTimeout} duration. If not, it assumes
+     *         the connection is stale, closes the current WebSocket, and attempts to reconnect.</li>
+     *     <li><b>Error Handling:</b> It tracks consecutive connection failures. If the number of failures
+     *         exceeds a threshold (10), it will stop trying to reconnect and {@link #close()} the client
+     *         to prevent an infinite loop of failures.</li>
+     *     <li><b>Shutdown:</b> When the {@link #operationalState} is set to {@code CLOSED}, this loop
+     *         ensures the underlying executor service is forcefully shut down.</li>
+     * </ul>
+     */
     private void asyncKeepAliveLoop() {
         String loggingPrefix = "Hub connection loop - ";
         LOG.debug(loggingPrefix + "Operational state = {}", operationalState);
@@ -236,6 +312,26 @@ public abstract class F1HubConnection {
         }
     }
 
+    /**
+     * Performs the SignalR negotiation handshake and establishes a WebSocket connection.
+     * <p>
+     * This method implements the two-step connection process required by the SignalR protocol.
+     * <ol>
+     *     <li><b>Negotiation:</b> It sends an initial HTTP GET request to the hub's {@code /negotiate}
+     *         endpoint. This request is used to agree on protocol details and obtain a unique
+     *         {@code connectionToken} and a session cookie from the server.</li>
+     *     <li><b>Connection:</b> If negotiation is successful, it uses the obtained token and cookie
+     *         to construct a WebSocket URI (e.g., {@code wss://...}). It then establishes a persistent
+     *         WebSocket connection to this URI.</li>
+     * </ol>
+     * The method blocks execution until the WebSocket connection is fully established or an error occurs.
+     * It also sets the internal {@link #connectionState} to {@code CONNECTING} during this process.
+     *
+     * @return The fully connected {@link WebSocket} instance.
+     * @throws IOException if the negotiation request fails, the server returns an error, or the
+     *         WebSocket connection cannot be established.
+     * @throws URISyntaxException if the base URI or the constructed negotiation/WebSocket URIs are malformed.
+     */
     private WebSocket negotiateWebsocket() throws IOException, URISyntaxException {
         connectionState = State.CONNECTING;
         final ObjectReader objectReader = objectMapper.reader();
@@ -279,7 +375,8 @@ public abstract class F1HubConnection {
             if (responseBodyRoot.path("ConnectionToken").isTextual()) {
                 connectionToken = responseBodyRoot.path("ConnectionToken").asText();
             } else {
-                throw new RuntimeException("Unable to get connection token to the SignalR service.");
+                // A connection token is mandatory for the next step.
+                throw new IOException("Unable to get connection token from the SignalR service during negotiation.");
             }
             if (responseBodyRoot.path("KeepAliveTimeout").isNumber()) {
                 keepAliveTimeout = Duration.ofSeconds(responseBodyRoot.path("KeepAliveTimeout").asInt());
@@ -324,8 +421,23 @@ public abstract class F1HubConnection {
         }
     }
 
-    /*
-    Process a received wss message.
+    /**
+     * Processes a raw message received from the WebSocket and directs it based on the current connection state.
+     * <p>
+     * This method acts as the central router for all incoming SignalR messages. Its behavior changes
+     * depending on whether the client is in the process of connecting or is fully connected:
+     * <ul>
+     *     <li><b>Logging:</b> If message logging is enabled, it first writes the raw message to a file.</li>
+     *     <li><b>Connecting State:</b> When in the {@code CONNECTING} state, it waits for a SignalR
+     *         initialization message. Upon receiving it, the connection state is transitioned to {@code CONNECTED}.</li>
+     *     <li><b>Connected State:</b> Once {@code CONNECTED}, it distinguishes between keep-alive pings (which
+     *         update the {@link #lastKeepAliveMessage} timestamp) and actual data messages (which are passed to
+     *         {@link #notifySubscribers(String)} for parsing and distribution).</li>
+     * </ul>
+     * Any unexpected messages or parsing failures will be logged as errors. A critical parsing failure
+     * will result in a {@link RuntimeException}, which will likely terminate the connection.
+     *
+     * @param message The complete, raw message string received from the WebSocket.
      */
     private void processMessage(String message) {
         if (isMessageLogEnabled()) {
@@ -347,23 +459,40 @@ public abstract class F1HubConnection {
                 }
                 case CONNECTED -> {
                     if (MessageDecoder.isKeepAliveMessage(message)) {
-                        lastKeepAliveMessage = Instant.now();
                         LOG.debug("Client in state _connected_, received keep alive message.");
+                        lastKeepAliveMessage = Instant.now();
                     } else {
                         LOG.debug("Client in state _connected_, received subscription message.");
                         notifySubscribers(message);
                     }
                 }
-                case DISCONNECTED -> LOG.debug("Message received while disconnected. Should not happen.");
+                case DISCONNECTED -> LOG.error("Message received while disconnected. Should not happen.");
             }
+        } catch (JsonProcessingException e) {
+            // This is a critical failure, as we can't understand the server.
+            LOG.error("Failed to parse JSON message from the SignalR hub. Message: '{}'", message, e);
+            throw new RuntimeException("Unrecoverable JSON parsing error", e);
         } catch (Exception e) {
-            LOG.error("Failed parsing message from the hub: {}", e.toString());
+            // Catch any other unexpected errors.
+            LOG.error("An unexpected error occurred while processing a message from the hub.", e);
             throw new RuntimeException(e);
         }
 
         LOG.trace("Received wss message:\n {}", message);
     }
 
+    /**
+     * Parses a raw message string from the SignalR hub and notifies the registered consumer.
+     * <p>
+     * This method takes the raw JSON payload from the WebSocket, which can contain an array of
+     * different data updates (e.g., TimingData, TimingAppData), and uses the {@link MessageDecoder}
+     * to parse it into a list of {@link LiveTimingMessage} objects.
+     * <p>
+     * If a consumer has been registered via {@link #withConsumer(Consumer)}, this method iterates
+     * through the parsed messages and passes each one to the consumer's {@code accept} method for processing.
+     *
+     * @param rawMessage The raw JSON string received from the WebSocket.
+     */
     private void notifySubscribers(String rawMessage) {
         String loggingPrefix = "notifySubscribers() - ";
         LOG.debug(loggingPrefix + "Raw message: {}", rawMessage);
@@ -375,7 +504,7 @@ public abstract class F1HubConnection {
                 messages.forEach(message -> getConsumer().accept(message));
             }
         } catch (JsonProcessingException e) {
-            LOG.warn("Error when processing received signalR message: {}", e.toString());
+            LOG.warn("Error when processing received signalR message: Raw message: '{}'. Error: {}", rawMessage, e.getMessage());
         }
     }
 
@@ -393,6 +522,7 @@ public abstract class F1HubConnection {
                                          CharSequence message,
                                          boolean last) {
             parts.add(message);
+            // TODO should we move .request to the end? Should we just return null instead of completion stage?
             webSocket.request(1);
             if (last) {
                 processMessage(assembleMessage(parts));
