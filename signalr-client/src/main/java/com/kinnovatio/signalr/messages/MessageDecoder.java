@@ -14,6 +14,13 @@ import java.util.*;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
+/**
+ * A utility class for decoding and parsing messages from the F1 SignalR hub.
+ * <p>
+ * This class provides static methods to identify different types of SignalR messages (e.g., init, keep-alive),
+ * parse the raw JSON envelopes, and extract the underlying live timing data. It also handles the
+ * decompression of gzipped message payloads, which are common in the F1 live timing feed.
+ */
 public class MessageDecoder {
     private static final Logger LOG = Logger.getLogger(MessageDecoder.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -30,7 +37,9 @@ public class MessageDecoder {
     }
 
     /**
-     * Check if a message is a SignalR keep alive message.
+     * Checks if a raw JSON message is a SignalR keep-alive message.
+     * <p>
+     * A keep-alive message is an empty JSON object: "{}".
      *
      * @param message The Json message to check.
      * @return true if the message is a keep alive message.
@@ -41,14 +50,14 @@ public class MessageDecoder {
     }
 
     /**
-     * Build a SingnalR json message based on standard inputs.
+     * Constructs a SignalR JSON message for invoking a hub method.
      *
-     * @param hub The target hub.
-     * @param method The hub method to call.
-     * @param arguments The arguments to supply to the method.
-     * @param identifier An identifier for the method call.
-     * @return The Json message representation of SignalR message.
-     * @throws JsonProcessingException if the input is not a valid json string.
+     * @param hub        The name of the target hub (e.g., "Streaming").
+     * @param method     The name of the hub method to call (e.g., "Subscribe").
+     * @param arguments  The list of arguments to supply to the method.
+     * @param identifier A client-defined identifier for the method call.
+     * @return A JSON string representing the SignalR message.
+     * @throws JsonProcessingException if the arguments cannot be serialized to JSON.
      */
     public static String toMessageJson(String hub, String method, List<Object> arguments, int identifier) throws JsonProcessingException {
         Map<String, Object> root = Map.of(
@@ -62,11 +71,15 @@ public class MessageDecoder {
     }
 
     /**
-     * Parse a SignalR message envelope and extract the contents.
+     * Parses a raw SignalR message envelope and extracts the list of {@link LiveTimingMessage}s it contains.
+     * <p>
+     * This method handles different SignalR message structures, such as hub responses and client method invocations,
+     * and delegates to helper methods to extract and parse the actual data payloads.
      *
-     * @param messageJson The SignalR message envelope (the raw message)
-     * @return a list of messages contained in the envelope.
-     * @throws JsonProcessingException if the json is malformed
+     * @param messageJson The raw SignalR message as a JSON string.
+     * @return A list of {@link LiveTimingMessage}s contained in the envelope. The list will be empty if the
+     *         message is not a data-carrying message (e.g., keep-alive).
+     * @throws JsonProcessingException if the JSON is malformed.
      */
     public static List<LiveTimingMessage> parseLiveTimingMessages(String messageJson) throws JsonProcessingException {
         SignalRMessage signalRMessage = parseSignalRMessage(messageJson);
@@ -151,8 +164,12 @@ public class MessageDecoder {
         return objects;
     }
 
-    /*
-
+    /**
+     * Parses a single message body from a stream of live timing messages.
+     * This method unpacks the envelope, decompresses the data if necessary, and creates a {@link LiveTimingMessage}.
+     *
+     * @param messageJson The JSON string for a single message within the "M" array.
+     * @return An {@link Optional} containing the parsed {@link LiveTimingMessage}, or empty if parsing fails.
      */
     private static Optional<LiveTimingMessage> parseSingleMethodInvocationMessageBody(String messageJson) {
         Optional<LiveTimingMessage> returnValue = Optional.empty();
@@ -163,6 +180,8 @@ public class MessageDecoder {
             if (root.path("H").asText().equalsIgnoreCase("Streaming")
                     && root.path("M").asText().equalsIgnoreCase("feed")
                     && root.path("A") instanceof ArrayNode array) {
+
+                // The arguments array has a fixed structure: [Category, Data, Timestamp]
                 String category = array.get(0).asText();
                 String messageValue = array.get(1).toString();
                 ZonedDateTime timeStamp = ZonedDateTime.parse(array.get(2).asText());
@@ -181,6 +200,12 @@ public class MessageDecoder {
         return returnValue;
     }
 
+    /**
+     * Parses the body of a hub response message, which can contain multiple data categories.
+     *
+     * @param messageJson The JSON string from the "R" property of a hub response.
+     * @return A list of parsed {@link LiveTimingMessage}s.
+     */
     private static List<LiveTimingMessage> parseHubResponseMessageBody(String messageJson) {
         List<LiveTimingMessage> returnList = new ArrayList<>();
 
@@ -196,6 +221,7 @@ public class MessageDecoder {
                 timeStamp = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC"));
             }
 
+            // Iterate over all fields in the JSON object (e.g., "CarData.z", "SessionInfo").
             root.fields().forEachRemaining(entry -> {
                     try {
                         String messageValue = entry.getValue().toString();
@@ -228,15 +254,21 @@ public class MessageDecoder {
      */
     public static String inflate(String compressedStringData) throws DataFormatException {
         StringBuilder result = new StringBuilder();
+        // Use Inflater with 'nowrap = true' for raw DEFLATE data, which is what F1 uses.
         Inflater inflater = new Inflater(true);
         inflater.setInput(Base64.getDecoder().decode(compressedStringData));
 
         while (!inflater.finished()) {
             byte[] outputBytes = new byte[1024];
             int resultLength = inflater.inflate(outputBytes);
+            if (resultLength == 0) {
+                // This can happen if the buffer is full but inflater needs more input,
+                // or if the stream is done. The !inflater.finished() check handles the latter.
+                break;
+            }
             result.append(new String(outputBytes, 0, resultLength, StandardCharsets.UTF_8));
         }
-
+        inflater.end(); // Release resources
         return result.toString();
     }
 }
