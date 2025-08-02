@@ -2,6 +2,7 @@ API notes
 
 SignalR protocol:
 - https://blog.3d-logic.com/2015/03/29/signalr-on-the-wire-an-informal-description-of-the-signalr-protocol/
+- https://dweik.xyz/post/f1-signalr-endpoint/
 
 Decoding messages:
 - https://openf1.org/#api-methods
