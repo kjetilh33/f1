@@ -1,4 +1,4 @@
-package com.kinnovatio.signalr.messages;
+package com.kinnovatio.signalr.messages.transport;
 
 import java.util.List;
 

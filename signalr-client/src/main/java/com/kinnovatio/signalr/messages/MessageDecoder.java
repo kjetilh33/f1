@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.jboss.logging.Logger;
 
+import com.kinnovatio.signalr.messages.transport.*
+
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -191,7 +193,7 @@ public class MessageDecoder {
                     messageValue = inflate(array.get(1).textValue());
                 }
 
-                returnValue = Optional.of(new LiveTimingMessage(category, messageValue, timeStamp, null));
+                returnValue = Optional.of(new LiveTimingMessage(category, messageValue, timeStamp));
             }
         } catch (Exception e) {
             LOG.warnf("Error while parsing streaming message: %s", e.toString());
@@ -229,7 +231,7 @@ public class MessageDecoder {
                         if (entry.getKey().endsWith(".z")) {
                                 messageValue = inflate(entry.getValue().textValue());
                         }
-                        returnList.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp, timeStamp.toString()));
+                        returnList.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp));
 
                     } catch (DataFormatException e) {
                         LOG.warnf("Error while deflating data in message with category %s: %s",

@@ -13,8 +13,6 @@ import java.time.ZonedDateTime;
  * @param message   The raw JSON payload for this category. This string contains the detailed
  *                  data that can be further parsed by the consumer.
  * @param timestamp The server-provided UTC timestamp indicating when the event occurred.
- * @param responseId The id of a collection of responses/live timing messages that together form a hub respons. Will
- *                   be null if this is a stand-alone message.
  */
-public record LiveTimingMessage(String category, String message, ZonedDateTime timestamp, String responseId) {
+public record LiveTimingMessage(String category, String message, ZonedDateTime timestamp) implements LiveTimingRecord {
 }
