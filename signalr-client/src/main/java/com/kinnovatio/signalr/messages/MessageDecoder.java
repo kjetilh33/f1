@@ -191,7 +191,7 @@ public class MessageDecoder {
                     messageValue = inflate(array.get(1).textValue());
                 }
 
-                returnValue = Optional.of(new LiveTimingMessage(category, messageValue, timeStamp));
+                returnValue = Optional.of(new LiveTimingMessage(category, messageValue, timeStamp, null));
             }
         } catch (Exception e) {
             LOG.warnf("Error while parsing streaming message: %s", e.toString());
@@ -222,14 +222,14 @@ public class MessageDecoder {
             }
 
             // Iterate over all fields in the JSON object (e.g., "CarData.z", "SessionInfo").
-            root.fields().forEachRemaining(entry -> {
+            root.properties().forEach(entry -> {
                     try {
                         String messageValue = entry.getValue().toString();
                         // Check if the message body is compressed
                         if (entry.getKey().endsWith(".z")) {
                                 messageValue = inflate(entry.getValue().textValue());
                         }
-                        returnList.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp));
+                        returnList.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp, timeStamp.toString()));
 
                     } catch (DataFormatException e) {
                         LOG.warnf("Error while deflating data in message with category %s: %s",
