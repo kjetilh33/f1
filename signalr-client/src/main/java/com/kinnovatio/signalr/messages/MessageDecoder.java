@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.jboss.logging.Logger;
 
-import com.kinnovatio.signalr.messages.transport.*
+import com.kinnovatio.signalr.messages.transport.*;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;

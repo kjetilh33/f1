@@ -1,3 +1,8 @@
 package com.kinnovatio.signalr.messages;
 
-public record LiveTimingHubResponse(Set<LiveTimingMessage> messages, ZonedDateTime timestamp) implements LiveTimingRecord
+import java.time.ZonedDateTime;
+import java.util.Set;
+
+public record LiveTimingHubResponse(Set<LiveTimingMessage> messages, ZonedDateTime timestamp) implements LiveTimingRecord {
+
+}

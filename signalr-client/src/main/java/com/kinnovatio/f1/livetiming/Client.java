@@ -2,6 +2,7 @@ package com.kinnovatio.f1.livetiming;
 
 import com.kinnovatio.signalr.F1HubConnection;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
+import com.kinnovatio.signalr.messages.LiveTimingRecord;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
 import io.prometheus.metrics.core.datapoints.Timer;
@@ -136,8 +137,8 @@ public class Client {
         hubConnection.close();
     }
 
-    private static void processMessage(LiveTimingMessage message) {
-        LOG.info("Received live timing message: {}", message);
+    private static void processMessage(LiveTimingRecord message) {
+        LOG.info("Received live timing record: {}", message);
     }
 
     /*

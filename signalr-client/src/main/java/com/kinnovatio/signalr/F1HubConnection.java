@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.auto.value.AutoValue;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
+import com.kinnovatio.signalr.messages.LiveTimingRecord;
 import com.kinnovatio.signalr.messages.MessageDecoder;
 import io.smallrye.common.constraint.Nullable;
 import org.slf4j.Logger;
@@ -136,7 +137,7 @@ public abstract class F1HubConnection {
     public abstract URI getBaseUri();
 
     @Nullable
-    public abstract Consumer<LiveTimingMessage> getConsumer();
+    public abstract Consumer<LiveTimingRecord> getConsumer();
     public abstract boolean isMessageLogEnabled();
 
     /**
@@ -150,12 +151,12 @@ public abstract class F1HubConnection {
     }
 
     /**
-     * Sets the consumer that will receive {@link LiveTimingMessage}s.
+     * Sets the consumer that will receive {@link LiveTimingRecord}s.
      *
      * @param consumer The consumer to process incoming messages.
      * @return a new instance with the updated consumer.
      */
-    public F1HubConnection withConsumer(Consumer<LiveTimingMessage> consumer) {
+    public F1HubConnection withConsumer(Consumer<LiveTimingRecord> consumer) {
         return toBuilder().setConsumer(consumer).build();
     }
 
@@ -573,7 +574,7 @@ public abstract class F1HubConnection {
     abstract static class Builder {
         abstract Builder setMessageLogEnabled(boolean value);
         abstract Builder setBaseUri(URI value);
-        abstract Builder setConsumer(Consumer<LiveTimingMessage> value);
+        abstract Builder setConsumer(Consumer<LiveTimingRecord> value);
 
         abstract F1HubConnection build();
     }
