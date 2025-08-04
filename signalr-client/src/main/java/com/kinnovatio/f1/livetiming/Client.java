@@ -1,16 +1,12 @@
 package com.kinnovatio.f1.livetiming;
 
 import com.kinnovatio.signalr.F1HubConnection;
-import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
-import com.microsoft.signalr.HubConnection;
-import com.microsoft.signalr.HubConnectionBuilder;
 import io.prometheus.metrics.core.datapoints.Timer;
 import io.prometheus.metrics.core.metrics.Gauge;
 import io.prometheus.metrics.exporter.pushgateway.PushGateway;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import io.prometheus.metrics.model.snapshots.Unit;
-import io.reactivex.rxjava3.disposables.Disposable;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,23 +114,6 @@ public class Client {
         //Thread.sleep(25000);
 
         //hub.close();
-    }
-
-    private static void useSignalrCoreClient() throws InterruptedException {
-        LOG.info("Connect to hub...");
-        HubConnection hubConnection = HubConnectionBuilder.create("https://livetiming.formula1.com/signalr")
-                .build();
-        hubConnection.start().blockingAwait();
-        LOG.info("Hub connection state: {}", hubConnection.getConnectionState().toString());
-
-        Disposable messageStreamDisposable = hubConnection.stream(String.class, "Subscribe", "Heartbeat")
-                .onErrorReturnItem("Error in stream")
-                .subscribe(message -> System.out.println("Message received:/n" + message + "/n"));
-
-        Thread.sleep(3000);
-        messageStreamDisposable.dispose();
-
-        hubConnection.close();
     }
 
     private static void processMessage(LiveTimingRecord message) {

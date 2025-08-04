@@ -500,7 +500,7 @@ public abstract class F1HubConnection {
         try {
             // Need to make sure we have a registered consumer for the messages
             if (null != getConsumer()) {
-                List<LiveTimingMessage> messages = MessageDecoder.parseLiveTimingMessages(rawMessage);
+                List<? extends LiveTimingRecord> messages = MessageDecoder.parseLiveTimingMessages(rawMessage);
                 LOG.debug(loggingPrefix + "Parsed raw message into {} live timing messages", messages.size());
                 messages.forEach(message -> getConsumer().accept(message));
             }

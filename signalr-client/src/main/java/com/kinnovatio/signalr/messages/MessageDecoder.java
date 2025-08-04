@@ -83,7 +83,7 @@ public class MessageDecoder {
      *         message is not a data-carrying message (e.g., keep-alive).
      * @throws JsonProcessingException if the JSON is malformed.
      */
-    public static List<LiveTimingMessage> parseLiveTimingMessages(String messageJson) throws JsonProcessingException {
+    public static List<? extends LiveTimingRecord> parseLiveTimingMessages(String messageJson) throws JsonProcessingException {
         SignalRMessage signalRMessage = parseSignalRMessage(messageJson);
 
         return switch (signalRMessage) {
@@ -91,7 +91,7 @@ public class MessageDecoder {
             case InitMessage i -> Collections.emptyList();
             case KeepAliveMessage k -> Collections.emptyList();
             case GroupMembershipMessage g -> Collections.emptyList();
-            case HubResponseMessage h -> parseHubResponseMessageBody(h.result());
+            case HubResponseMessage h -> List.of(parseHubResponseMessageBody(h.result()));
             case ClientMethodInvocationMessage c -> {
                 yield c.messageData().stream()
                         .map(MessageDecoder::parseSingleMethodInvocationMessageBody)
@@ -99,7 +99,6 @@ public class MessageDecoder {
                         .toList();
             }
         };
-
     }
 
     /**
@@ -208,19 +207,17 @@ public class MessageDecoder {
      * @param messageJson The JSON string from the "R" property of a hub response.
      * @return A list of parsed {@link LiveTimingMessage}s.
      */
-    private static List<LiveTimingMessage> parseHubResponseMessageBody(String messageJson) {
-        List<LiveTimingMessage> returnList = new ArrayList<>();
+    private static LiveTimingHubResponseMessage parseHubResponseMessageBody(String messageJson) {
+        List<LiveTimingMessage> LiveTimingMessages = new ArrayList<>();
+        // Set a default timestamp
+        ZonedDateTime timeStamp = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC"));
 
         try {
             JsonNode root = objectMapper.readTree(messageJson);
-            ZonedDateTime timeStamp;
 
             // Check if we have timestamp data in the payload
             if (root.path("ExtrapolatedClock").path("Utc").isTextual()) {
                 timeStamp = ZonedDateTime.parse(root.path("ExtrapolatedClock").path("Utc").textValue());
-            } else {
-                // If no timestamp in the payload, set a default
-                timeStamp = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC"));
             }
 
             // Iterate over all fields in the JSON object (e.g., "CarData.z", "SessionInfo").
@@ -231,7 +228,7 @@ public class MessageDecoder {
                         if (entry.getKey().endsWith(".z")) {
                                 messageValue = inflate(entry.getValue().textValue());
                         }
-                        returnList.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp));
+                        LiveTimingMessages.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp));
 
                     } catch (DataFormatException e) {
                         LOG.warnf("Error while deflating data in message with category %s: %s",
@@ -244,7 +241,7 @@ public class MessageDecoder {
             LOG.warnf("Error while parsing hub response message: %s", e.toString());
         }
 
-        return returnList;
+        return new LiveTimingHubResponseMessage(LiveTimingMessages, timeStamp);
     }
 
     /**
