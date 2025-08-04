@@ -91,13 +91,11 @@ public class MessageDecoder {
             case InitMessage i -> Collections.emptyList();
             case KeepAliveMessage k -> Collections.emptyList();
             case GroupMembershipMessage g -> Collections.emptyList();
-            case HubResponseMessage h -> List.of(parseHubResponseMessageBody(h.result()));
-            case ClientMethodInvocationMessage c -> {
-                yield c.messageData().stream()
-                        .map(MessageDecoder::parseSingleMethodInvocationMessageBody)
-                        .flatMap(Optional::stream)
-                        .toList();
-            }
+            case HubResponseMessage h -> parseHubResponseMessageBody(h.result()).stream().toList();
+            case ClientMethodInvocationMessage c -> c.messageData().stream()
+                    .map(MessageDecoder::parseSingleMethodInvocationMessageBody)
+                    .flatMap(Optional::stream)
+                    .toList();
         };
     }
 
@@ -207,17 +205,20 @@ public class MessageDecoder {
      * @param messageJson The JSON string from the "R" property of a hub response.
      * @return A list of parsed {@link LiveTimingMessage}s.
      */
-    private static LiveTimingHubResponseMessage parseHubResponseMessageBody(String messageJson) {
-        List<LiveTimingMessage> LiveTimingMessages = new ArrayList<>();
-        // Set a default timestamp
-        ZonedDateTime timeStamp = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC"));
+    private static Optional<LiveTimingHubResponseMessage> parseHubResponseMessageBody(String messageJson) {
+        Optional<LiveTimingHubResponseMessage> returnValue = Optional.empty();
 
         try {
             JsonNode root = objectMapper.readTree(messageJson);
+            List<LiveTimingMessage> LiveTimingMessages = new ArrayList<>();
+            ZonedDateTime timeStamp;
 
             // Check if we have timestamp data in the payload
             if (root.path("ExtrapolatedClock").path("Utc").isTextual()) {
                 timeStamp = ZonedDateTime.parse(root.path("ExtrapolatedClock").path("Utc").textValue());
+            } else {
+                // Set a default timestamp
+                timeStamp = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC"));
             }
 
             // Iterate over all fields in the JSON object (e.g., "CarData.z", "SessionInfo").
@@ -237,11 +238,12 @@ public class MessageDecoder {
                     }
             }
             );
+            returnValue = Optional.of(new LiveTimingHubResponseMessage(LiveTimingMessages, timeStamp));
         } catch (Exception e) {
             LOG.warnf("Error while parsing hub response message: %s", e.toString());
         }
 
-        return new LiveTimingHubResponseMessage(LiveTimingMessages, timeStamp);
+        return returnValue;
     }
 
     /**
