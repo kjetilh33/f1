@@ -1,6 +1,7 @@
 package com.kinnovatio;
 
 import io.quarkus.runtime.StartupEvent;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import org.eclipse.microprofile.reactive.messaging.*;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -27,6 +28,7 @@ public class MyMessagingApplication {
      * Consume the message from the "words-in" channel, uppercase it and send it to the uppercase channel.
      * Messages come from the broker.
      **/
+    @RunOnVirtualThread
     @Incoming("words-in")
     @Outgoing("uppercase")
     public Message<String> toUpperCase(Message<String> message) {
