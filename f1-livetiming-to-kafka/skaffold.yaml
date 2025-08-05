@@ -1,0 +1,38 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: f1-livetiming-to-kafka
+build:
+  local:
+    push: false                                            # When building locally, do not push the image to a repository
+  artifacts:
+  - image: f1-livetiming-to-kafka                                         # Image name
+    context: .
+    custom:
+      buildCommand: ./build.sh
+      dependencies:
+        paths:
+          - src/**
+          - kubernetes-manifests/**
+    #jib:                                                   # Use Jib as the container builder
+    #  args:
+    #    - Dquarkus.container-image.build=true
+      #fromImage: "gcr.io/distroless/java21-debian12"       # Use a "distroless" base image
+  tagPolicy:
+    dateTime:                                              # The image will be tagged with the build timestamp
+      format: "20060102T150405"
+      timezone: "UTC"
+manifests:
+  kustomize:
+    paths:
+      - ./kubernetes-manifests/
+
+profiles:
+  - name: local
+    activation:
+      - kubeContext: docker-desktop
+    requiresAllActivations: true
+    patches:
+      - op: replace
+        path: /build/artifacts/0/image
+        value: local/f1-livetiming-to-kafka
