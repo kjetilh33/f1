@@ -10,7 +10,7 @@ import jakarta.inject.Inject;
 import java.util.stream.Stream;
 
 @ApplicationScoped
-public class MyMessagingApplication {
+public class F1LiveTimingConnector {
 
     @Inject
     @Channel("words-out")

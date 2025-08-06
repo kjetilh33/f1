@@ -2,6 +2,11 @@ quarkus:
   log:
     level: INFO
 
+%prod:
+  kafka:
+    bootstrap:
+      servers: kafka-main-kafka-bootstrap.kafka.svc.cluster.local:9092
+
 mp:
   messaging:
     incoming:
