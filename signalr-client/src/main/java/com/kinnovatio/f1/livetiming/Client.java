@@ -117,7 +117,7 @@ public class Client {
     }
 
     private static void processMessage(LiveTimingRecord message) {
-        LOG.info("Received live timing record: {}", message);
+        LOG.debug("Received live timing record: {}", message);
     }
 
     /*
