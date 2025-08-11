@@ -28,13 +28,21 @@ public class ConnectorStatusHttpServer {
     private HttpServer server;
 
 
-    public ConnectorStatusHttpServer(int port) {
+    private ConnectorStatusHttpServer(int port) {
         this.port = port;
         this.serverAddress = new InetSocketAddress(port);
     }
 
-    public ConnectorStatusHttpServer() {
+    private ConnectorStatusHttpServer() {
         this(8080); // set default port to 8080
+    }
+
+    public static ConnectorStatusHttpServer create() {
+        return new ConnectorStatusHttpServer();
+    }
+
+    public static ConnectorStatusHttpServer on(int port) {
+        return new ConnectorStatusHttpServer(port);
     }
 
     public void start() throws IOException, URISyntaxException {
