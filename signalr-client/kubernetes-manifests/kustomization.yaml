@@ -6,7 +6,8 @@ commonLabels:
   app.kubernetes.io/name: signalr-to-kafka
   app: signalr-to-kafka
 resources:
-  - signalr-to-kafka.job.yaml
+  - signalr-to-kafka.deployment.yaml
+  - signalr-to-kafka.service.yaml
 
 # The generator will convert the config.yaml file into a K8 config map which can be mapped
 # into the container

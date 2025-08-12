@@ -47,13 +47,7 @@ public class ConnectorStatusHttpServer {
 
     public void start() throws IOException, URISyntaxException {
         if (server == null) {
-            URL staticResourceUrl = ClassLoader.getSystemResource("/static");
-            if (staticResourceUrl == null) {
-                String errorMessage = "HTTP Server: Could not find static resources.";
-                LOG.error(errorMessage);
-                throw new IOException(errorMessage);
-            }
-            Path staticResourceRoot = Paths.get(staticResourceUrl.toURI());
+            Path staticResourceRoot = Paths.get("/static");
             server = SimpleFileServer.createFileServer(serverAddress, staticResourceRoot, SimpleFileServer.OutputLevel.INFO);
             LOG.info("HTTP server: Ready to serve files from {}", staticResourceRoot);
         }

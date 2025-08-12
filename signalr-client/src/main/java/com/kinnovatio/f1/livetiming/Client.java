@@ -34,10 +34,14 @@ public class Client {
     private static final String signalRBaseUrl = "https://livetiming.formula1.com/signalr/";
     private static final String testBaseUrl = "http://livetiming.kinnovatio.local/signalr/";
 
+    // connector components
+    //private static ConnectorStatusHttpServer statusHttpServer;
+    //private static F1HubConnection hubConnection;
+
 
     // Metrics configs. From config file / env variables
     private static final boolean enableMetrics =
-            ConfigProvider.getConfig().getValue("metrics.enable", Boolean.class);
+            ConfigProvider.getConfig(). getValue("metrics.enable", Boolean.class);
     private static final String metricsJobName = ConfigProvider.getConfig().getValue("metrics.jobName", String.class);
     private static final Optional<String> pushGatewayUrl =
             ConfigProvider.getConfig().getOptionalValue("metrics.pushGateway.url", String.class);
@@ -87,7 +91,8 @@ public class Client {
         Timer jobDurationTimer = jobDurationSeconds.startTimer();
 
         useSignalrCustomClient();
-        //useSignalrCoreClient();
+        ConnectorStatusHttpServer.create().start();
+
         LOG.info("Finished work");
         // automatically records the duration onto the jobDurationSeconds gauge.
         jobDurationTimer.observeDuration();

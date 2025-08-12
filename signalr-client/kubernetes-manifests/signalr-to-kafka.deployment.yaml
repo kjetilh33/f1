@@ -39,5 +39,5 @@ spec:
         - name: config                              # Give the volume a name you can reference in the container spec.
           configMap:                                # Specifies that you source the data from a ConfigMap.
             name: signalr-to-kafka-config                    # The name of the ConfigMap to read from
-      restartPolicy: Never
+      restartPolicy: Always
 #     serviceAccountName: extractor-default
