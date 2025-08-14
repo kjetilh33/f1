@@ -1,5 +1,7 @@
 package com.kinnovatio.f1.livetiming;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.SimpleFileServer;
 import org.slf4j.Logger;
@@ -9,6 +11,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -48,7 +51,10 @@ public class ConnectorStatusHttpServer {
     public void start() throws IOException, URISyntaxException {
         if (server == null) {
             Path staticResourceRoot = Paths.get("/static");
-            server = SimpleFileServer.createFileServer(serverAddress, staticResourceRoot, SimpleFileServer.OutputLevel.INFO);
+            HttpHandler fileHandler = SimpleFileServer.createFileHandler(staticResourceRoot);
+            server = HttpServer.create(serverAddress, port);
+            server.createContext("/", fileHandler);
+            server.createContext("/status", new StatusDataHandler());
             LOG.info("HTTP server: Ready to serve files from {}", staticResourceRoot);
         }
         server.start();
@@ -62,6 +68,33 @@ public class ConnectorStatusHttpServer {
             server = null;
         } else {
             LOG.info("HTTP Server: Not running");
+        }
+    }
+
+    private static class StatusDataHandler implements HttpHandler {
+        public StatusDataHandler() {
+        }
+
+        public void handle(HttpExchange exchange) throws IOException {
+            try (exchange) {
+                if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                    exchange.sendResponseHeaders(405, -1); //405 method not allowed
+                    return;
+                }
+
+                String jsonResponse = """
+                        {
+                            "status": "Running"
+                        }
+                        """;
+                byte[] responseBytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, responseBytes.length);
+                exchange.getResponseBody().write(responseBytes);
+            } catch (IOException e) {
+                LOG.warn("Error when updating connector status: {}", e.toString());
+                throw e;
+            }
         }
     }
 }
