@@ -378,6 +378,8 @@ public abstract class F1HubConnection {
                 // A connection token is mandatory for the next step.
                 throw new IOException("Unable to get connection token from the SignalR service during negotiation.");
             }
+
+            // Check keep alive timeout.
             if (responseBodyRoot.path("KeepAliveTimeout").isNumber()) {
                 keepAliveTimeout = Duration.ofSeconds(responseBodyRoot.path("KeepAliveTimeout").asInt());
                 LOG.debug("Found keep alive timeout spec in connection negotiation: {}",
