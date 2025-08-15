@@ -331,9 +331,8 @@ public abstract class F1HubConnection {
      * @return The fully connected {@link WebSocket} instance.
      * @throws IOException if the negotiation request fails, the server returns an error, or the
      *         WebSocket connection cannot be established.
-     * @throws URISyntaxException if the base URI or the constructed negotiation/WebSocket URIs are malformed.
      */
-    private WebSocket negotiateWebsocket() throws IOException, URISyntaxException {
+    private WebSocket negotiateWebsocket() throws IOException {
         connectionState = State.CONNECTING;
         final ObjectReader objectReader = objectMapper.reader();
 
@@ -558,15 +557,55 @@ public abstract class F1HubConnection {
         }
     }
 
+    /**
+     * Represents the granular, low-level status of the underlying WebSocket connection.
+     * This enum tracks the different phases of establishing and maintaining a connection
+     * to the SignalR hub. It is managed internally and is distinct from
+     * {@link OperationalState}, which reflects the user's high-level intent for the client.
+     */
     enum State {
+        /**
+         * The client is not connected but is ready to initiate a new connection.
+         * This is the initial state, and also the state after a WebSocket is cleanly closed.
+         * From this state, a new connection attempt can begin.
+         */
         READY,
+        /**
+         * The client is in the process of establishing a connection. This includes
+         * the HTTP negotiation phase and waiting for the WebSocket to become fully
+         * open and receive the SignalR initialization message.
+         */
         CONNECTING,
+        /**
+         * The WebSocket connection is established, and the SignalR protocol handshake
+         * is complete. The client is now able to send and receive data messages.
+         */
         CONNECTED,
+        /**
+         * The WebSocket connection has been lost due to an error. The background
+         * keep-alive loop will attempt to reconnect when the client is in this state.
+         */
         DISCONNECTED
     }
 
+    /**
+     * Defines the high-level operational state of the F1HubConnection client.
+     * This state determines whether the client is actively trying to maintain a connection
+     * or if it has been shut down. It is distinct from the {@link State} enum, which
+     * tracks the more granular status of the underlying WebSocket connection.
+     */
     enum OperationalState {
+        /**
+         * The client is shut down. In this state, no new connections will be attempted,
+         * and the background keep-alive and reconnection tasks will not run. This is the
+         * initial state and the state after {@link #close()} is called.
+         */
         CLOSED,
+        /**
+         * The client is active. It will attempt to establish and maintain a connection
+         * to the SignalR hub. The background keep-alive and reconnection logic is active
+         * in this state. This state is set by a call to {@link #connect()}.
+         */
         OPEN
     }
 
