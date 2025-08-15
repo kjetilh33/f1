@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,7 +28,6 @@ public class ConnectorStatusHttpServer {
     private final int port;
     private final InetSocketAddress serverAddress;
     private HttpServer server;
-
 
     private ConnectorStatusHttpServer(int port) {
         this.port = port;
