@@ -13,6 +13,9 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
@@ -36,7 +39,11 @@ public class Client {
 
     // connector components
     //private static ConnectorStatusHttpServer statusHttpServer;
-    //private static F1HubConnection hubConnection;
+    private static F1HubConnection hubConnection;
+    private static State connectorState = State.NO_SESSION;
+    private static Instant lastSessionCheck = Instant.now();
+    private static ScheduledExecutorService executorService = null;
+
 
 
     // Metrics configs. From config file / env variables
@@ -93,6 +100,9 @@ public class Client {
         useSignalrCustomClient();
         ConnectorStatusHttpServer.create().start();
 
+        executorService = Executors.newSingleThreadScheduledExecutor();
+        executorService.scheduleAtFixedRate(Client::asyncKeepAliveLoop, 1, 1, TimeUnit.SECONDS);
+
         LOG.info("Finished work");
         // automatically records the duration onto the jobDurationSeconds gauge.
         jobDurationTimer.observeDuration();
@@ -106,15 +116,11 @@ public class Client {
     }
 
     private static void useSignalrCustomClient() throws Exception {
-        F1HubConnection hub = F1HubConnection.of(signalRBaseUrl) //.of(signalRBaseUrl) of(testBaseUrl)
+        hubConnection = F1HubConnection.of(signalRBaseUrl) //.of(signalRBaseUrl) of(testBaseUrl)
                 //.enableMessageLogging(true)
                 .withConsumer(Client::processMessage)
                 ;
-        if (hub.connect()) {
-            LOG.info("Received connection confirmation.");
-            LOG.info("Start subscription.");
-            hub.subscribeToAll();
-        }
+        hubConnection.connect();
 
         //Thread.sleep(25000);
 
@@ -123,6 +129,12 @@ public class Client {
 
     private static void processMessage(LiveTimingRecord message) {
         LOG.debug("Received live timing record: {}", message);
+    }
+
+    private static void asyncKeepAliveLoop() {
+        String loggingPrefix = "Connector connection loop - ";
+        LOG.debug(loggingPrefix + "Connector state = {}", connectorState);
+
     }
 
     /*
@@ -148,5 +160,10 @@ public class Client {
         }
 
         return isSuccess;
+    }
+
+    enum State {
+        NO_SESSION,
+        LIVE_SESSION
     }
 }

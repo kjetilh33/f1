@@ -167,10 +167,9 @@ public abstract class F1HubConnection {
      *
      * @return {@code true} if the connection was set up successfully. {@code false} otherwise.
      * @throws IOException if something goes wrong at the network layer.
-     * @throws URISyntaxException if the target URI is invalid.
      * @throws InterruptedException if the working thread gets interrupted.
      */
-    public boolean connect() throws IOException, URISyntaxException, InterruptedException {
+    public boolean connect() throws IOException, InterruptedException {
         if (operationalState == OperationalState.OPEN) {
             LOG.warn("The connection is already open. Connect() has no effect.");
             return false;
@@ -188,7 +187,7 @@ public abstract class F1HubConnection {
             operationalState = OperationalState.OPEN;
             webSocket = negotiateWebsocket();
 
-            // try for 20 seconds to establish a connection
+            // try for 20 seconds to establish a SignalR connection
             while (Duration.between(startInstant, Instant.now()).compareTo(Duration.ofSeconds(20)) < 1
                     && connectionState != State.CONNECTED) {
                 LOG.debug("Checking connection state. State: {}, duration: {}", connectionState, Duration.between(startInstant, Instant.now()));
@@ -203,6 +202,7 @@ public abstract class F1HubConnection {
             
             // Start a scheduled task to check state (close, reconnect)
             executorService.scheduleAtFixedRate(this::asyncKeepAliveLoop, 1, 1, TimeUnit.SECONDS);
+            subscribeToAll();
 
         } catch (Exception e) {
             operationalState = OperationalState.CLOSED;
@@ -215,15 +215,42 @@ public abstract class F1HubConnection {
     }
 
     /**
+     * Checks if the client is currently connected to the SignalR hub.
+     *
+     * @return {@code true} if the connection state is {@link State#CONNECTED}, {@code false} otherwise.
+     */
+    public boolean isConnected() {
+        return connectionState == State.CONNECTED;
+    }
+
+    /**
+     * Gets the high-level operational state of the client.
+     * This indicates whether the client is actively trying to maintain a connection
+     * ({@code OPEN}) or has been shut down ({@code CLOSED}).
+     *
+     * @return The current operational state as a string (e.g., "OPEN", "CLOSED").
+     * @see OperationalState
+     */
+    public String getOperationalState() {
+        return operationalState.toString();
+    }
+    
+    /**
+     * Gets the low-level connection state of the underlying WebSocket.
+     * This provides a granular status of the connection process, such as whether it is
+     * connecting, connected, or disconnected.
+     *
+     * @return The current connection state as a string (e.g., "READY", "CONNECTING", "CONNECTED").
+     * @see State
+     */
+    public String getConnectionState() {
+        return connectionState.toString();
+    }
+    
+    /**
      * Start subscribing to the live timing data (all data streams/types)
      */
-    public void subscribeToAll() {
-        if (operationalState != OperationalState.OPEN || connectionState != State.CONNECTED) {
-            LOG.warn("The connection is not ready. Operational state = {}, connection state = {}",
-                    operationalState, connectionState);
-
-            return;
-        }
+    private void subscribeToAll() {
         final String hub = "Streaming";
         final String method = "Subscribe";
         final List<Object> arguments = List.of(List.of(dataStreams));
@@ -245,7 +272,11 @@ public abstract class F1HubConnection {
      */
     public void close() {
         operationalState = OperationalState.CLOSED;
-        executorService.shutdown();
+        if (null != executorService) executorService.shutdown();
+        if (null != webSocket) {
+            webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
+            webSocket = null;
+        }
     }
 
     /**
