@@ -1,6 +1,8 @@
 package com.kinnovatio.f1.livetiming;
 
 import com.kinnovatio.signalr.F1HubConnection;
+import com.kinnovatio.signalr.messages.LiveTimingHubResponseMessage;
+import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
 import io.prometheus.metrics.core.datapoints.Timer;
 import io.prometheus.metrics.core.metrics.Gauge;
@@ -12,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -129,6 +132,22 @@ public class Client {
 
     private static void processMessage(LiveTimingRecord message) {
         LOG.debug("Received live timing record: {}", message);
+
+        switch (message) {
+            case LiveTimingHubResponseMessage hubResponse -> {
+                List<LiveTimingMessage> messages = hubResponse.messages();
+                messages.forEach(Client::processLiveTimingMessage);
+            }
+            case LiveTimingMessage timingMessage -> {
+                processLiveTimingMessage(timingMessage);
+            }
+        }
+    }
+
+    private static void processLiveTimingMessage(LiveTimingMessage message) {
+        if (message.category().startsWith("Session")) {
+            LOG.info(message.toString());
+        }
     }
 
     private static void asyncKeepAliveLoop() {
