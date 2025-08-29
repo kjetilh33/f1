@@ -82,7 +82,9 @@ public class ConnectorStatusHttpServer {
 
                 String jsonResponse = """
                         {
-                            "status": "Running"
+                            "connectorStatus": "Running",
+                            "sessionStatus": "Session active",
+                            "messagesStatus": "Receiving"
                         }
                         """;
                 byte[] responseBytes = jsonResponse.getBytes(StandardCharsets.UTF_8);

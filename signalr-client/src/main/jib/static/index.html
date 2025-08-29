@@ -12,24 +12,25 @@
 <body>
 <div class="container-fluid p-5 bg-primary text-white text-center">
     <h1>Status</h1>
-    <p>Connector staus</p> 
+    <p>Connector status</p> 
+    <p id="last-updated">No update</p>
 </div>
 
 <div class="container mt-5">
   <div class="row">
     <div class="col-sm-4">
       <h3>F1 Session</h3>
-      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>
+      <p id="f1-session-status">Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>
       
     </div>
     <div class="col-sm-4">
       <h3>Live timing connector</h3>
-      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>
+      <p id="live-timing-connector-status">Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>
    
     </div>
     <div class="col-sm-4">
       <h3>Live timing messages</h3>        
-      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>
+      <p id="live-timing-messages">Lorem ipsum dolor sit amet, consectetur adipisicing elit...</p>
 
     </div>
   </div>
@@ -57,8 +58,16 @@
                 })
                 .then(data => {
                     console.log(data);
+                    updateStatus(data);
                 })
                 .catch(error => console.error('Error:', error));
+        }
+
+        function updateStatus(status) {
+            document.getElementById('f1-session-status').textContent = status.sessionStatus;
+            document.getElementById('live-timing-connector-status').textContent = status.connectorStatus;
+            document.getElementById('live-timing-messages').textContent = status.messagesStatus;  
+            document.getElementById('last-updated').textContent = new Date().toLocaleString();
         }
     </script>
 </body>
