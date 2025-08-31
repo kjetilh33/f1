@@ -1,10 +1,12 @@
 package com.kinnovatio.f1.livetiming;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.signalr.F1HubConnection;
 import com.kinnovatio.signalr.messages.LiveTimingHubResponseMessage;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
-import io.prometheus.metrics.core.datapoints.Timer;
 import io.prometheus.metrics.core.metrics.Gauge;
 import io.prometheus.metrics.exporter.pushgateway.PushGateway;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
@@ -13,8 +15,10 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -22,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     /*
     Configuration section. The configuration values are read from the following locations (in order of precedence):
@@ -43,10 +48,11 @@ public class Client {
     // connector components
     //private static ConnectorStatusHttpServer statusHttpServer;
     private static F1HubConnection hubConnection;
-    private static State connectorState = State.NO_SESSION;
+    private static State connectorState = State.UNKNOWN;
     private static Instant lastSessionCheck = Instant.now();
     private static ScheduledExecutorService executorService = null;
 
+    private static SessionInfo sessionInfo = null;
 
 
     // Metrics configs. From config file / env variables
@@ -98,24 +104,15 @@ public class Client {
      */
     private static void run() throws Exception {
         LOG.info("Starting container...");
-        Timer jobDurationTimer = jobDurationSeconds.startTimer();
 
+        // Start the F1 hub connection
         useSignalrCustomClient();
+        // Start the connector status http server
         ConnectorStatusHttpServer.create().start();
 
+        // Start the background keep-alive task
         executorService = Executors.newSingleThreadScheduledExecutor();
-        executorService.scheduleAtFixedRate(Client::asyncKeepAliveLoop, 1, 1, TimeUnit.SECONDS);
-
-        LOG.info("Finished work");
-        // automatically records the duration onto the jobDurationSeconds gauge.
-        jobDurationTimer.observeDuration();
-
-        // The job completion metric is only added to the registry after job success,
-        // so that a previous success in the Pushgateway isn't overwritten on failure.
-        Gauge jobCompletionTimeStamp = Gauge.builder()
-                .name("job_completion_timestamp").help("Job completion time stamp")
-                .register(collectorRegistry);
-        jobCompletionTimeStamp.set(Instant.now().getEpochSecond());
+        executorService.scheduleAtFixedRate(Client::asyncKeepAliveLoop, 10, 2, TimeUnit.SECONDS);
     }
 
     private static void useSignalrCustomClient() throws Exception {
@@ -124,15 +121,10 @@ public class Client {
                 .withConsumer(Client::processMessage)
                 ;
         hubConnection.connect();
-
-        //Thread.sleep(25000);
-
-        //hub.close();
     }
 
     private static void processMessage(LiveTimingRecord message) {
         LOG.debug("Received live timing record: {}", message);
-
         switch (message) {
             case LiveTimingHubResponseMessage hubResponse -> {
                 List<LiveTimingMessage> messages = hubResponse.messages();
@@ -145,15 +137,89 @@ public class Client {
     }
 
     private static void processLiveTimingMessage(LiveTimingMessage message) {
-        if (message.category().startsWith("Session")) {
+        if (message.category().equalsIgnoreCase("SessionInfo")) {
             LOG.info(message.toString());
+            try {
+                checkSessionStatus(message.message());
+            } catch (JsonProcessingException e) {
+                LOG.warn("Failed to process session info message. Error: {}", e);
+            }
         }
     }
 
-    private static void asyncKeepAliveLoop() {
-        String loggingPrefix = "Connector connection loop - ";
-        LOG.debug(loggingPrefix + "Connector state = {}", connectorState);
+    private static void checkSessionStatus(String sessionJson) throws JsonProcessingException {
+        Objects.requireNonNull(sessionJson);
+        JsonNode root = objectMapper.readTree(sessionJson);
+        String meetingName = root.path("Meeting").path("Name").asText("No race name");
+        String sessionStatus = root.path("SessionStatus").asText("No session status");
+        String sessionType = root.path("Type").asText("No session type");
+        String startDateString = root.path("StartDate").asText("No start date");
+        String endDateString = root.path("EndDate").asText("No end date");
 
+        // Store the session info
+        sessionInfo = new SessionInfo(meetingName, sessionStatus, sessionType, startDateString, endDateString);
+
+        // Evaluate if we have an active session running or not
+        if (sessionStatus.equalsIgnoreCase("Started")) {
+            connectorState = State.LIVE_SESSION;
+        } else {
+            connectorState = State.NO_SESSION;
+        }
+
+        // Set timestamp of last evaluation
+        lastSessionCheck = Instant.now();
+    }
+
+    public static SessionInfo getSessionInfo() {
+        return sessionInfo;
+    }
+
+    private static void asyncKeepAliveLoop() {
+        final String loggingPrefix = "Connector connection loop - ";
+        LOG.debug(loggingPrefix + "Connector state = {}", connectorState);
+        LOG.debug(loggingPrefix + "Session info = {}", sessionInfo);
+        LOG.debug(loggingPrefix + "F1 connection hub connection state = {}", hubConnection.getConnectionState());
+        LOG.debug(loggingPrefix + "F1 connection hub operational state = {}", hubConnection.getOperationalState());
+
+        if (connectorState == State.UNKNOWN && Duration.between(lastSessionCheck, Instant.now()).compareTo(Duration.ofSeconds(60)) < 0) {
+            // Let's wait for 60 seconds for the connector to connect and evaluate the session state.
+            return;
+        }
+
+        if (connectorState == State.LIVE_SESSION) {
+            if (hubConnection.isConnected()) {
+                // All is good. We have a race session and the connector is running. Do nothing.
+            } else {
+                LOG.info(loggingPrefix + "Looks like we don't have a connection to the F1 hub. Will try to reconnect...");
+                try {
+                    hubConnection.connect();
+                } catch (Exception e) {
+                    LOG.warn("Error connecting to hub: {}", e.toString());
+                }
+            }
+        } else if (connectorState == State.NO_SESSION) {
+            if (hubConnection.isConnected()) {
+                // The session is over, so we can disconnect from the F1 live hub.
+                LOG.info(loggingPrefix + "There is no race session currently, but our live timing connection is open. Will close it...");
+                hubConnection.close();
+            } else if (Duration.between(lastSessionCheck, Instant.now()).compareTo(Duration.ofMinutes(20)) > 0) {
+                // It has been 20 mins since we last checked if there is a session starting
+                try {
+                    hubConnection.connect();
+                } catch (Exception e) {
+                    LOG.warn("Error connecting to hub: {}", e.toString());
+                }
+            }
+        } else {
+            // We are in "unknown", and have been in over 60 sec. Let's disconnect and reconnect
+            LOG.info(loggingPrefix + "Not able to determine if we have a race session ongoing or now. Will restart the connection.");
+            hubConnection.close();
+            try {
+                hubConnection.connect();
+            } catch (Exception e) {
+                LOG.warn("Error connecting to hub: {}", e.toString());
+            }
+        }
     }
 
     /*
@@ -183,6 +249,7 @@ public class Client {
 
     enum State {
         NO_SESSION,
-        LIVE_SESSION
+        LIVE_SESSION,
+        UNKNOWN
     }
 }
