@@ -1,5 +1,8 @@
 package com.kinnovatio.f1.livetiming;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.kinnovatio.signalr.F1HubConnection;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -17,14 +20,14 @@ import java.nio.file.Paths;
 public class ConnectorStatusHttpServer {
     // TODO: Add a simple HTTP server that exposes the connector status (e.g. connected, disconnected, etc.)
     // This can be used by Kubernetes to determine if the connector is healthy.
-    // The HTTP server should be started in a separate thread.
-    // The HTTP server should expose a /health endpoint that returns 200 OK if the connector is healthy.
-    // The HTTP server should expose a /metrics endpoint that returns the Prometheus metrics.
+
     // The HTTP server should be configurable (e.g. port, etc.).
     // The HTTP server should be stopped when the connector is stopped.
     // The HTTP server should be started when the connector is started.
 
     private static final Logger LOG = LoggerFactory.getLogger(ConnectorStatusHttpServer.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     private final int port;
     private final InetSocketAddress serverAddress;
     private HttpServer server;
@@ -79,14 +82,22 @@ public class ConnectorStatusHttpServer {
                     exchange.sendResponseHeaders(405, -1); //405 method not allowed
                     return;
                 }
+                String defaultSessionInfoString = "No session info available";
 
-                String jsonResponse = """
-                        {
-                            "connectorStatus": "Running",
-                            "sessionStatus": "Session active",
-                            "messagesStatus": "Receiving"
-                        }
-                        """;
+                SessionInfo sessionInfo = Client.getSessionInfo()
+                        .orElse(new SessionInfo(defaultSessionInfoString, defaultSessionInfoString, defaultSessionInfoString, defaultSessionInfoString, defaultSessionInfoString));
+
+                // build the response json tree model
+                ObjectNode rootNode = objectMapper.createObjectNode();
+                rootNode.put("connectorOperationalStatus", Client.getHubConnection().getOperationalState());
+                rootNode.put("connectorConnectionStatus", Client.getHubConnection().getConnectionState());
+                rootNode.put("sessionStatus", sessionInfo.status());
+                rootNode.put("sessionName", sessionInfo.meetingName());
+                rootNode.put("sessionType", sessionInfo.type());
+                rootNode.put("sessionStartDate", sessionInfo.startDate());
+                rootNode.put("sessionEndDate", sessionInfo.endDate());
+
+                String jsonResponse = rootNode.toString();
                 byte[] responseBytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().add("Content-Type", "application/json");
                 exchange.sendResponseHeaders(200, responseBytes.length);

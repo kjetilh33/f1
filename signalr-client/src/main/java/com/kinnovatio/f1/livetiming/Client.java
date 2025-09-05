@@ -190,8 +190,12 @@ public class Client {
         lastSessionCheck = Instant.now();
     }
 
-    public static SessionInfo getSessionInfo() {
-        return sessionInfo;
+    public static Optional<SessionInfo> getSessionInfo() {
+        return Optional.ofNullable(sessionInfo);
+    }
+
+    public static F1HubConnection getHubConnection() {
+        return hubConnection;
     }
 
     private static void asyncKeepAliveLoop() {
@@ -241,8 +245,6 @@ public class Client {
             }
         }
     }
-
-
 
     enum State {
         NO_SESSION,
