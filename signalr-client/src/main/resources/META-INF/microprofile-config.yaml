@@ -7,10 +7,8 @@ smallrye:
     locations: "/config/config.yaml"
 
 # Default config settings for your module
-cdf:
-  authentication:
-    apiKey:
-    apiKeyGcp: ""
+source:
+  baseUrl: "http://livetiming.kinnovatio.local/signalr/"
 
 # Default configuration for metrics.
 metrics:

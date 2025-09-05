@@ -7,9 +7,10 @@ import com.kinnovatio.signalr.F1HubConnection;
 import com.kinnovatio.signalr.messages.LiveTimingHubResponseMessage;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
+import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.core.metrics.Gauge;
-import io.prometheus.metrics.exporter.pushgateway.PushGateway;
-import io.prometheus.metrics.model.registry.PrometheusRegistry;
+import io.prometheus.metrics.core.metrics.StateSet;
+import io.prometheus.metrics.instrumentation.jvm.JvmMetrics;
 import io.prometheus.metrics.model.snapshots.Unit;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
@@ -42,8 +43,8 @@ public class Client {
     "
      */
     // Connection variables
-    private static final String signalRBaseUrl = "https://livetiming.formula1.com/signalr/";
-    private static final String testBaseUrl = "http://livetiming.kinnovatio.local/signalr/";
+    private static final String signalRBaseUrl =
+            ConfigProvider.getConfig().getValue("source.baseUrl", String.class);
 
     // connector components
     //private static ConnectorStatusHttpServer statusHttpServer;
@@ -57,30 +58,43 @@ public class Client {
 
     // Metrics configs. From config file / env variables
     private static final boolean enableMetrics =
-            ConfigProvider.getConfig(). getValue("metrics.enable", Boolean.class);
-    private static final String metricsJobName = ConfigProvider.getConfig().getValue("metrics.jobName", String.class);
-    private static final Optional<String> pushGatewayUrl =
-            ConfigProvider.getConfig().getOptionalValue("metrics.pushGateway.url", String.class);
+            ConfigProvider.getConfig().getValue("metrics.enable", Boolean.class);
 
     /*
     Metrics section. Define the metrics to expose.
      */
-    //JvmMetrics.builder().register(); // initialize the out-of-the-box JVM metrics
-    static final PrometheusRegistry collectorRegistry = new PrometheusRegistry();
-    static final Gauge jobDurationSeconds = Gauge.builder()
-            .name("job.duration_seconds").help("Job duration in seconds")
-            .unit(Unit.SECONDS)
-            .register(collectorRegistry);
+    static final Counter recordReceivedCounter = Counter.builder()
+            .name("record_received_total")
+            .help("Total number of live timing records received")
+            .register();
+
+    static final Counter messageReceivedCounter = Counter.builder()
+            .name("message_received_total")
+            .help("Total number of live timing messages received")
+            .labelNames("category")
+            .register();
+
+    static final Counter messageSentCounter = Counter.builder()
+            .name("message_sent_total")
+            .help("Total number of messages sent to Kafka")
+            .labelNames("category")
+            .register();
+
+
+    static final StateSet connectorSessionState = StateSet.builder()
+            .name("connector.session_state")
+            .help("Connector session state")
+            .states("sessionActive")
+            .register();
 
     static final Gauge errorGauge= Gauge.builder()
             .name("job.errors").help("Total job errors")
-            .register(collectorRegistry);
+            .register();
 
     /*
     The entry point of the code. It executes the main logic and push job metrics upon completion.
      */
     public static void main(String[] args) {
-        boolean jobFailed = false;
         try {
             // Execute the main logic
             run();
@@ -88,14 +102,6 @@ public class Client {
         } catch (Exception e) {
             LOG.error("Unrecoverable error. Will exit. {}", e.toString());
             errorGauge.inc();
-            jobFailed = true;
-        } finally {
-            if (enableMetrics) {
-                pushMetrics();
-            }
-            if (jobFailed) {
-                System.exit(1); // container exit code for execution errors, etc.
-            }
         }
     }
 
@@ -109,6 +115,16 @@ public class Client {
         useSignalrCustomClient();
         // Start the connector status http server
         ConnectorStatusHttpServer.create().start();
+
+        // Start the metrics http server
+        if (enableMetrics) {
+            JvmMetrics.builder().register(); // initialize the out-of-the-box JVM metrics
+            io.prometheus.metrics.exporter.httpserver.HTTPServer metricsHttpServer =
+                    io.prometheus.metrics.exporter.httpserver.HTTPServer.builder()
+                    .port(9400)
+                    .buildAndStart();
+            LOG.info("HTTP server for metrics started on port 9400");
+        }
 
         // Start the background keep-alive task
         executorService = Executors.newSingleThreadScheduledExecutor();
@@ -125,6 +141,8 @@ public class Client {
 
     private static void processMessage(LiveTimingRecord message) {
         LOG.debug("Received live timing record: {}", message);
+        recordReceivedCounter.inc();
+
         switch (message) {
             case LiveTimingHubResponseMessage hubResponse -> {
                 List<LiveTimingMessage> messages = hubResponse.messages();
@@ -137,6 +155,8 @@ public class Client {
     }
 
     private static void processLiveTimingMessage(LiveTimingMessage message) {
+        messageReceivedCounter.labelValues(message.category()).inc();
+
         if (message.category().equalsIgnoreCase("SessionInfo")) {
             LOG.info(message.toString());
             try {
@@ -222,30 +242,7 @@ public class Client {
         }
     }
 
-    /*
-    Push the current metrics to the push gateway.
-     */
-    private static boolean pushMetrics() {
-        boolean isSuccess = false;
-        if (pushGatewayUrl.isPresent()) {
-            try {
-                LOG.info("Pushing metrics to {}", pushGatewayUrl);
-                PushGateway pg = PushGateway.builder()
-                        .address(pushGatewayUrl.get())
-                        .job(metricsJobName)
-                        .registry(collectorRegistry)
-                        .build();
-                pg.push();
-                isSuccess = true;
-            } catch (Exception e) {
-                LOG.warn("Error when trying to push metrics: {}", e.toString());
-            }
-        } else {
-            LOG.warn("No metrics push gateway configured. Cannot push the metrics.");
-        }
 
-        return isSuccess;
-    }
 
     enum State {
         NO_SESSION,

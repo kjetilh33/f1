@@ -65,7 +65,6 @@
             <artifactId>smallrye-config-source-yaml</artifactId>
             <version>${smallrye.config.version}</version>
         </dependency>
-        <!-- Legacy Prometheus libraries for pushgateway -->
         <dependency>
             <groupId>io.prometheus</groupId>
             <artifactId>prometheus-metrics-core</artifactId>
@@ -73,7 +72,7 @@
         </dependency>
         <dependency>
             <groupId>io.prometheus</groupId>
-            <artifactId>prometheus-metrics-exporter-pushgateway</artifactId>
+            <artifactId>prometheus-metrics-exporter-httpserver</artifactId>
             <version>${io.prometheus.version}</version>
         </dependency>
         <!-- Hotspot JVM metrics-->
@@ -82,14 +81,6 @@
             <artifactId>prometheus-metrics-instrumentation-jvm</artifactId>
             <version>${io.prometheus.version}</version>
         </dependency>
-        <!-- Exposition HTTPServer-->
-        <!--
-        <dependency>
-            <groupId>io.prometheus</groupId>
-            <artifactId>prometheus-metrics-exporter-httpserver</artifactId>
-            <version>${io.prometheus.version}</version>
-        </dependency>
-        -->
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
