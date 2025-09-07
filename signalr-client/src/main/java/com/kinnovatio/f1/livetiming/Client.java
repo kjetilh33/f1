@@ -228,6 +228,7 @@ public class Client {
                 hubConnection.close();
             } else if (Duration.between(lastSessionCheck, Instant.now()).compareTo(Duration.ofMinutes(20)) > 0) {
                 // It has been 20 mins since we last checked if there is a session starting
+                LOG.info(loggingPrefix + "Checking to see if a session will start soon. Will try to reconnect...");
                 try {
                     hubConnection.connect();
                 } catch (Exception e) {
