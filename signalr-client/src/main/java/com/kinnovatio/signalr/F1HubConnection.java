@@ -170,48 +170,7 @@ public abstract class F1HubConnection {
      * @throws InterruptedException if the working thread gets interrupted.
      */
     public boolean connect() throws IOException, InterruptedException {
-        if (operationalState == OperationalState.OPEN) {
-            LOG.warn("The connection is already open. Connect() has no effect.");
-            return false;
-        }
-
-        // In case we have an open websocket, close it
-        if (null != webSocket) webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
-
-        // Check if we need to instantiate the http client
-        if (null == httpClient) httpClient = HttpClient.newHttpClient();
-
-        try {
-            Instant startInstant = Instant.now();
-            connectionState = State.READY;
-            operationalState = OperationalState.OPEN;
-            webSocket = negotiateWebsocket();
-
-            // try for 20 seconds to establish a SignalR connection
-            while (Duration.between(startInstant, Instant.now()).compareTo(Duration.ofSeconds(20)) < 1
-                    && connectionState != State.CONNECTED) {
-                LOG.debug("Checking connection state. State: {}, duration: {}", connectionState, Duration.between(startInstant, Instant.now()));
-                Thread.sleep(1000);
-            }
-            if (connectionState != State.CONNECTED) {
-                throw new IOException("Timeout. Unable to establish connection to hub.");
-            }
-
-            // Check the executor service
-            if (null == executorService || executorService.isShutdown()) executorService = Executors.newSingleThreadScheduledExecutor();
-            
-            // Start a scheduled task to check state (close, reconnect)
-            executorService.scheduleAtFixedRate(this::asyncKeepAliveLoop, 1, 1, TimeUnit.SECONDS);
-            subscribeToAll();
-
-        } catch (Exception e) {
-            operationalState = OperationalState.CLOSED;
-            connectionState = State.READY;
-            webSocket = null;
-            throw e;
-        }
-
-        return true;
+        return connect(false);
     }
 
     /**
@@ -245,6 +204,74 @@ public abstract class F1HubConnection {
      */
     public String getConnectionState() {
         return connectionState.toString();
+    }
+    
+    /**
+     * Initiates or forces a reconnection to the SignalR hub.
+     * <p>
+     * This is the internal implementation of the connection logic. It manages the entire
+     * lifecycle of establishing a connection, including:
+     * <ul>
+     *     <li>Closing any existing WebSocket connection.</li>
+     *     <li>Performing the SignalR negotiation to obtain a connection token.</li>
+     *     <li>Establishing a new WebSocket connection.</li>
+     *     <li>Starting a background task ({@link #asyncKeepAliveLoop()}) to handle keep-alives
+     *         and automatic reconnections.</li>
+     * </ul>
+     * The {@code forceConnect} parameter allows this method to be used for both the initial
+     * user-triggered connection and for internal reconnections when a connection is lost.
+     *
+     * @param forceConnect If {@code true}, forces a new connection even if the operational state
+     *                     is already {@code OPEN}. If {@code false}, the method will return
+     *                     without action if the connection is already considered open.
+     * @return {@code true} if the connection was successfully initiated, {@code false} if the
+     *         connection was already open and {@code forceConnect} was {@code false}.
+     * @throws IOException if an I/O error occurs during negotiation or if the connection times out.
+     * @throws InterruptedException if the thread is interrupted during the connection process.
+     */
+    private boolean connect(boolean forceConnect) throws IOException, InterruptedException {
+        if (operationalState == OperationalState.OPEN  && !forceConnect) {
+            LOG.warn("The connection is already open. Connect() has no effect.");
+            return false;
+        }
+
+        // In case we have an open websocket, close it
+        if (null != webSocket) webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
+
+        // Check if we need to instantiate the http client
+        if (null == httpClient) httpClient = HttpClient.newHttpClient();
+
+        try {
+            Instant startInstant = Instant.now();
+            connectionState = State.READY;
+            operationalState = OperationalState.OPEN;
+            webSocket = negotiateWebsocket();
+
+            // try for 20 seconds to establish a SignalR connection
+            while (Duration.between(startInstant, Instant.now()).compareTo(Duration.ofSeconds(20)) < 1
+                    && connectionState != State.CONNECTED) {
+                LOG.debug("Checking connection state. State: {}, duration: {}", connectionState, Duration.between(startInstant, Instant.now()));
+                Thread.sleep(1000);
+            }
+            if (connectionState != State.CONNECTED) {
+                throw new IOException("Timeout. Unable to establish connection to hub.");
+            }
+
+            // Check the executor service
+            if (null == executorService || executorService.isShutdown()) executorService = Executors.newSingleThreadScheduledExecutor();
+
+            // Start a scheduled task to check state (close, reconnect)
+            executorService.scheduleAtFixedRate(this::asyncKeepAliveLoop, 1, 1, TimeUnit.SECONDS);
+            subscribeToAll();
+
+        } catch (Exception e) {
+            operationalState = OperationalState.CLOSED;
+            connectionState = State.READY;
+            webSocket = null;
+            throw e;
+        }
+
+        return true;
     }
     
     /**
@@ -309,6 +336,8 @@ public abstract class F1HubConnection {
         } else {
             if (connectionState != State.CONNECTING && connectionState != State.CONNECTED) {
                 LOG.debug(loggingPrefix + "Hub connection state: {}", connectionState);
+                LOG.warn(loggingPrefix + "Not connected to the SignalR hub. Connection state: {}. Will try to reconnect...",
+                        connectionState);
                 try {
                     connect();
                     errorCounter = 0;
@@ -323,6 +352,9 @@ public abstract class F1HubConnection {
             } else {
                 // Check if we have received a keep alive message recently
                 if (Duration.between(lastKeepAliveMessage, Instant.now()).compareTo(keepAliveTimeout) > 0) {
+                    LOG.warn(loggingPrefix + "Looks like we have a connection with the SignalR hub, but have not received a keep alive message in a while. "
+                            + "Connection state: {}, duration since last keep alive message: {}. Will try to reconnect...",
+                            connectionState, Duration.between(lastKeepAliveMessage, Instant.now()));
                     // It has been too long since the last keep alive message. We need to try and reconnect.
                     // In case we have an open websocket, close it
                     if (null != webSocket) webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
@@ -339,6 +371,8 @@ public abstract class F1HubConnection {
                             close();
                         }
                     }
+                } else {
+                    LOG.info(loggingPrefix + "Trying to establish connection to hub...");
                 }
             }
         }
