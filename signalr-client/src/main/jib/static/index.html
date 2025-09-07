@@ -83,7 +83,7 @@
         }
 
         function updateStatus(status) {
-            document.getElementById('connector-status').textContent = status.sessionStatus;
+            document.getElementById('connector-status').textContent = status.connectorStatus;
             document.getElementById('live-timing-hub-status').textContent = status.connectorOperationalStatus;
             document.getElementById('signalr-status').textContent = status.connectorConnectionStatus;
 

@@ -82,6 +82,8 @@ public class ConnectorStatusHttpServer {
                     exchange.sendResponseHeaders(405, -1); //405 method not allowed
                     return;
                 }
+                ConnectorStatus connectorStatus = Client.getConnectorStatus();
+
                 String defaultSessionInfoString = "No session info available";
 
                 SessionInfo sessionInfo = Client.getSessionInfo()
@@ -89,6 +91,7 @@ public class ConnectorStatusHttpServer {
 
                 // build the response json tree model
                 ObjectNode rootNode = objectMapper.createObjectNode();
+                rootNode.put("connectorStatus", connectorStatus.connectorState());
                 rootNode.put("connectorOperationalStatus", Client.getHubConnection().getOperationalState());
                 rootNode.put("connectorConnectionStatus", Client.getHubConnection().getConnectionState());
                 rootNode.put("sessionStatus", sessionInfo.status());

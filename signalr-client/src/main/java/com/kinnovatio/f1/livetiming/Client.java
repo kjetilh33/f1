@@ -18,12 +18,11 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
@@ -55,6 +54,12 @@ public class Client {
 
     private static SessionInfo sessionInfo = null;
 
+    private static final int MESSAGE_QUEUE_MAX_SIZE = 10;
+    private static final Deque<LiveTimingMessage> messageQueue = new ArrayDeque<>(MESSAGE_QUEUE_MAX_SIZE);
+
+    private static final AtomicInteger messageCounter = new AtomicInteger(0);
+    private static final int MESSAGE_COUNTER_HISTORY_MAX_SIZE = 60 * 30;
+    private static final Deque<Integer> messageCounterHistory = new ArrayDeque<>(MESSAGE_COUNTER_HISTORY_MAX_SIZE);
 
     // Metrics configs. From config file / env variables
     private static final boolean enableMetrics =
@@ -156,6 +161,7 @@ public class Client {
 
     private static void processLiveTimingMessage(LiveTimingMessage message) {
         messageReceivedCounter.labelValues(message.category()).inc();
+        addToMessageQueue(message);
 
         if (message.category().equalsIgnoreCase("SessionInfo")) {
             LOG.info(message.toString());
@@ -190,12 +196,23 @@ public class Client {
         lastSessionCheck = Instant.now();
     }
 
+    private static void addToMessageQueue(LiveTimingMessage message) {
+        messageQueue.add(message);
+        if (messageQueue.size() > MESSAGE_QUEUE_MAX_SIZE) {
+            messageQueue.pollFirst();
+        }
+    }
+
     public static Optional<SessionInfo> getSessionInfo() {
         return Optional.ofNullable(sessionInfo);
     }
 
     public static F1HubConnection getHubConnection() {
         return hubConnection;
+    }
+
+    public static ConnectorStatus getConnectorStatus() {
+        return new ConnectorStatus(connectorState.getStatus(), List.copyOf(messageQueue));
     }
 
     private static void asyncKeepAliveLoop() {
@@ -248,8 +265,18 @@ public class Client {
     }
 
     enum State {
-        NO_SESSION,
-        LIVE_SESSION,
-        UNKNOWN
+        NO_SESSION ("Waiting for next session to start."),
+        LIVE_SESSION ("Streaming live timing data."),
+        UNKNOWN ("Unknown state.");
+
+        private final String status;
+
+        public String getStatus() {
+            return status;
+        }
+
+        State(String status) {
+            this.status = status;
+        }
     }
 }
