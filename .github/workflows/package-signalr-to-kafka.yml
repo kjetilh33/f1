@@ -8,7 +8,7 @@ on:
       - "signalr-client/**"
       
 jobs:
-  package-signalr-mock-server:
+  package-signalr-to-kafka:
     uses: "kjetilh33/utilities/.github/workflows/java-maven-skaffold-build-push-ghcr.yml@main"
     with:
       repositoryFolder: "./signalr-client/"
