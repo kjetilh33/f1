@@ -6,7 +6,7 @@ on:
       - "signalr-client/**"
       
 jobs:
-  build-signalr-mock-server:
+  build-signalr-to-kakfka:
     uses: "kjetilh33/utilities/.github/workflows/java-maven-skaffold-build.yml@main"
     with:
       repositoryFolder: "./signalr-client/" 
