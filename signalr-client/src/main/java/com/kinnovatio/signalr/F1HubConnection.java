@@ -217,10 +217,10 @@ public abstract class F1HubConnection {
     /**
      * Checks if the client is currently connected to the SignalR hub.
      *
-     * @return {@code true} if the connection state is {@link State#CONNECTED}, {@code false} otherwise.
+     * @return {@code true} if the connection state is {@link OperationalState#OPEN}, {@code false} otherwise.
      */
     public boolean isConnected() {
-        return connectionState == State.CONNECTED;
+        return operationalState == OperationalState.OPEN;
     }
 
     /**
@@ -305,7 +305,7 @@ public abstract class F1HubConnection {
             LOG.debug(loggingPrefix + "Hub executor service isShutdown: {}, isTerminated: {}",
                     executorService.isShutdown(),
                     executorService.isTerminated());
-            executorService.shutdownNow();
+            this.close();
         } else {
             if (connectionState != State.CONNECTING && connectionState != State.CONNECTED) {
                 LOG.debug(loggingPrefix + "Hub connection state: {}", connectionState);
