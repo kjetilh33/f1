@@ -92,7 +92,7 @@ public class ConnectorStatusHttpServer {
                 rootNode.put("connectorOperationalStatus", Client.getHubConnection().getOperationalState());
                 rootNode.put("connectorConnectionStatus", Client.getHubConnection().getConnectionState());
                 rootNode.put("sessionStatus", sessionInfo.status());
-                rootNode.put("sessionName", sessionInfo.meetingName());
+                rootNode.put("meetingName", sessionInfo.meetingName());
                 rootNode.put("sessionType", sessionInfo.type());
                 rootNode.put("sessionStartDate", sessionInfo.startDate());
                 rootNode.put("sessionEndDate", sessionInfo.endDate());

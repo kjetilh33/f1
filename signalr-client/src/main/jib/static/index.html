@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bootstrap and Tailwind Example</title>
+    <title>F1 live timing connector</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Tailwind CSS -->
@@ -17,19 +17,38 @@
 </div>
 
 <div class="container mt-5">
+  <div class="row mb-4">
+    <div class="col-sm-6">
+      <h3 class="text-lg font-bold text-center">F1 Session status</h3>
+      <div class="grid grid-cols-2 grid-rows-5 gap-2">
+        <div>Event: </div>
+        <div id="meeting-name">Waiting for status...</div>
+        <div>Session: </div>
+        <div id="session-name">Waiting for status...</div>
+        <div>Session status:</div>
+        <div id="session-status">Waiting for status...</div>
+        <div>Session start date: </div>
+        <div id="session-start-date">Waiting for status...</div>
+        <div>Session end date:</div>
+        <div id="session-end-date">Waiting for status...</div>
+      </div>      
+    </div>
+    <div class="col-sm-6">
+      <h3 class="text-lg font-bold text-center">Live timing connector</h3>
+      <div class="grid grid-cols-2 grid-rows-3 gap-2">
+        <div>Connector status:</div>
+        <div id="connector-status">Waiting for status...</div>
+        <div>Live timing hub status:</div>
+        <div id="live-timing-hub-status">Waiting for status...</div>
+        <div>SignalR operational status:</div>
+        <div id="signalr-status">Waiting for status...</div>
+      </div>  
+    </div>
+    
+  </div>
   <div class="row">
-    <div class="col-sm-4">
-      <h3>F1 Session</h3>
-      <p id="f1-session-status">...</p>
-      
-    </div>
-    <div class="col-sm-4">
-      <h3>Live timing connector</h3>
-      <p id="live-timing-connector-status">...</p>
-   
-    </div>
-    <div class="col-sm-4">
-      <h3>Live timing messages</h3>        
+    <div class="col-sm-12">
+      <h3 class="text-lg font-bold text-center">Live timing messages</h3>        
       <p id="live-timing-messages">...</p>
 
     </div>
@@ -64,9 +83,15 @@
         }
 
         function updateStatus(status) {
-            document.getElementById('f1-session-status').textContent = status.sessionStatus;
-            document.getElementById('live-timing-connector-status').textContent = status.connectorStatus;
-            document.getElementById('live-timing-messages').textContent = status.messagesStatus;  
+            document.getElementById('connector-status').textContent = status.sessionStatus;
+            document.getElementById('live-timing-hub-status').textContent = status.connectorOperationalStatus;
+            document.getElementById('signalr-status').textContent = status.connectorConnectionStatus;
+
+            document.getElementById('meeting-name').textContent = status.sessionName;
+            document.getElementById('session-name').textContent = status.sessionType;
+            document.getElementById('session-status').textContent = status.sessionStatus;
+            document.getElementById('session-start-date').textContent = status.sessionStartDate;
+            document.getElementById('session-end-date').textContent = status.sessionEndDate;  
             document.getElementById('last-updated').textContent = new Date().toLocaleString();
         }
     </script>
