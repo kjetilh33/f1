@@ -50,16 +50,10 @@ public class Client {
     private static F1HubConnection hubConnection;
     private static State connectorState = State.UNKNOWN;
     private static Instant lastSessionCheck = Instant.now();
-    private static ScheduledExecutorService executorService = null;
+    private static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     private static SessionInfo sessionInfo = null;
-
-    private static final int MESSAGE_QUEUE_MAX_SIZE = 10;
-    private static final Deque<LiveTimingMessage> messageQueue = new ArrayDeque<>(MESSAGE_QUEUE_MAX_SIZE);
-
-    private static final AtomicInteger messageCounter = new AtomicInteger(0);
-    private static final int MESSAGE_COUNTER_HISTORY_MAX_SIZE = 60 * 30;
-    private static final Deque<Integer> messageCounterHistory = new ArrayDeque<>(MESSAGE_COUNTER_HISTORY_MAX_SIZE);
+    private static final StatsMonitor statsMonitor = StatsMonitor.create().start();
 
     // Metrics configs. From config file / env variables
     private static final boolean enableMetrics =
@@ -132,7 +126,6 @@ public class Client {
         }
 
         // Start the background keep-alive task
-        executorService = Executors.newSingleThreadScheduledExecutor();
         executorService.scheduleAtFixedRate(Client::asyncKeepAliveLoop, 10, 2, TimeUnit.SECONDS);
     }
 
@@ -161,7 +154,8 @@ public class Client {
 
     private static void processLiveTimingMessage(LiveTimingMessage message) {
         messageReceivedCounter.labelValues(message.category()).inc();
-        addToMessageQueue(message);
+        statsMonitor.addToMessageQueue(message);
+        statsMonitor.incMessageCounter();
 
         if (message.category().equalsIgnoreCase("SessionInfo")) {
             LOG.info(message.toString());
@@ -196,13 +190,6 @@ public class Client {
         lastSessionCheck = Instant.now();
     }
 
-    private static void addToMessageQueue(LiveTimingMessage message) {
-        messageQueue.add(message);
-        if (messageQueue.size() > MESSAGE_QUEUE_MAX_SIZE) {
-            messageQueue.pollFirst();
-        }
-    }
-
     public static Optional<SessionInfo> getSessionInfo() {
         return Optional.ofNullable(sessionInfo);
     }
@@ -212,7 +199,7 @@ public class Client {
     }
 
     public static ConnectorStatus getConnectorStatus() {
-        return new ConnectorStatus(connectorState.getStatus(), List.copyOf(messageQueue));
+        return new ConnectorStatus(connectorState.getStatus(), statsMonitor.getMessagesFromQueue());
     }
 
     private static void asyncKeepAliveLoop() {
