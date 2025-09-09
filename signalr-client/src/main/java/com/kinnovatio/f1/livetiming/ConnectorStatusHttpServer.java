@@ -1,8 +1,11 @@
 package com.kinnovatio.f1.livetiming;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.kinnovatio.signalr.F1HubConnection;
+
+import com.kinnovatio.signalr.messages.LiveTimingMessage;
+import org.apache.commons.lang3.StringUtils;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -99,6 +102,37 @@ public class ConnectorStatusHttpServer {
                 rootNode.put("sessionType", sessionInfo.type());
                 rootNode.put("sessionStartDate", sessionInfo.startDate());
                 rootNode.put("sessionEndDate", sessionInfo.endDate());
+
+                // add messages from queue
+                ArrayNode messages = objectMapper.createArrayNode();
+                for (LiveTimingMessage message : connectorStatus.messages()) {
+                    ObjectNode messageRoot = objectMapper.createObjectNode();
+                    messageRoot.put("timestampEpoch", message.timestamp().toEpochSecond());
+                    messageRoot.put("category", message.category());
+                    messageRoot.put("message", StringUtils.truncate(message.message(), 100));
+                    messages.add(messageRoot);
+                }
+                rootNode.set("messages", messages);
+
+                // add message rate per second
+                ArrayNode messageRatePerSecond = objectMapper.createArrayNode();
+                for (RateTuple rateTuple : connectorStatus.messageRatePerSecond()) {
+                    ObjectNode tupleRoot = objectMapper.createObjectNode();
+                    tupleRoot.put("timestampEpoch", rateTuple.instant().getEpochSecond());
+                    tupleRoot.put("count", rateTuple.count());
+                    messageRatePerSecond.add(tupleRoot);
+                }
+                rootNode.set("messageRatePerSecond", messageRatePerSecond);
+
+                // add message rate per minute
+                ArrayNode messageRatePerMinute = objectMapper.createArrayNode();
+                for (RateTuple rateTuple : connectorStatus.messageRatePerMinute()) {
+                    ObjectNode tupleRoot = objectMapper.createObjectNode();
+                    tupleRoot.put("timestampEpoch", rateTuple.instant().getEpochSecond());
+                    tupleRoot.put("count", rateTuple.count());
+                    messageRatePerSecond.add(tupleRoot);
+                }
+                rootNode.set("messageRatePerMinute", messageRatePerMinute);
 
                 String jsonResponse = rootNode.toString();
                 byte[] responseBytes = jsonResponse.getBytes(StandardCharsets.UTF_8);

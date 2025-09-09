@@ -11,7 +11,6 @@ import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.core.metrics.Gauge;
 import io.prometheus.metrics.core.metrics.StateSet;
 import io.prometheus.metrics.instrumentation.jvm.JvmMetrics;
-import io.prometheus.metrics.model.snapshots.Unit;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,6 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
@@ -199,7 +197,8 @@ public class Client {
     }
 
     public static ConnectorStatus getConnectorStatus() {
-        return new ConnectorStatus(connectorState.getStatus(), statsMonitor.getMessagesFromQueue());
+        return new ConnectorStatus(connectorState.getStatus(), statsMonitor.getMessagesFromQueue(),
+                statsMonitor.getMessageRatePerSecond(), statsMonitor.getMessageRatePerMinute());
     }
 
     private static void asyncKeepAliveLoop() {

@@ -19,6 +19,7 @@
         <auto-value.version>1.11.0</auto-value.version>
         <jackson.version>2.20.0</jackson.version>
         <slf4j-api.version>2.0.17</slf4j-api.version>
+        <commons-lang3.version>3.18.0</commons-lang3.version>
         <logback-classic.version>1.5.18</logback-classic.version>
         <smallrye.config.version>3.13.4</smallrye.config.version>
         <io.prometheus.version>1.4.1</io.prometheus.version>
@@ -48,6 +49,11 @@
             <groupId>com.google.auto.value</groupId>
             <artifactId>auto-value-annotations</artifactId>
             <version>${auto-value.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
