@@ -10,55 +10,63 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body>
-<div class="container-fluid p-5 bg-primary text-white text-center">
-    <h1>Status</h1>
-    <p>Connector status</p> 
-    <p>Last updated: <span id="last-updated">Not updated</span></p>
-</div>
-
-<div class="container mt-5">
-  <div class="row mb-4">
-    <div class="col-sm-6">
-      <h3 class="text-lg font-bold text-center">F1 Session status</h3>
-      <div class="grid grid-cols-2 grid-rows-5 gap-2">
-        <div>Event: </div>
-        <div id="meeting-name">Waiting for status...</div>
-        <div>Session: </div>
-        <div id="session-name">Waiting for status...</div>
-        <div>Session status:</div>
-        <div id="session-status">Waiting for status...</div>
-        <div>Session start date: </div>
-        <div id="session-start-date">Waiting for status...</div>
-        <div>Session end date:</div>
-        <div id="session-end-date">Waiting for status...</div>
-      </div>      
-    </div>
-    <div class="col-sm-6">
-      <h3 class="text-lg font-bold text-center">Live timing connector</h3>
-      <div class="grid grid-cols-2 grid-rows-3 gap-2">
-        <div>Connector status:</div>
-        <div id="connector-status">Waiting for status...</div>
-        <div>Live timing hub status:</div>
-        <div id="live-timing-hub-status">Waiting for status...</div>
-        <div>SignalR operational status:</div>
-        <div id="signalr-status">Waiting for status...</div>
-      </div>  
-    </div>
-    
+  <div class="container-fluid p-5 bg-primary text-white text-center">
+      <h1>Status</h1>
+      <p>Connector status</p> 
+      <p>Last updated: <span id="last-updated">Not updated</span></p>
   </div>
-  <div class="row">
-    <div class="col-sm-12">
-      <h3 class="text-lg font-bold text-center">Live timing messages</h3>        
-      <p id="live-timing-messages">...</p>
 
+  <div class="container mt-5">
+    <div class="row mb-4">
+      <div class="col-sm-6">
+        <h3 class="text-lg font-bold text-center">F1 Session status</h3>
+        <div class="grid grid-cols-2 grid-rows-5 gap-2">
+          <div>Event: </div>
+          <div id="meeting-name">Waiting for status...</div>
+          <div>Session: </div>
+          <div id="session-name">Waiting for status...</div>
+          <div>Session status:</div>
+          <div id="session-status">Waiting for status...</div>
+          <div>Session start date: </div>
+          <div id="session-start-date">Waiting for status...</div>
+          <div>Session end date:</div>
+          <div id="session-end-date">Waiting for status...</div>
+        </div>      
+      </div>
+      <div class="col-sm-6">
+        <h3 class="text-lg font-bold text-center">Live timing connector</h3>
+        <div class="grid grid-cols-2 grid-rows-3 gap-2">
+          <div>Connector status:</div>
+          <div id="connector-status">Waiting for status...</div>
+          <div>Live timing hub status:</div>
+          <div id="live-timing-hub-status">Waiting for status...</div>
+          <div>SignalR operational status:</div>
+          <div id="signalr-status">Waiting for status...</div>
+        </div>  
+      </div>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-sm-6">
+        <canvas id="chart-minutes"></canvas>
+      </div>
+      <div class="col-sm-6">
+        <canvas id="chart-seconds"></canvas>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-sm-12">
+        <h3 class="text-lg font-bold text-center">Live timing messages</h3>        
+        <div id="live-timing-messages-container"></div>
+
+      </div>
     </div>
   </div>
-</div>
-
-    <!-- Your content here -->
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             fetchData();
@@ -78,6 +86,7 @@
                 .then(data => {
                     console.log(data);
                     updateStatus(data);
+                    updateLiveTimingMessages(data);
                 })
                 .catch(error => console.error('Error:', error));
         }
@@ -93,6 +102,99 @@
             document.getElementById('session-start-date').textContent = status.sessionStartDate;
             document.getElementById('session-end-date').textContent = status.sessionEndDate;  
             document.getElementById('last-updated').textContent = new Date().toLocaleString();
+        }
+
+        function updateLiveTimingMessages(status) {
+          const tableContainer = document.getElementById('live-timing-messages-container');
+
+          // Clear any existing content
+          tableContainer.innerHTML = '';
+
+          // Create the table element
+          const table = document.createElement('table');
+          table.classList.add('table', 'table-striped', 'table-hover', 'w-full', 'border', 'border-collapse');
+
+          // Create the table header (thead)
+          const thead = table.createTHead();
+          const headerRow = thead.insertRow();
+
+          // Define headers
+          const headers = ["Timestamp", "Category", "Message Text"];
+          headers.forEach(headerText => {
+            const th = document.createElement('th');
+            th.textContent = headerText;
+            th.classList.add('px-4', 'py-2', 'bg-gray-200', 'font-bold', 'text-left');
+            headerRow.appendChild(th);
+          });
+
+          // Create the table body (tbody)
+          const tbody = table.createTBody();
+
+          // Populate the table with message data
+          status.messages.forEach(message => {
+            const row = tbody.insertRow();
+            row.classList.add('border-t', 'border-gray-300');
+
+            // Add cells for timestamp, category, and message text
+            const timestampCell = row.insertCell();
+            timestampCell.textContent = new Date(message.timestampEpoch * 1000).toLocaleString();
+            timestampCell.classList.add('px-4', 'py-2');
+
+            const categoryCell = row.insertCell();
+            categoryCell.textContent = message.category;
+            // Add conditional styling based on category
+            if (message.category === "Error") {
+              categoryCell.classList.add('font-semibold', 'text-red-600');
+            } else if (message.category === "Warning") {
+              categoryCell.classList.add('font-semibold', 'text-yellow-600');
+            } else if (message.category === "Info") {
+              categoryCell.classList.add('font-semibold', 'text-green-600');
+            }
+            categoryCell.classList.add('px-4', 'py-2');
+
+            const messageCell = row.insertCell();
+            messageCell.textContent = message.message;
+            messageCell.classList.add('px-4', 'py-2');
+          });
+
+          // Append the completed table to the container
+          tableContainer.appendChild(table);
+        }
+
+
+        // Set up the charts
+        let secondsChartData = [{x: 1, y: 0}];
+        let minutesChartData = [{x: 1, y: 0}];
+        
+        const secondsChartOptions = {
+          type: 'line',
+          data: {
+            datasets: [{
+              label: "Records per second",
+              data: secondsChartData,
+              backgroundColor: "rgba(75, 192, 192, 0.2)",
+              borderColor: "rgba(75, 192, 192, 1)",
+              borderWidth: 1
+            }]
+          }          
+        };
+        const minutesChartOptions = {
+          type: 'line',
+          data: {
+            datasets: [{
+              label: "Records per minute",
+              data: minutesChartData,
+              backgroundColor: "rgba(75, 192, 192, 0.2)",
+              borderColor: "rgba(75, 192, 192, 1)",
+              borderWidth: 1
+            }]
+          }
+        };
+        const secondsChart = new Chart(document.getElementById("chart-seconds"), secondsChartOptions);
+        const minutesChart = new Chart(document.getElementById("chart-minutes"), minutesChartOptions);
+
+        function updateCharts(data) {
+          // Update the seconds chart
         }
     </script>
 </body>
