@@ -2,6 +2,8 @@ package com.kinnovatio.f1.livetiming;
 
 import com.google.auto.value.AutoValue;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -14,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @AutoValue
 public abstract class StatsMonitor {
+    private static final Logger LOG = LoggerFactory.getLogger(StatsMonitor.class);
     private static final int DEFAULT_MAX_TIME_UNITS = 1800;  // 30 minutes + 30 hours
     private static final int DEFAULT_MESSAGE_QUEUE_SIZE = 10;
 
@@ -60,14 +63,20 @@ public abstract class StatsMonitor {
         executorService.scheduleAtFixedRate(() -> {
             // Get the current count and reset the counter
             int currentCountSeconds = messageCounterPerSecond.getAndSet(0);
-            messageCounterHistorySeconds.add(new RateTuple(currentCountSeconds, Instant.now()) );
+            messageCounterHistorySeconds.add(new RateTuple(currentCountSeconds, Instant.now()));
+            if (messageCounterHistorySeconds.size() > getMaxTimeUnits()) {
+                messageCounterHistorySeconds.pollFirst();
+            }
         }, 1, 1, TimeUnit.SECONDS);
 
         // Start a task to track the message rate per minute
         executorService.scheduleAtFixedRate(() -> {
             // Get the current count and reset the counter
             int currentCountMinutes = messageCounterPerMinute.getAndSet(0);
-            messageCounterHistoryMinutes.add(new RateTuple(currentCountMinutes, Instant.now()) );
+            messageCounterHistoryMinutes.add(new RateTuple(currentCountMinutes, Instant.now()));
+            if (messageCounterHistoryMinutes.size() > getMaxTimeUnits()) {
+                messageCounterHistoryMinutes.pollFirst();
+            }
         }, 1, 1, TimeUnit.MINUTES);
 
         return this;

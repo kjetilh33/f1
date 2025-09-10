@@ -130,7 +130,7 @@ public class ConnectorStatusHttpServer {
                     ObjectNode tupleRoot = objectMapper.createObjectNode();
                     tupleRoot.put("timestampEpoch", rateTuple.instant().getEpochSecond());
                     tupleRoot.put("count", rateTuple.count());
-                    messageRatePerSecond.add(tupleRoot);
+                    messageRatePerMinute.add(tupleRoot);
                 }
                 rootNode.set("messageRatePerMinute", messageRatePerMinute);
 
