@@ -90,7 +90,8 @@ public class ConnectorStatusHttpServer {
                 String defaultSessionInfoString = "No session info available";
 
                 SessionInfo sessionInfo = Client.getSessionInfo()
-                        .orElse(new SessionInfo(defaultSessionInfoString, defaultSessionInfoString, defaultSessionInfoString, defaultSessionInfoString, defaultSessionInfoString));
+                        .orElse(new SessionInfo(defaultSessionInfoString, defaultSessionInfoString, defaultSessionInfoString,
+                                defaultSessionInfoString, defaultSessionInfoString, defaultSessionInfoString));
 
                 // build the response json tree model
                 ObjectNode rootNode = objectMapper.createObjectNode();
