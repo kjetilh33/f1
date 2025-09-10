@@ -279,7 +279,7 @@ public class Client {
     }
 
     public static ConnectorStatus getConnectorStatus() {
-        return new ConnectorStatus(connectorState.getStatus(), statsMonitor.getMessagesFromQueue(),
+        return new ConnectorStatus(connectorState.getStatus(), lastSessionCheck, statsMonitor.getMessagesFromQueue(),
                 statsMonitor.getMessageRatePerSecond(), statsMonitor.getMessageRatePerMinute());
     }
 
