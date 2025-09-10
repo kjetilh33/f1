@@ -186,12 +186,9 @@
             }]
           },
           options: {
-            plugins: {
-              decimation: {
-                enabled: true,
-                algorithm: 'lttb',
-                samples: 30,
-                threshold: 30
+            elements: {
+              line: {
+                tension: 0.4
               }
             },
             scales: {
@@ -221,6 +218,11 @@
             }]
           },
           options: {
+            elements: {
+              line: {
+                tension: 0.4
+              }
+            },
             scales: {
                 x: {
                     type: 'time',

@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @AutoValue
 public abstract class StatsMonitor {
     private static final Logger LOG = LoggerFactory.getLogger(StatsMonitor.class);
-    private static final int DEFAULT_MAX_TIME_UNITS = 1800;  // 30 minutes + 30 hours
+    private static final int DEFAULT_MAX_TIME_UNITS = 120;  // 30 minutes + 30 hours
     private static final int DEFAULT_MESSAGE_QUEUE_SIZE = 10;
 
     private final Deque<LiveTimingMessage> messageQueue = new ArrayDeque<>(DEFAULT_MESSAGE_QUEUE_SIZE);
