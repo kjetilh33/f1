@@ -67,14 +67,19 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
+    <!--
+    <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+     -->
+    <script src="https://cdn.jsdelivr.net/npm/luxon"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
     <script>
+
         document.addEventListener('DOMContentLoaded', () => {
             fetchData();
         });
 
-        const intervalTime = 1000; // 1 seconds
+        const intervalTime = 2000; // 2 seconds
         setInterval(fetchData, intervalTime);
 
         function fetchData() {
@@ -181,12 +186,24 @@
             }]
           },
           options: {
+            plugins: {
+              decimation: {
+                enabled: true,
+                algorithm: 'lttb',
+                samples: 50
+              }
+            },
             scales: {
                 x: {
                     type: 'time',
                     time: {
                         unit: 'second' // You can specify a unit like 'day', 'month', 'year', etc.
-                    }
+                    },
+                adapters: {
+                  date: {
+                      //locale: enUS,
+                  }
+                }
                 }
             }
           }
@@ -208,8 +225,13 @@
                     type: 'time',
                     time: {
                         unit: 'minute' // You can specify a unit like 'day', 'month', 'year', etc.
+                    },
+                  adapters: {
+                    date: {
+                        //locale: enUS,
                     }
-                }
+                  }
+                  }
             }
           }
         };
@@ -218,15 +240,22 @@
 
         function updateCharts(data) {
           // Update the seconds chart
-          const secondsData = data.messageRatePerSecond.map(item => {
-            const date = new Date(item.timestampEpoch * 1000);
-            return {x: date, y: item.count};
-          });
+          secondsChartData.length = 0;
 
-          secondsChartData = secondsData;
+          for (const item of data.messageRatePerSecond) {
+            const date = new Date(item.timestampEpoch * 1000);
+            secondsChartData.push({x: date, y: item.count});
+          }
           secondsChart.update();         
 
+          // Update the minutes chart
+          minutesChartData.length = 0;
 
+          for (const item of data.messageRatePerMinute) {
+            const date = new Date(item.timestampEpoch * 1000);
+            minutesChartData.push({x: date, y: item.count});
+          }
+          minutesChart.update();
         }
           
     </script>
