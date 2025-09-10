@@ -48,6 +48,8 @@ public class Client {
     private static F1HubConnection hubConnection;
     private static State connectorState = State.UNKNOWN;
     private static Instant lastSessionCheck = Instant.now();
+    private static Instant lastMessageReceived = Instant.now();
+    private static final String defaultSessionStringValue = "No information available";
     private static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     private static SessionInfo sessionInfo = null;
@@ -155,30 +157,88 @@ public class Client {
         statsMonitor.addToMessageQueue(message);
         statsMonitor.incMessageCounter();
 
+        updateSessionStatus(message);
+
+    }
+
+    private static void updateSessionStatus(LiveTimingMessage message) {
+        Duration timeSinceLastMessage = Duration.between(lastMessageReceived, Instant.now());
+        lastMessageReceived = Instant.now();
+
         if (message.category().equalsIgnoreCase("SessionInfo")) {
             LOG.info(message.toString());
             try {
-                checkSessionStatus(message.message());
+                Objects.requireNonNull(message.message());
+                JsonNode root = objectMapper.readTree(message.message());
+
+                // set default/fallback values
+                String meetingName = defaultSessionStringValue;
+                String sessionStatus = defaultSessionStringValue;
+                String archiveStatus = defaultSessionStringValue;
+                String sessionType = defaultSessionStringValue;
+                String startDateString = defaultSessionStringValue;
+                String endDateString = defaultSessionStringValue;
+
+                if (sessionInfo != null) {
+                    // We have existing session info. Use it.
+                    meetingName = sessionInfo.meetingName();
+                    sessionStatus = sessionInfo.status();
+                    archiveStatus = sessionInfo.archiveStatus();
+                    sessionType = sessionInfo.type();
+                    startDateString = sessionInfo.startDate();
+                    endDateString = sessionInfo.endDate();
+                }
+
+                // Add the newest update from the message
+                meetingName = root.path("Meeting").path("Name").asText(meetingName);
+                sessionStatus = root.path("SessionStatus").asText(sessionStatus);
+                archiveStatus = root.path("ArchiveStatus").path("Status").asText(archiveStatus);
+                sessionType = root.path("Type").asText(sessionType);
+                startDateString = root.path("StartDate").asText(startDateString);
+                endDateString = root.path("EndDate").asText(endDateString);
+
+                // Store the session info
+                sessionInfo = new SessionInfo(meetingName, sessionStatus, sessionType, startDateString, endDateString, archiveStatus);
             } catch (JsonProcessingException e) {
                 LOG.warn("Failed to process session info message. Error: {}", e);
             }
+        } else if (message.category().equalsIgnoreCase("SessionData")) {
+            LOG.info(message.toString());
+            try {
+                Objects.requireNonNull(message.message());
+                JsonNode root = objectMapper.readTree(message.message());
+
+                // set default/fallback values
+                String meetingName = defaultSessionStringValue;
+                String sessionStatus = defaultSessionStringValue;
+                String archiveStatus = defaultSessionStringValue;
+                String sessionType = defaultSessionStringValue;
+                String startDateString = defaultSessionStringValue;
+                String endDateString = defaultSessionStringValue;
+
+                if (sessionInfo != null) {
+                    // We have existing session info. Use it.
+                    meetingName = sessionInfo.meetingName();
+                    sessionStatus = sessionInfo.status();
+                    archiveStatus = sessionInfo.archiveStatus();
+                    sessionType = sessionInfo.type();
+                    startDateString = sessionInfo.startDate();
+                    endDateString = sessionInfo.endDate();
+                }
+
+                // Add the newest update from the message
+                sessionStatus = root.path("SessionStatus").asText(sessionStatus);
+
+                // Store the session info
+                sessionInfo = new SessionInfo(meetingName, sessionStatus, sessionType, startDateString, endDateString, archiveStatus);
+            } catch (JsonProcessingException e) {
+                LOG.warn("Failed to process session data message. Error: {}", e);
+            }
         }
-    }
-
-    private static void checkSessionStatus(String sessionJson) throws JsonProcessingException {
-        Objects.requireNonNull(sessionJson);
-        JsonNode root = objectMapper.readTree(sessionJson);
-        String meetingName = root.path("Meeting").path("Name").asText("No race name");
-        String sessionStatus = root.path("SessionStatus").asText("No session status");
-        String sessionType = root.path("Type").asText("No session type");
-        String startDateString = root.path("StartDate").asText("No start date");
-        String endDateString = root.path("EndDate").asText("No end date");
-
-        // Store the session info
-        sessionInfo = new SessionInfo(meetingName, sessionStatus, sessionType, startDateString, endDateString);
 
         // Evaluate if we have an active session running or not
-        if (sessionStatus.equalsIgnoreCase("Started")) {
+        if (sessionInfo.status().equalsIgnoreCase("Started")
+                || sessionInfo.archiveStatus().equalsIgnoreCase("Generating")) {
             connectorState = State.LIVE_SESSION;
         } else {
             connectorState = State.NO_SESSION;
