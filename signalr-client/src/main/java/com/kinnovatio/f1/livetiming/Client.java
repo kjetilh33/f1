@@ -154,16 +154,18 @@ public class Client {
 
     private static void processLiveTimingMessage(LiveTimingMessage message) {
         messageReceivedCounter.labelValues(message.category()).inc();
+        lastMessageReceived = Instant.now();
         statsMonitor.addToMessageQueue(message);
         statsMonitor.incMessageCounter();
 
-        updateSessionStatus(message);
-
+        if (message.category().equalsIgnoreCase("SessionInfo")
+                || message.category().equalsIgnoreCase("SessionData")) {
+            updateSessionStatus(message);
+        }
     }
 
     private static void updateSessionStatus(LiveTimingMessage message) {
-        Duration timeSinceLastMessage = Duration.between(lastMessageReceived, Instant.now());
-        lastMessageReceived = Instant.now();
+        String loggingPrefix = "updateSessionStatus() - ";
 
         if (message.category().equalsIgnoreCase("SessionInfo")) {
             LOG.info(message.toString());
@@ -197,10 +199,12 @@ public class Client {
                 startDateString = root.path("StartDate").asText(startDateString);
                 endDateString = root.path("EndDate").asText(endDateString);
 
+                LOG.info(loggingPrefix + "We have an updated session status: {}", sessionStatus);
+
                 // Store the session info
                 sessionInfo = new SessionInfo(meetingName, sessionStatus, sessionType, startDateString, endDateString, archiveStatus);
             } catch (JsonProcessingException e) {
-                LOG.warn("Failed to process session info message. Error: {}", e);
+                LOG.warn(loggingPrefix + "Failed to process session info message. Error: {}", e);
             }
         } else if (message.category().equalsIgnoreCase("SessionData")) {
             LOG.info(message.toString());
@@ -227,7 +231,23 @@ public class Client {
                 }
 
                 // Add the newest update from the message
-                sessionStatus = root.path("SessionStatus").asText(sessionStatus);
+                if (root.path("StatusSeries").isObject()) {
+                    // we may have status as a single object entry.
+                    for (JsonNode entry : root.path("StatusSeries")) {
+                        if (entry.path("SessionStatus").isTextual()) {
+                            sessionStatus = entry.path("SessionStatus").asText(sessionStatus);
+                            LOG.info(loggingPrefix + "We have an updated session status: {}", sessionStatus);
+                        }
+                    }
+                } else if (root.path("StatusSeries").isArray()) {
+                    // We have a collection of status objects. Need to iterate over them.
+                    for (JsonNode entry : root.path("StatusSeries")) {
+                        if (entry.path("SessionStatus").isTextual()) {
+                            sessionStatus = entry.path("SessionStatus").asText(sessionStatus);
+                            LOG.info(loggingPrefix + "We have an updated session status: {}", sessionStatus);
+                        }
+                    }
+                }
 
                 // Store the session info
                 sessionInfo = new SessionInfo(meetingName, sessionStatus, sessionType, startDateString, endDateString, archiveStatus);
@@ -237,7 +257,9 @@ public class Client {
         }
 
         // Evaluate if we have an active session running or not
-        if (sessionInfo.status().equalsIgnoreCase("Started")
+        if (sessionInfo == null) {
+            connectorState = State.UNKNOWN;
+        } else if (sessionInfo.status().equalsIgnoreCase("Started")
                 || sessionInfo.archiveStatus().equalsIgnoreCase("Generating")) {
             connectorState = State.LIVE_SESSION;
         } else {
@@ -263,6 +285,7 @@ public class Client {
 
     private static void asyncKeepAliveLoop() {
         final String loggingPrefix = "Connector connection loop - ";
+        Duration timeSinceLastMessage = Duration.between(lastMessageReceived, Instant.now());
         LOG.debug(loggingPrefix + "Connector state = {}", connectorState);
         LOG.debug(loggingPrefix + "Session info = {}", sessionInfo);
         LOG.debug(loggingPrefix + "F1 connection hub connection state = {}", hubConnection.getConnectionState());
@@ -273,7 +296,8 @@ public class Client {
             return;
         }
 
-        if (connectorState == State.LIVE_SESSION) {
+        if (connectorState == State.LIVE_SESSION || timeSinceLastMessage.compareTo(Duration.ofSeconds(30)) < 0) {
+            // We have an ongoing session (or we have messages flowing through)
             if (hubConnection.isConnected()) {
                 // All is good. We have a race session and the connector is running. Do nothing.
             } else {
