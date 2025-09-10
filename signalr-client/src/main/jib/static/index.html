@@ -58,8 +58,25 @@
     <div class="row">
       <div class="col-sm-12">
         <h3 class="text-lg font-bold text-center">Live timing messages</h3>        
-        <div id="live-timing-messages-container"></div>
+        <div id="live-timing-messages-container" class="text-sm"></div>
 
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="messageModalLabel">Full Message Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body max-h-1/2 overflow-y-auto">
+          <p id="modal-full-text" class="break-words text-sm"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -157,9 +174,21 @@
             categoryCell.classList.add('px-4', 'py-2');
 
             const messageCell = row.insertCell();
-            messageCell.textContent = message.message;
+            messageCell.textContent = message.messageShort;
             messageCell.classList.add('px-4', 'py-2');
+
+            // Add click event listener to each row
+            row.addEventListener('click', () => {
+              const modalBody = document.getElementById('modal-full-text');
+              modalBody.textContent = message.message;
+              
+              const messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
+              messageModal.show();
+            });
           });
+
+          
+
 
           // Append the completed table to the container
           tableContainer.appendChild(table);

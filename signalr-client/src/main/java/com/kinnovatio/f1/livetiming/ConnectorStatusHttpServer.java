@@ -109,7 +109,8 @@ public class ConnectorStatusHttpServer {
                     ObjectNode messageRoot = objectMapper.createObjectNode();
                     messageRoot.put("timestampEpoch", message.timestamp().toEpochSecond());
                     messageRoot.put("category", message.category());
-                    messageRoot.put("message", StringUtils.truncate(message.message(), 100));
+                    messageRoot.put("messageShort", StringUtils.truncate(message.message(), 100));
+                    messageRoot.put("message", message.message());
                     messages.add(messageRoot);
                 }
                 rootNode.set("messages", messages);
