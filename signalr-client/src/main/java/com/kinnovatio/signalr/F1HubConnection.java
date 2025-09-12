@@ -507,45 +507,52 @@ public abstract class F1HubConnection {
      * @param message The complete, raw message string received from the WebSocket.
      */
     private void processMessage(String message) {
+        String loggingPrefix = "processMessage() - ";
+
         if (isMessageLogEnabled()) {
-            try {
-                Files.writeString(defaultPathMessageLog, message + "\n",
-                        StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-            } catch (IOException e) {
-                LOG.warn("Failed to write message to log file: {}", e.toString());
-            }
+            logMessage(message);
         }
+
         try {
             switch (connectionState) {
-                case READY -> LOG.error("Message received before connection has been set up. Should not happen.");
+                case READY -> LOG.error(loggingPrefix + "Message received before connection has been set up. Should not happen.");
                 case CONNECTING -> {
                     if (MessageDecoder.isInitMessage(message)) {
                         connectionState = State.CONNECTED;
-                        LOG.info("SignalR hub connection established over websocket.");
+                        LOG.info(loggingPrefix + "SignalR hub connection established over websocket.");
                     }
                 }
                 case CONNECTED -> {
                     if (MessageDecoder.isKeepAliveMessage(message)) {
-                        LOG.debug("Client in state _connected_, received keep alive message.");
+                        LOG.debug(loggingPrefix + "Client in state _connected_, received keep alive message.");
                         lastKeepAliveMessage = Instant.now();
                     } else {
-                        LOG.debug("Client in state _connected_, received subscription message.");
+                        LOG.debug(loggingPrefix + "Client in state _connected_, received subscription message.");
                         notifySubscribers(message);
                     }
                 }
-                case DISCONNECTED -> LOG.error("Message received while disconnected. Should not happen.");
+                case DISCONNECTED -> LOG.error(loggingPrefix + "Message received while disconnected. Should not happen.");
             }
         } catch (JsonProcessingException e) {
             // This is a critical failure, as we can't understand the server.
-            LOG.error("Failed to parse JSON message from the SignalR hub. Message: '{}'", message, e);
+            LOG.error(loggingPrefix + "Failed to parse JSON message from the SignalR hub. Message: '{}'", message, e);
             throw new RuntimeException("Unrecoverable JSON parsing error", e);
         } catch (Exception e) {
             // Catch any other unexpected errors.
-            LOG.error("An unexpected error occurred while processing a message from the hub.", e);
+            LOG.error(loggingPrefix + "An unexpected error occurred while processing a message from the hub.", e);
             throw new RuntimeException(e);
         }
 
-        LOG.trace("Received wss message:\n {}", message);
+        LOG.trace(loggingPrefix + "Received wss message:\n {}", message);
+    }
+
+    private void logMessage(String message) {
+        try {
+            Files.writeString(defaultPathMessageLog, message + "\n",
+                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            LOG.warn("Failed to write message to log file: {}", e.toString());
+        }
     }
 
     /**

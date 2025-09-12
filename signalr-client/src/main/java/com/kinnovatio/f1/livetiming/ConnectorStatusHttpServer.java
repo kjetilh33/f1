@@ -96,9 +96,11 @@ public class ConnectorStatusHttpServer {
                 // build the response json tree model
                 ObjectNode rootNode = objectMapper.createObjectNode();
                 rootNode.put("connectorStatus", connectorStatus.connectorState());
+                rootNode.put("connectorLastSessionCheckEpoch", connectorStatus.lastSessionCheck().getEpochSecond());
                 rootNode.put("connectorOperationalStatus", Client.getHubConnection().getOperationalState());
                 rootNode.put("connectorConnectionStatus", Client.getHubConnection().getConnectionState());
                 rootNode.put("sessionStatus", sessionInfo.status());
+                rootNode.put("archiveStatus", sessionInfo.status());
                 rootNode.put("meetingName", sessionInfo.meetingName());
                 rootNode.put("sessionType", sessionInfo.type());
                 rootNode.put("sessionStartDate", sessionInfo.startDate());
