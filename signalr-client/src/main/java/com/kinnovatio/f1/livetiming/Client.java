@@ -168,7 +168,7 @@ public class Client {
         String loggingPrefix = "updateSessionStatus() - ";
 
         if (message.category().equalsIgnoreCase("SessionInfo")) {
-            LOG.info(message.toString());
+            LOG.info(loggingPrefix + message.toString());
             try {
                 Objects.requireNonNull(message.message());
                 JsonNode root = objectMapper.readTree(message.message());
@@ -207,7 +207,7 @@ public class Client {
                 LOG.warn(loggingPrefix + "Failed to process session info message. Error: {}", e);
             }
         } else if (message.category().equalsIgnoreCase("SessionData")) {
-            LOG.info(message.toString());
+            LOG.info(loggingPrefix + message.toString());
             try {
                 Objects.requireNonNull(message.message());
                 JsonNode root = objectMapper.readTree(message.message());
