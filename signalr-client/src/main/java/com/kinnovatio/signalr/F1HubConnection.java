@@ -82,7 +82,7 @@ public abstract class F1HubConnection {
     private ScheduledExecutorService executorService = null;
 
     // Keep-alive and connection management fields
-    private Instant lastKeepAliveMessage = null;
+    private Instant lastKeepAliveMessage = Instant.now();
     private Duration keepAliveTimeout = Duration.ofSeconds(30);
     private HttpClient httpClient = null;
     private WebSocket webSocket = null;
@@ -334,8 +334,9 @@ public abstract class F1HubConnection {
                     executorService.isTerminated());
             this.close();
         } else {
-            if (connectionState != State.CONNECTING && connectionState != State.CONNECTED) {
-                LOG.debug(loggingPrefix + "Hub connection state: {}", connectionState);
+            // We _should_ be connected (or in the process of establishing a connection)
+            if (connectionState == State.READY || connectionState == State.DISCONNECTED) {
+                // ... But we aren't. Need to take action to connect.
                 LOG.warn(loggingPrefix + "Not connected to the SignalR hub. Connection state: {}. Will try to reconnect...",
                         connectionState);
                 try {
@@ -350,7 +351,8 @@ public abstract class F1HubConnection {
                     }
                 }     
             } else {
-                // Check if we have received a keep alive message recently
+                // We are connected.
+                // Check if we have received a keep alive message recently--this indicates that the connection is alive
                 if (Duration.between(lastKeepAliveMessage, Instant.now()).compareTo(keepAliveTimeout) > 0) {
                     LOG.warn(loggingPrefix + "Looks like we have a connection with the SignalR hub, but have not received a keep alive message in a while. "
                             + "Connection state: {}, duration since last keep alive message: {}. Will try to reconnect...",
@@ -372,7 +374,9 @@ public abstract class F1HubConnection {
                         }
                     }
                 } else {
-                    LOG.info(loggingPrefix + "Trying to establish connection to hub...");
+                    // We are connected _and_ we have received a keep alive message. All is good.
+                    LOG.trace(loggingPrefix + "We are connected to the SignalR hub. Operational state: {}, Connection state: {}",
+                            operationalState, connectionState);
                 }
             }
         }
