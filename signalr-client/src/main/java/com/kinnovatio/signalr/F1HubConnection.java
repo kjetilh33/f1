@@ -8,6 +8,7 @@ import com.google.auto.value.AutoValue;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
 import com.kinnovatio.signalr.messages.MessageDecoder;
+import io.prometheus.metrics.core.metrics.Gauge;
 import io.smallrye.common.constraint.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,6 +89,17 @@ public abstract class F1HubConnection {
     private WebSocket webSocket = null;
     private final SignalrWssListener wssListener = new SignalrWssListener();
     private int errorCounter = 0;
+
+    // Metrics fields
+    static final Gauge connectorConnectionState = Gauge.builder()
+            .name("connector.connection_state")
+            .help("Connector connection state")
+            .register();
+
+    static final Gauge connectorOperationalState = Gauge.builder()
+            .name("connector.operational_state")
+            .help("Connector operational state")
+            .register();
 
     private static F1HubConnection.Builder builder() {
         return new AutoValue_F1HubConnection.Builder()
@@ -244,7 +256,11 @@ public abstract class F1HubConnection {
         try {
             Instant startInstant = Instant.now();
             connectionState = State.READY;
+            connectorConnectionState.set(0);
+
             operationalState = OperationalState.OPEN;
+            connectorOperationalState.set(1);
+
             webSocket = negotiateWebsocket();
 
             // try for 20 seconds to establish a SignalR connection
@@ -266,7 +282,11 @@ public abstract class F1HubConnection {
 
         } catch (Exception e) {
             operationalState = OperationalState.CLOSED;
+            connectorOperationalState.set(0);
+
             connectionState = State.READY;
+            connectorConnectionState.set(0);
+
             webSocket = null;
             throw e;
         }
@@ -299,6 +319,8 @@ public abstract class F1HubConnection {
      */
     public void close() {
         operationalState = OperationalState.CLOSED;
+        connectorOperationalState.set(0);
+
         if (null != executorService) executorService.shutdown();
         if (null != webSocket) {
             webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
@@ -403,6 +425,8 @@ public abstract class F1HubConnection {
      */
     private WebSocket negotiateWebsocket() throws IOException {
         connectionState = State.CONNECTING;
+        connectorConnectionState.set(1);
+
         final ObjectReader objectReader = objectMapper.reader();
 
         URI negotiateURI = getBaseUri().resolve(String.format("%s?%s=%s&%s=%s",
@@ -488,6 +512,8 @@ public abstract class F1HubConnection {
         } catch (Exception e) {
             LOG.error("Error connecting to hub: {}", e.toString());
             connectionState = State.READY;
+            connectorConnectionState.set(0);
+
             throw new IOException(e);
         }
     }
@@ -523,6 +549,8 @@ public abstract class F1HubConnection {
                 case CONNECTING -> {
                     if (MessageDecoder.isInitMessage(message)) {
                         connectionState = State.CONNECTED;
+                        connectorConnectionState.set(2);
+
                         LOG.info(loggingPrefix + "SignalR hub connection established over websocket.");
                     }
                 }
@@ -623,6 +651,8 @@ public abstract class F1HubConnection {
                                           int statusCode,
                                           String reason) {
             connectionState = State.READY;
+            connectorConnectionState.set(0);
+
             LOG.info("Websocket closed. Status code: {}. Reason: {}",
                     statusCode,
                     reason);
@@ -631,6 +661,8 @@ public abstract class F1HubConnection {
 
         public void onError(WebSocket webSocket, Throwable error) {
             connectionState = State.DISCONNECTED;
+            connectorConnectionState.set(3);
+
             LOG.warn("Websocket error: \n {}", error.toString());
         }
     }

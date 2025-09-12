@@ -80,10 +80,9 @@ public class Client {
             .register();
 
 
-    static final StateSet connectorSessionState = StateSet.builder()
+    static final Gauge connectorSessionStateGauge = Gauge.builder()
             .name("connector.session_state")
             .help("Connector session state")
-            .states("sessionActive")
             .register();
 
     static final Gauge errorGauge= Gauge.builder()
@@ -109,6 +108,9 @@ public class Client {
      */
     private static void run() throws Exception {
         LOG.info("Starting container...");
+
+        // Set the initial connector state to UNKNOWN
+        connectorSessionStateGauge.set(0);
 
         // Start the F1 hub connection
         useSignalrCustomClient();
@@ -259,11 +261,14 @@ public class Client {
         // Evaluate if we have an active session running or not
         if (sessionInfo == null) {
             connectorState = State.UNKNOWN;
+            connectorSessionStateGauge.set(0);
         } else if (sessionInfo.status().equalsIgnoreCase("Started")
                 || sessionInfo.archiveStatus().equalsIgnoreCase("Generating")) {
             connectorState = State.LIVE_SESSION;
+            connectorSessionStateGauge.set(2);
         } else {
             connectorState = State.NO_SESSION;
+            connectorSessionStateGauge.set(1);
         }
 
         // Set timestamp of last evaluation
@@ -335,9 +340,9 @@ public class Client {
     }
 
     enum State {
+        UNKNOWN ("Unknown state."),
         NO_SESSION ("Waiting for next session to start."),
-        LIVE_SESSION ("Streaming live timing data."),
-        UNKNOWN ("Unknown state.");
+        LIVE_SESSION ("Streaming live timing data.");
 
         private final String status;
 
