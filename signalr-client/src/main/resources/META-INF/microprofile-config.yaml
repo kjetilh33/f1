@@ -9,6 +9,7 @@ smallrye:
 # Default config settings for your module
 source:
   baseUrl: "http://livetiming.kinnovatio.local/signalr/"
+  #baseUrl: "https://livetiming.formula1.com/signalr/"
 
 # Default configuration for metrics.
 metrics:
