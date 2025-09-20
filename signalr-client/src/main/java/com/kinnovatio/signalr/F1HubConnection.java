@@ -217,7 +217,17 @@ public abstract class F1HubConnection {
     public String getConnectionState() {
         return connectionState.toString();
     }
-    
+
+    private void setOperationalState(OperationalState operationalState) {
+        this.operationalState = operationalState;
+        connectorOperationalState.set(operationalState.getStatusValue());
+    }
+
+    private void setConnectionState(State connectionState) {
+        this.connectionState = connectionState;
+        connectorConnectionState.set(connectionState.getStatusValue());
+    }
+
     /**
      * Initiates or forces a reconnection to the SignalR hub.
      * <p>
@@ -255,11 +265,8 @@ public abstract class F1HubConnection {
 
         try {
             Instant startInstant = Instant.now();
-            connectionState = State.READY;
-            connectorConnectionState.set(0);
-
-            operationalState = OperationalState.OPEN;
-            connectorOperationalState.set(1);
+            setConnectionState(State.READY);
+            setOperationalState(OperationalState.OPEN);
 
             webSocket = negotiateWebsocket();
 
@@ -281,11 +288,8 @@ public abstract class F1HubConnection {
             subscribeToAll();
 
         } catch (Exception e) {
-            operationalState = OperationalState.CLOSED;
-            connectorOperationalState.set(0);
-
-            connectionState = State.READY;
-            connectorConnectionState.set(0);
+            setOperationalState(OperationalState.CLOSED);
+            setConnectionState(State.READY);
 
             webSocket = null;
             throw e;
@@ -318,8 +322,7 @@ public abstract class F1HubConnection {
      * initiates an orderly shutdown of the scheduled executor service that manages the connection.
      */
     public void close() {
-        operationalState = OperationalState.CLOSED;
-        connectorOperationalState.set(0);
+        setOperationalState(OperationalState.CLOSED);
 
         if (null != executorService) executorService.shutdown();
         if (null != webSocket) {
@@ -548,9 +551,7 @@ public abstract class F1HubConnection {
                 case READY -> LOG.error(loggingPrefix + "Message received before connection has been set up. Should not happen.");
                 case CONNECTING -> {
                     if (MessageDecoder.isInitMessage(message)) {
-                        connectionState = State.CONNECTED;
-                        connectorConnectionState.set(2);
-
+                        setConnectionState(State.CONNECTED);
                         LOG.info(loggingPrefix + "SignalR hub connection established over websocket.");
                     }
                 }
@@ -650,9 +651,7 @@ public abstract class F1HubConnection {
         public CompletionStage<?> onClose(WebSocket webSocket,
                                           int statusCode,
                                           String reason) {
-            connectionState = State.READY;
-            connectorConnectionState.set(0);
-
+            setConnectionState(State.READY);
             LOG.info("Websocket closed. Status code: {}. Reason: {}",
                     statusCode,
                     reason);
@@ -660,9 +659,7 @@ public abstract class F1HubConnection {
         }
 
         public void onError(WebSocket webSocket, Throwable error) {
-            connectionState = State.DISCONNECTED;
-            connectorConnectionState.set(3);
-
+            setConnectionState(State.DISCONNECTED);
             LOG.warn("Websocket error: \n {}", error.toString());
         }
     }
@@ -720,13 +717,23 @@ public abstract class F1HubConnection {
          * and the background keep-alive and reconnection tasks will not run. This is the
          * initial state and the state after {@link #close()} is called.
          */
-        CLOSED,
+        CLOSED(0),
         /**
          * The client is active. It will attempt to establish and maintain a connection
          * to the SignalR hub. The background keep-alive and reconnection logic is active
          * in this state. This state is set by a call to {@link #connect()}.
          */
-        OPEN
+        OPEN(1);
+
+        private final int statusValue;
+
+        public int getStatusValue() {
+            return statusValue;
+        }
+
+        OperationalState(int statusValue) {
+            this.statusValue = statusValue;
+        }
     }
 
     @AutoValue.Builder
