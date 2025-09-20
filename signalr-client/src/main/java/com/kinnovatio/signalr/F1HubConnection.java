@@ -679,23 +679,33 @@ public abstract class F1HubConnection {
          * This is the initial state, and also the state after a WebSocket is cleanly closed.
          * From this state, a new connection attempt can begin.
          */
-        READY,
+        READY (0),
         /**
          * The client is in the process of establishing a connection. This includes
          * the HTTP negotiation phase and waiting for the WebSocket to become fully
          * open and receive the SignalR initialization message.
          */
-        CONNECTING,
+        CONNECTING (1),
         /**
          * The WebSocket connection is established, and the SignalR protocol handshake
          * is complete. The client is now able to send and receive data messages.
          */
-        CONNECTED,
+        CONNECTED (2),
         /**
          * The WebSocket connection has been lost due to an error. The background
          * keep-alive loop will attempt to reconnect when the client is in this state.
          */
-        DISCONNECTED
+        DISCONNECTED (3);
+
+        private final int statusValue;
+
+        public int getStatusValue() {
+            return statusValue;
+        }
+
+        State(int statusValue) {
+            this.statusValue = statusValue;
+        }
     }
 
     /**

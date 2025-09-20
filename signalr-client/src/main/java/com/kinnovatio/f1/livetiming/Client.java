@@ -340,17 +340,23 @@ public class Client {
     }
 
     enum State {
-        UNKNOWN ("Unknown state."),
-        NO_SESSION ("Waiting for next session to start."),
-        LIVE_SESSION ("Streaming live timing data.");
+        UNKNOWN (0, "Unknown state."),
+        NO_SESSION (1,"Waiting for next session to start."),
+        LIVE_SESSION (2,"Streaming live timing data.");
 
+        private final int statusValue;
         private final String status;
+
+        public int getStatusValue() {
+            return statusValue;
+        }
 
         public String getStatus() {
             return status;
         }
 
-        State(String status) {
+        State(int statusValue,String status) {
+            this.statusValue = statusValue;
             this.status = status;
         }
     }
