@@ -63,25 +63,25 @@ public class Client {
     Metrics section. Define the metrics to expose.
      */
     static final Counter recordReceivedCounter = Counter.builder()
-            .name("record_received_total")
+            .name("livetiming_connector_record_received_total")
             .help("Total number of live timing records received")
             .register();
 
     static final Counter messageReceivedCounter = Counter.builder()
-            .name("message_received_total")
+            .name("livetiming_connector_message_received_total")
             .help("Total number of live timing messages received")
             .labelNames("category")
             .register();
 
     static final Counter messageSentCounter = Counter.builder()
-            .name("message_sent_total")
+            .name("livetiming_connector_message_sent_total")
             .help("Total number of messages sent to Kafka")
             .labelNames("category")
             .register();
 
 
     static final Gauge connectorSessionStateGauge = Gauge.builder()
-            .name("connector.session_state")
+            .name("livetiming_connector_session_state")
             .help("Connector session state")
             .register();
 
@@ -260,15 +260,12 @@ public class Client {
 
         // Evaluate if we have an active session running or not
         if (sessionInfo == null) {
-            connectorState = State.UNKNOWN;
-            connectorSessionStateGauge.set(0);
+            setConnectorState(State.UNKNOWN);
         } else if (sessionInfo.status().equalsIgnoreCase("Started")
                 || sessionInfo.archiveStatus().equalsIgnoreCase("Generating")) {
-            connectorState = State.LIVE_SESSION;
-            connectorSessionStateGauge.set(2);
+            setConnectorState(State.LIVE_SESSION);
         } else {
-            connectorState = State.NO_SESSION;
-            connectorSessionStateGauge.set(1);
+            setConnectorState(State.NO_SESSION);
         }
 
         // Set timestamp of last evaluation
@@ -337,6 +334,12 @@ public class Client {
                 LOG.warn("Error connecting to hub: {}", e.toString());
             }
         }
+    }
+
+    private static void setConnectorState(State connectorState) {
+        LOG.info("Client - changing connector state from {} to {}", Client.connectorState, connectorState);
+        Client.connectorState = connectorState;
+        connectorSessionStateGauge.set(connectorState.getStatusValue());
     }
 
     enum State {

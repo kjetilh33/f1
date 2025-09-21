@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import io.prometheus.metrics.core.metrics.Counter;
 import org.jboss.logging.Logger;
 
 import com.kinnovatio.signalr.messages.transport.*;
@@ -26,6 +27,12 @@ import java.util.zip.Inflater;
 public class MessageDecoder {
     private static final Logger LOG = Logger.getLogger(MessageDecoder.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Metrics fields
+    static final Counter deflatedMessageCounter = Counter.builder()
+            .name("livetiming_connector_deflated_message_total")
+            .help("Total number messages with compressed data received")
+            .register();
 
     /**
      * Check if a message is a SignalR init message.
@@ -254,6 +261,8 @@ public class MessageDecoder {
      * @throws DataFormatException if the compressed data format is invalid.
      */
     public static String inflate(String compressedStringData) throws DataFormatException {
+        deflatedMessageCounter.inc();
+
         StringBuilder result = new StringBuilder();
         // Use Inflater with 'nowrap = true' for raw DEFLATE data, which is what F1 uses.
         Inflater inflater = new Inflater(true);

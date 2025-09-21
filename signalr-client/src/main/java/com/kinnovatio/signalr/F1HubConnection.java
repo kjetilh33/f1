@@ -8,6 +8,7 @@ import com.google.auto.value.AutoValue;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
 import com.kinnovatio.signalr.messages.MessageDecoder;
+import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.core.metrics.Gauge;
 import io.smallrye.common.constraint.Nullable;
 import org.slf4j.Logger;
@@ -91,13 +92,18 @@ public abstract class F1HubConnection {
     private int errorCounter = 0;
 
     // Metrics fields
+    static final Counter recordReceivedCounter = Counter.builder()
+            .name("livetiming_connector_websocket_record_received_total")
+            .help("Total number of live timing records received")
+            .register();
+
     static final Gauge connectorConnectionState = Gauge.builder()
-            .name("connector.connection_state")
+            .name("livetiming_connector_connection_state")
             .help("Connector connection state")
             .register();
 
     static final Gauge connectorOperationalState = Gauge.builder()
-            .name("connector.operational_state")
+            .name("livetiming_connector_operational_state")
             .help("Connector operational state")
             .register();
 
@@ -173,7 +179,7 @@ public abstract class F1HubConnection {
     }
 
     /**
-     * Initiate a SignalR connection. This method will try to setup a connection over websocket. Once the
+     * Initiate a SignalR connection. This method will try to set up a connection over websocket. Once the
      * connection is ready, you have to call {@link #subscribeToAll()} to start receiving live timing
      * messages.
      *
@@ -218,12 +224,24 @@ public abstract class F1HubConnection {
         return connectionState.toString();
     }
 
+    /**
+     * Sets the high-level operational state of the client and updates the corresponding metric.
+     *
+     * @param operationalState The new operational state.
+     */
     private void setOperationalState(OperationalState operationalState) {
+        LOG.info("F1HubConnection - changing operational state from {} to {}", this.operationalState, operationalState);
         this.operationalState = operationalState;
         connectorOperationalState.set(operationalState.getStatusValue());
     }
 
+    /**
+     * Sets the low-level connection state of the WebSocket and updates the corresponding metric.
+     *
+     * @param connectionState The new connection state.
+     */
     private void setConnectionState(State connectionState) {
+        LOG.info("F1HubConnection - changing SignalR connection state from {} to {}", this.connectionState, connectionState);
         this.connectionState = connectionState;
         connectorConnectionState.set(connectionState.getStatusValue());
     }
@@ -253,12 +271,12 @@ public abstract class F1HubConnection {
      */
     private boolean connect(boolean forceConnect) throws IOException, InterruptedException {
         if (operationalState == OperationalState.OPEN  && !forceConnect) {
-            LOG.warn("The connection is already open. Connect() has no effect.");
+            LOG.warn("F1HubConnection - The connection is already open. Connect() has no effect.");
             return false;
         }
 
         // In case we have an open websocket, close it
-        if (null != webSocket) webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
+        if (null != webSocket) webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "Closing before reconnection.");
 
         // Check if we need to instantiate the http client
         if (null == httpClient) httpClient = HttpClient.newHttpClient();
@@ -271,7 +289,7 @@ public abstract class F1HubConnection {
             webSocket = negotiateWebsocket();
 
             // try for 20 seconds to establish a SignalR connection
-            while (Duration.between(startInstant, Instant.now()).compareTo(Duration.ofSeconds(20)) < 1
+            while (Duration.between(startInstant, Instant.now()).compareTo(Duration.ofSeconds(20)) < 0
                     && connectionState != State.CONNECTED) {
                 LOG.debug("Checking connection state. State: {}, duration: {}", connectionState, Duration.between(startInstant, Instant.now()));
                 Thread.sleep(1000);
@@ -284,14 +302,13 @@ public abstract class F1HubConnection {
             if (null == executorService || executorService.isShutdown()) executorService = Executors.newSingleThreadScheduledExecutor();
 
             // Start a scheduled task to check state (close, reconnect)
-            executorService.scheduleAtFixedRate(this::asyncKeepAliveLoop, 1, 1, TimeUnit.SECONDS);
+            executorService.scheduleAtFixedRate(this::asyncKeepAliveLoop, 5, 1, TimeUnit.SECONDS);
+
+            // Start subscribing to the F1 live timing data.
             subscribeToAll();
-
         } catch (Exception e) {
-            setOperationalState(OperationalState.CLOSED);
-            setConnectionState(State.READY);
+            close();
 
-            webSocket = null;
             throw e;
         }
 
@@ -326,9 +343,10 @@ public abstract class F1HubConnection {
 
         if (null != executorService) executorService.shutdown();
         if (null != webSocket) {
-            webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
+            webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "Closing the connection.");
             webSocket = null;
         }
+        if (connectionState != State.READY) setConnectionState(State.READY);
     }
 
     /**
@@ -388,7 +406,7 @@ public abstract class F1HubConnection {
 
                     // reconnect
                     try {
-                        connect();
+                        connect(true);
                         errorCounter = 0;
                     } catch (Exception e) {
                         errorCounter++;
@@ -427,12 +445,10 @@ public abstract class F1HubConnection {
      *         WebSocket connection cannot be established.
      */
     private WebSocket negotiateWebsocket() throws IOException {
-        connectionState = State.CONNECTING;
-        connectorConnectionState.set(1);
+        setConnectionState(State.CONNECTING);
 
         final ObjectReader objectReader = objectMapper.reader();
-
-        URI negotiateURI = getBaseUri().resolve(String.format("%s?%s=%s&%s=%s",
+        final URI negotiateURI = getBaseUri().resolve(String.format("%s?%s=%s&%s=%s",
                 negotiatePath,
                 connectionDataKey,
                 URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
@@ -540,6 +556,7 @@ public abstract class F1HubConnection {
      * @param message The complete, raw message string received from the WebSocket.
      */
     private void processMessage(String message) {
+        recordReceivedCounter.inc();
         String loggingPrefix = "processMessage() - ";
 
         if (isMessageLogEnabled()) {
@@ -553,6 +570,9 @@ public abstract class F1HubConnection {
                     if (MessageDecoder.isInitMessage(message)) {
                         setConnectionState(State.CONNECTED);
                         LOG.info(loggingPrefix + "SignalR hub connection established over websocket.");
+                    } else {
+                        LOG.warn("Unrecognized message received while waiting for a SignalR initialization message. Message: {}",
+                                message);
                     }
                 }
                 case CONNECTED -> {
