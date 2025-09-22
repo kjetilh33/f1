@@ -573,7 +573,8 @@ public abstract class F1HubConnection {
                 case ClientMethodInvocationMessage c -> "ClientMethodInvocation";
             };
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            LOG.warn(loggingPrefix + "Error when processing received signalR message: Raw message: '{}'. Error: {}",
+                    message, e.getMessage());;
         }
 
         recordReceivedCounter.labelValues(recordCategory).inc();
