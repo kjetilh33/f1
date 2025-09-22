@@ -73,12 +73,17 @@ public abstract class F1HubConnection {
     /**
      * The data streams to subscribe to for receiving all live timing data.
      */
-    private static final String[] dataStreams = {"Heartbeat", "CarData.z", "Position.z",
+    private static final String[] dataStreams = {"Heartbeat",
             "ExtrapolatedClock", "TopThree", "RcmSeries",
-            "TimingStats", "TimingAppData",
+            "TimingStats", "TimingAppData", "TeamRadio",
             "WeatherData", "TrackStatus", "DriverList",
             "RaceControlMessages", "SessionInfo",
-            "SessionData", "LapCount", "TimingData"};
+            "SessionData", "LapCount", "TimingData",
+            // subscription only?
+            "CarData.z", "Position.z", "ChampionshipPrediction",
+            // Not sure if these work now?
+            "PitLaneTimeCollection", "PitStopSeries", "PitStop"
+    };
 
     // Internal state management
     private State connectionState = State.READY;
