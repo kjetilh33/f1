@@ -79,10 +79,11 @@ public abstract class F1HubConnection {
             "WeatherData", "TrackStatus", "DriverList",
             "RaceControlMessages", "SessionInfo",
             "SessionData", "LapCount", "TimingData",
+            "PitLaneTimeCollection",
             // subscription only?
             "CarData.z", "Position.z", "ChampionshipPrediction",
             // Not sure if these work now?
-            "PitLaneTimeCollection", "PitStopSeries", "PitStop"
+            "PitStopSeries", "PitStop"
     };
 
     // Internal state management
