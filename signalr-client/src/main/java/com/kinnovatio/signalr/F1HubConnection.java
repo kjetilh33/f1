@@ -8,6 +8,7 @@ import com.google.auto.value.AutoValue;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
 import com.kinnovatio.signalr.messages.MessageDecoder;
+import com.kinnovatio.signalr.messages.transport.*;
 import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.core.metrics.Gauge;
 import io.smallrye.common.constraint.Nullable;
@@ -29,6 +30,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -95,6 +97,7 @@ public abstract class F1HubConnection {
     static final Counter recordReceivedCounter = Counter.builder()
             .name("livetiming_connector_websocket_record_received_total")
             .help("Total number of live timing records received")
+            .labelNames("category")
             .register();
 
     static final Gauge connectorConnectionState = Gauge.builder()
@@ -556,13 +559,31 @@ public abstract class F1HubConnection {
      * @param message The complete, raw message string received from the WebSocket.
      */
     private void processMessage(String message) {
-        recordReceivedCounter.inc();
         String loggingPrefix = "processMessage() - ";
 
+        // Capture statistics on the number of messages received
+        String recordCategory = "Unknown";
+        try {
+            recordCategory = switch (MessageDecoder.parseSignalRMessage(message)) {
+                case UnknownMessage u -> "Unknown";
+                case InitMessage i -> "Init";
+                case KeepAliveMessage k -> "KeepAlive";
+                case GroupMembershipMessage g -> "GroupMembership";
+                case HubResponseMessage h -> "HubResponse";
+                case ClientMethodInvocationMessage c -> "ClientMethodInvocation";
+            };
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        recordReceivedCounter.labelValues(recordCategory).inc();
+
+        // Store the messages on disk if logging is enabled
         if (isMessageLogEnabled()) {
             logMessage(message);
         }
 
+        // Process the message based on the current connection state
         try {
             switch (connectionState) {
                 case READY -> LOG.error(loggingPrefix + "Message received before connection has been set up. Should not happen.");
