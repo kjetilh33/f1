@@ -292,6 +292,7 @@ public abstract class F1HubConnection {
 
         try {
             Instant startInstant = Instant.now();
+            lastKeepAliveMessage = Instant.now();
             setConnectionState(State.READY);
             setOperationalState(OperationalState.OPEN);
 
