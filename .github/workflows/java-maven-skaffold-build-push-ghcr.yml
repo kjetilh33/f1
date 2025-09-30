@@ -10,7 +10,7 @@ on:
         type: string
       javaVersion:
         description: 'The Java version to build and deploy. Default is Java 21'
-        default: '21'
+        default: '25'
         required: false
         type: string
 env:
@@ -38,7 +38,7 @@ jobs:
       - name: Build image with Skaffold
         uses: hiberbee/github-action-skaffold@1.27.0
         with:
-          skaffold-version: 2.9.0
+          skaffold-version: 2.16.1
           working-directory: ${{ inputs.repositoryFolder }}
           command: build
           push: true
