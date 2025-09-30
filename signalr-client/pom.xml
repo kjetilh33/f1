@@ -115,6 +115,7 @@
                 <configuration>
                     <container>
                         <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
+                        <mainClass>com.kinnovatio.f1.livetiming.Client</mainClass>
                     </container>
                 </configuration>
             </plugin>
