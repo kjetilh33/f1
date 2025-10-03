@@ -315,8 +315,8 @@ public class Client {
                 // The session is over, so we can disconnect from the F1 live hub.
                 LOG.info(loggingPrefix + "There is no race session currently, but our live timing connection is open. Will close it...");
                 hubConnection.close();
-            } else if (Duration.between(lastSessionCheck, Instant.now()).compareTo(Duration.ofMinutes(20)) > 0) {
-                // It has been 20 mins since we last checked if there is a session starting
+            } else if (Duration.between(lastSessionCheck, Instant.now()).compareTo(Duration.ofMinutes(10)) > 0) {
+                // It has been 10 mins since we last checked if there is a session starting
                 LOG.info(loggingPrefix + "Checking to see if a session will start soon. Will try to reconnect...");
                 try {
                     hubConnection.connect();
