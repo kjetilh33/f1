@@ -75,13 +75,6 @@ public class Client {
             .labelNames("category")
             .register();
 
-    static final Counter messageSentCounter = Counter.builder()
-            .name("livetiming_connector_message_sent_total")
-            .help("Total number of messages sent to Kafka")
-            .labelNames("category")
-            .register();
-
-
     static final Gauge connectorSessionStateGauge = Gauge.builder()
             .name("livetiming_connector_session_state")
             .help("Connector session state")
@@ -161,6 +154,10 @@ public class Client {
         lastMessageReceived = Instant.now();
         statsMonitor.addToMessageQueue(message);
         statsMonitor.incMessageCounter();
+
+        if (enableKafka) {
+            KafkaProducer.getInstance().publish(message.category(), message.toString());
+        }
 
         if (message.category().equalsIgnoreCase("SessionInfo")
                 || message.category().equalsIgnoreCase("SessionData")) {
