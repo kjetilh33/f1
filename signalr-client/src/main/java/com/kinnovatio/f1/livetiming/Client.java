@@ -42,6 +42,9 @@ public class Client {
     private static final String signalRBaseUrl =
             ConfigProvider.getConfig().getValue("source.baseUrl", String.class);
 
+    private static final boolean enableKafka =
+            ConfigProvider.getConfig().getValue("target.kafka.enable", Boolean.class);
+
     // connector components
     //private static ConnectorStatusHttpServer statusHttpServer;
     private static F1HubConnection hubConnection;

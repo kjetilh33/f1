@@ -18,6 +18,7 @@
         <jackson.version>2.20.0</jackson.version>
         <slf4j-api.version>2.0.17</slf4j-api.version>
         <commons-lang3.version>3.19.0</commons-lang3.version>
+        <kafka-clients.version>4.1.0</kafka-clients.version>
         <logback-classic.version>1.5.19</logback-classic.version>
         <smallrye.config.version>3.14.1</smallrye.config.version>
         <io.prometheus.version>1.4.1</io.prometheus.version>
@@ -52,6 +53,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>${commons-lang3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>${kafka-clients.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

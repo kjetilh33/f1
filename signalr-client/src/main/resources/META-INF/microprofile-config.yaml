@@ -11,9 +11,13 @@ source:
   baseUrl: "http://livetiming.kinnovatio.local/signalr/"
   #baseUrl: "https://livetiming.formula1.com/signalr/"
 
+target:
+  kafka:
+    enable: false
+    clientId: "f1-livetiming-signalr-connector"
+    bootstrapHost: "kafka-main-kafka-bootstrap.kafka:9092"
+    topic: "f1-live-raw"
+
 # Default configuration for metrics.
 metrics:
   enable: false
-  jobName: "k8-demo"
-  pushGateway:
-    url: "http://stable-prometheus-pushgateway.internal-services:9091"

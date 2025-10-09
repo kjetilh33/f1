@@ -6,6 +6,13 @@ source:
   baseUrl: "https://livetiming.formula1.com/signalr/"
 #  baseUrl: "http://livetiming.kinnovatio.local/signalr/"
 
+target:
+  kafka:
+    enable: false
+    clientId: "f1-livetiming-signalr-connector"
+    bootstrapHost: "kafka-main-kafka-bootstrap.kafka:9092"
+    topic: "f1-live-raw"
+
 # Configuration for metrics.
 metrics:
   enable: true
