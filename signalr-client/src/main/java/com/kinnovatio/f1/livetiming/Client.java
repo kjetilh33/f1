@@ -85,9 +85,6 @@ public class Client {
             .name("job.errors").help("Total job errors")
             .register();
 
-    static {
-        objectMapper.registerModule(new JavaTimeModule());
-    }
 
     /*
     The entry point of the code. It executes the main logic and push job metrics upon completion.

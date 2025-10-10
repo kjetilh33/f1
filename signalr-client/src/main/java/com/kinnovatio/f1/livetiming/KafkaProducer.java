@@ -1,15 +1,24 @@
 package com.kinnovatio.f1.livetiming;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.prometheus.metrics.core.metrics.Counter;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 public class KafkaProducer {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaProducer.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     // Kafka configs. From config file / env variables
 
@@ -32,6 +41,8 @@ public class KafkaProducer {
 
 
     private KafkaProducer() {
+        objectMapper.registerModule(new JavaTimeModule());
+
         Properties props = new Properties();
         props.put("bootstrap.servers", kafkaBootstrapHost);
         props.put("client.id", kafkaClientId);
@@ -52,7 +63,7 @@ public class KafkaProducer {
     }
 
     public void publish(LiveTimingMessage message) {
-        List <Header> headers = new ArrayList<>();
+        List<Header> headers = new ArrayList<>();
         headers.add(new RecordHeader("timestamp", message.timestamp().toString().getBytes()));
         headers.add(new RecordHeader("messageType", "LiveTimingMessage".getBytes()));
 
