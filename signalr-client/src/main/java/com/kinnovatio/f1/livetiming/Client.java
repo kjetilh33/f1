@@ -155,8 +155,13 @@ public class Client {
         statsMonitor.addToMessageQueue(message);
         statsMonitor.incMessageCounter();
 
+
         if (enableKafka) {
-            KafkaProducer.getInstance().publish(message.category(), message.toString());
+            try {
+                KafkaProducer.getInstance().publish(message.category(), objectMapper.writeValueAsString(message));
+            } catch (JsonProcessingException e) {
+                LOG.error("Error writing message to kafka: {}", e);
+            }
         }
 
         if (message.category().equalsIgnoreCase("SessionInfo")
