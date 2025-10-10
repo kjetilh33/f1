@@ -51,8 +51,22 @@ public class KafkaProducer {
         return instance;
     }
 
-    public void publish(String key, String value) {
-        producer.send(new ProducerRecord<>(kafkaTopic, key, value), (metadata, exception) -> {
+    public void publish(LiveTimingMessage message) {
+        List <Header> headers = new ArrayList<>();
+        headers.add(new RecordHeader("timestamp", message.timestamp().toString().getBytes()));
+        headers.add(new RecordHeader("messageType", "LiveTimingMessage".getBytes()));
+
+        try {
+                publish(message.category(), objectMapper.writeValueAsString(message), headers);
+            } catch (JsonProcessingException e) {
+                LOG.error("Error writing message to kafka: {}", e);
+            }
+    }
+
+    private void publish(String key, String value, List<Header> headers) {
+        ProducerRecord <String, String> record = new ProducerRecord<>(kafkaTopic, null, key, value, headers);        
+
+        producer.send(record, (metadata, exception) -> {
             if (exception == null) {
                 LOG.debug("Message sent to Kafka topic {} partition {} offset {}", metadata.topic(), metadata.partition(), metadata.offset());
                 messageSentCounter.labelValues(key).inc();
