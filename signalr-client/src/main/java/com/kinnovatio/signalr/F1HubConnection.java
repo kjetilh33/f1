@@ -40,20 +40,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-/**
- * Represents a connection to the Formula 1 SignalR live timing hub.
- * This class handles the negotiation, connection, and communication with the F1 SignalR service
- * over WebSockets. It manages the connection lifecycle, including keep-alive messages and
- * automatic reconnection.
- * <p>
- * Use the static factory methods {@link #create()} or {@link #of(String)} to instantiate.
- * Once created, configure it using methods like {@link #withConsumer(Consumer)} and then
- * call {@link #connect()} to establish the connection. After connecting, call
- * {@link #subscribeToAll()} to start receiving data.
- *
- * This class is designed to be immutable through the use of AutoValue. Configuration methods
- * return a new instance with the updated configuration.
- */
+/// Represents a connection to the Formula 1 SignalR live timing hub.
+/// This class handles the negotiation, connection, and communication with the F1 SignalR service
+/// over WebSockets. It manages the connection lifecycle, including keep-alive messages and
+/// automatic reconnection.
+///
+/// Use the static factory methods [#create()] or [#of(String)] to instantiate.
+/// Once created, configure it using methods like [#withConsumer(Consumer)] and then
+/// call [#connect()] to establish the connection. After connecting, call
+/// [#subscribeToAll()] to start receiving data.
+/// This class is designed to be immutable through the use of AutoValue. Configuration methods
+/// return a new instance with the updated configuration.
 @AutoValue
 public abstract class F1HubConnection {
     private static final Logger LOG = LoggerFactory.getLogger(F1HubConnection.class);
@@ -70,9 +67,7 @@ public abstract class F1HubConnection {
                 [{"name": "streaming"}]
                 """;
 
-    /**
-     * The data streams to subscribe to for receiving all live timing data.
-     */
+    /// The data streams to subscribe to for receiving all live timing data.
     private static final String[] dataStreams = {"Heartbeat",
             "ExtrapolatedClock", "TopThree", "RcmSeries",
             "TimingStats", "TimingAppData", "TeamRadio",
@@ -121,12 +116,10 @@ public abstract class F1HubConnection {
                 .setMessageLogEnabled(false);
     }
 
-    /**
-     * Creates a new F1HubConnection with the default base URL.
-     *
-     * @return a new instance of {@link F1HubConnection}.
-     * @throws RuntimeException if the default base URL is invalid.
-     */
+    /// Creates a new F1HubConnection with the default base URL.
+    ///
+    /// @return a new instance of [F1HubConnection].
+    /// @throws RuntimeException if the default base URL is invalid.
     public static F1HubConnection create() {
         try {
             return F1HubConnection.of(baseUrl);
@@ -136,23 +129,19 @@ public abstract class F1HubConnection {
         }
     }
 
-    /**
-     * Creates a new F1HubConnection with a specified base URI.
-     *
-     * @param baseUri The base URI string for the SignalR service.
-     * @return a new instance of {@link F1HubConnection}.
-     * @throws URISyntaxException if the provided baseUri string is not a valid URI.
-     */
+    /// Creates a new F1HubConnection with a specified base URI.
+    ///
+    /// @param baseUri The base URI string for the SignalR service.
+    /// @return a new instance of [F1HubConnection].
+    /// @throws URISyntaxException if the provided baseUri string is not a valid URI.
     public static F1HubConnection of(String baseUri) throws URISyntaxException {
         return F1HubConnection.of(new URI(baseUri));
     }
 
-    /**
-     * Creates a new F1HubConnection with a specified base URI.
-     *
-     * @param baseUri The base URI for the SignalR service.
-     * @return a new instance of {@link F1HubConnection}.
-     */
+    /// Creates a new F1HubConnection with a specified base URI.
+    ///
+    /// @param baseUri The base URI for the SignalR service.
+    /// @return a new instance of [F1HubConnection].
     public static F1HubConnection of(URI baseUri) {
         return F1HubConnection.builder()
                 .setBaseUri(baseUri)
@@ -167,117 +156,99 @@ public abstract class F1HubConnection {
     public abstract Consumer<LiveTimingRecord> getConsumer();
     public abstract boolean isMessageLogEnabled();
 
-    /**
-     * Enables or disables logging of all received raw messages to a file.
-     *
-     * @param enable {@code true} to enable logging, {@code false} to disable.
-     * @return a new instance with the updated setting.
-     */
+    /// Enables or disables logging of all received raw messages to a file.
+    ///
+    /// @param enable `true` to enable logging, `false` to disable.
+    /// @return a new instance with the updated setting.
     public F1HubConnection enableMessageLogging(boolean enable) {
         return toBuilder().setMessageLogEnabled(enable).build();
     }
 
-    /**
-     * Sets the consumer that will receive {@link LiveTimingRecord}s.
-     *
-     * @param consumer The consumer to process incoming messages.
-     * @return a new instance with the updated consumer.
-     */
+    /// Sets the consumer that will receive [LiveTimingRecord]s.
+    ///
+    /// @param consumer The consumer to process incoming messages.
+    /// @return a new instance with the updated consumer.
     public F1HubConnection withConsumer(Consumer<LiveTimingRecord> consumer) {
         return toBuilder().setConsumer(consumer).build();
     }
 
-    /**
-     * Initiate a SignalR connection. This method will try to set up a connection over websocket. Once the
-     * connection is ready, you have to call {@link #subscribeToAll()} to start receiving live timing
-     * messages.
-     *
-     * @return {@code true} if the connection was set up successfully. {@code false} otherwise.
-     * @throws IOException if something goes wrong at the network layer.
-     * @throws InterruptedException if the working thread gets interrupted.
-     */
+    /// Initiate a SignalR connection. This method will try to set up a connection over websocket. Once the
+    /// connection is ready, you have to call [#subscribeToAll()] to start receiving live timing
+    /// messages.
+    ///
+    /// @return `true` if the connection was set up successfully. `false` otherwise.
+    /// @throws IOException if something goes wrong at the network layer.
+    /// @throws InterruptedException if the working thread gets interrupted.
     public boolean connect() throws IOException, InterruptedException {
         return connect(false);
     }
 
-    /**
-     * Checks if the client is currently connected to the SignalR hub.
-     *
-     * @return {@code true} if the connection state is {@link OperationalState#OPEN}, {@code false} otherwise.
-     */
+    /// Checks if the client is currently connected to the SignalR hub.
+    ///
+    /// @return `true` if the connection state is [#OPEN], `false` otherwise.
     public boolean isConnected() {
         return operationalState == OperationalState.OPEN;
     }
 
-    /**
-     * Gets the high-level operational state of the client.
-     * This indicates whether the client is actively trying to maintain a connection
-     * ({@code OPEN}) or has been shut down ({@code CLOSED}).
-     *
-     * @return The current operational state as a string (e.g., "OPEN", "CLOSED").
-     * @see OperationalState
-     */
+    /// Gets the high-level operational state of the client.
+    /// This indicates whether the client is actively trying to maintain a connection
+    /// (`OPEN`) or has been shut down (`CLOSED`).
+    ///
+    /// @return The current operational state as a string (e.g., "OPEN", "CLOSED").
+    /// @see OperationalState
     public String getOperationalState() {
         return operationalState.toString();
     }
     
-    /**
-     * Gets the low-level connection state of the underlying WebSocket.
-     * This provides a granular status of the connection process, such as whether it is
-     * connecting, connected, or disconnected.
-     *
-     * @return The current connection state as a string (e.g., "READY", "CONNECTING", "CONNECTED").
-     * @see State
-     */
+    /// Gets the low-level connection state of the underlying WebSocket.
+    /// This provides a granular status of the connection process, such as whether it is
+    /// connecting, connected, or disconnected.
+    ///
+    /// @return The current connection state as a string (e.g., "READY", "CONNECTING", "CONNECTED").
+    /// @see State
     public String getConnectionState() {
         return connectionState.toString();
     }
 
-    /**
-     * Sets the high-level operational state of the client and updates the corresponding metric.
-     *
-     * @param operationalState The new operational state.
-     */
+    /// Sets the high-level operational state of the client and updates the corresponding metric.
+    ///
+    /// @param operationalState The new operational state.
     private void setOperationalState(OperationalState operationalState) {
         LOG.info("F1HubConnection - changing operational state from {} to {}", this.operationalState, operationalState);
         this.operationalState = operationalState;
         connectorOperationalState.set(operationalState.getStatusValue());
     }
 
-    /**
-     * Sets the low-level connection state of the WebSocket and updates the corresponding metric.
-     *
-     * @param connectionState The new connection state.
-     */
+    /// Sets the low-level connection state of the WebSocket and updates the corresponding metric.
+    ///
+    /// @param connectionState The new connection state.
     private void setConnectionState(State connectionState) {
         LOG.info("F1HubConnection - changing SignalR connection state from {} to {}", this.connectionState, connectionState);
         this.connectionState = connectionState;
         connectorConnectionState.set(connectionState.getStatusValue());
     }
 
-    /**
-     * Initiates or forces a reconnection to the SignalR hub.
-     * <p>
-     * This is the internal implementation of the connection logic. It manages the entire
-     * lifecycle of establishing a connection, including:
-     * <ul>
-     *     <li>Closing any existing WebSocket connection.</li>
-     *     <li>Performing the SignalR negotiation to obtain a connection token.</li>
-     *     <li>Establishing a new WebSocket connection.</li>
-     *     <li>Starting a background task ({@link #asyncKeepAliveLoop()}) to handle keep-alives
-     *         and automatic reconnections.</li>
-     * </ul>
-     * The {@code forceConnect} parameter allows this method to be used for both the initial
-     * user-triggered connection and for internal reconnections when a connection is lost.
-     *
-     * @param forceConnect If {@code true}, forces a new connection even if the operational state
-     *                     is already {@code OPEN}. If {@code false}, the method will return
-     *                     without action if the connection is already considered open.
-     * @return {@code true} if the connection was successfully initiated, {@code false} if the
-     *         connection was already open and {@code forceConnect} was {@code false}.
-     * @throws IOException if an I/O error occurs during negotiation or if the connection times out.
-     * @throws InterruptedException if the thread is interrupted during the connection process.
-     */
+    /// Initiates or forces a reconnection to the SignalR hub.
+    ///
+    /// This is the internal implementation of the connection logic. It manages the entire
+    /// lifecycle of establishing a connection, including:
+    ///
+    ///   - Closing any existing WebSocket connection.
+    ///   - Performing the SignalR negotiation to obtain a connection token.
+    ///   - Establishing a new WebSocket connection.
+    ///   - Starting a background task ([#asyncKeepAliveLoop()]) to handle keep-alives
+    ///     and automatic reconnections.
+    ///
+    /// The `forceConnect` parameter allows this method to be used for both the initial
+    /// user-triggered connection and for internal reconnections when a connection is lost.
+    ///
+    /// @param forceConnect If `true`, forces a new connection even if the operational state
+    ///                     is already `OPEN`. If `false`, the method will return
+    ///                     without action if the connection is already considered open.
+    /// @return `true` if the connection was successfully initiated, `false` if the
+    ///         connection was already open and `forceConnect` was `false`.
+    /// @throws IOException if an I/O error occurs during negotiation or if the connection times out.
+    /// @throws InterruptedException if the thread is interrupted during the connection process.
     private boolean connect(boolean forceConnect) throws IOException, InterruptedException {
         if (operationalState == OperationalState.OPEN  && !forceConnect) {
             LOG.warn("F1HubConnection - The connection is already open. Connect() has no effect.");
@@ -325,9 +296,7 @@ public abstract class F1HubConnection {
         return true;
     }
     
-    /**
-     * Start subscribing to the live timing data (all data streams/types)
-     */
+    /// Start subscribing to the live timing data (all data streams/types)
     private void subscribeToAll() {
         final String hub = "Streaming";
         final String method = "Subscribe";
@@ -341,13 +310,11 @@ public abstract class F1HubConnection {
         
     }
 
-    /**
-     * Gracefully closes the connection to the F1 SignalR hub and cleans up resources.
-     * <p>
-     * This method signals the client to shut down by setting the operational state to {@code CLOSED},
-     * which prevents the background keep-alive task from attempting any new reconnections. It then
-     * initiates an orderly shutdown of the scheduled executor service that manages the connection.
-     */
+    /// Gracefully closes the connection to the F1 SignalR hub and cleans up resources.
+    ///
+    /// This method signals the client to shut down by setting the operational state to `CLOSED`,
+    /// which prevents the background keep-alive task from attempting any new reconnections. It then
+    /// initiates an orderly shutdown of the scheduled executor service that manages the connection.
     public void close() {
         setOperationalState(OperationalState.CLOSED);
 
@@ -359,24 +326,22 @@ public abstract class F1HubConnection {
         if (connectionState != State.READY) setConnectionState(State.READY);
     }
 
-    /**
-     * A periodic task that runs in the background to monitor and maintain the hub connection.
-     * This method is designed to be executed by a {@link ScheduledExecutorService}.
-     * <p>
-     * Its responsibilities include:
-     * <ul>
-     *     <li><b>Reconnecting:</b> If the connection state is not {@code CONNECTED} or {@code CONNECTING},
-     *         it attempts to re-establish the connection by calling {@link #connect()}.</li>
-     *     <li><b>Keep-Alive Check:</b> If the connection is active, it checks if a keep-alive message
-     *         has been received within the {@link #keepAliveTimeout} duration. If not, it assumes
-     *         the connection is stale, closes the current WebSocket, and attempts to reconnect.</li>
-     *     <li><b>Error Handling:</b> It tracks consecutive connection failures. If the number of failures
-     *         exceeds a threshold (10), it will stop trying to reconnect and {@link #close()} the client
-     *         to prevent an infinite loop of failures.</li>
-     *     <li><b>Shutdown:</b> When the {@link #operationalState} is set to {@code CLOSED}, this loop
-     *         ensures the underlying executor service is forcefully shut down.</li>
-     * </ul>
-     */
+    /// A periodic task that runs in the background to monitor and maintain the hub connection.
+    /// This method is designed to be executed by a [ScheduledExecutorService].
+    ///
+    /// Its responsibilities include:
+    ///
+    ///   - **Reconnecting:** If the connection state is not `CONNECTED` or `CONNECTING`,
+    ///     it attempts to re-establish the connection by calling [#connect()].
+    ///   - **Keep-Alive Check:** If the connection is active, it checks if a keep-alive message
+    ///     has been received within the [#keepAliveTimeout] duration. If not, it assumes
+    ///     the connection is stale, closes the current WebSocket, and attempts to reconnect.
+    ///   - **Error Handling:** It tracks consecutive connection failures. If the number of failures
+    ///     exceeds a threshold (10), it will stop trying to reconnect and [#close()] the client
+    ///     to prevent an infinite loop of failures.
+    ///   - **Shutdown:** When the [#operationalState] is set to `CLOSED`, this loop
+    ///     ensures the underlying executor service is forcefully shut down.
+    ///
     private void asyncKeepAliveLoop() {
         String loggingPrefix = "Hub connection loop - ";
         LOG.debug(loggingPrefix + "Operational state = {}", operationalState);
@@ -435,25 +400,23 @@ public abstract class F1HubConnection {
         }
     }
 
-    /**
-     * Performs the SignalR negotiation handshake and establishes a WebSocket connection.
-     * <p>
-     * This method implements the two-step connection process required by the SignalR protocol.
-     * <ol>
-     *     <li><b>Negotiation:</b> It sends an initial HTTP GET request to the hub's {@code /negotiate}
-     *         endpoint. This request is used to agree on protocol details and obtain a unique
-     *         {@code connectionToken} and a session cookie from the server.</li>
-     *     <li><b>Connection:</b> If negotiation is successful, it uses the obtained token and cookie
-     *         to construct a WebSocket URI (e.g., {@code wss://...}). It then establishes a persistent
-     *         WebSocket connection to this URI.</li>
-     * </ol>
-     * The method blocks execution until the WebSocket connection is fully established or an error occurs.
-     * It also sets the internal {@link #connectionState} to {@code CONNECTING} during this process.
-     *
-     * @return The fully connected {@link WebSocket} instance.
-     * @throws IOException if the negotiation request fails, the server returns an error, or the
-     *         WebSocket connection cannot be established.
-     */
+    /// Performs the SignalR negotiation handshake and establishes a WebSocket connection.
+    ///
+    /// This method implements the two-step connection process required by the SignalR protocol.
+    /// <ol>
+    ///   - **Negotiation:** It sends an initial HTTP GET request to the hub's `/negotiate`
+    ///     endpoint. This request is used to agree on protocol details and obtain a unique
+    ///     `connectionToken` and a session cookie from the server.
+    ///   - **Connection:** If negotiation is successful, it uses the obtained token and cookie
+    ///     to construct a WebSocket URI (e.g., `wss://...`). It then establishes a persistent
+    ///     WebSocket connection to this URI.
+    /// </ol>
+    /// The method blocks execution until the WebSocket connection is fully established or an error occurs.
+    /// It also sets the internal [#connectionState] to `CONNECTING` during this process.
+    ///
+    /// @return The fully connected [WebSocket] instance.
+    /// @throws IOException if the negotiation request fails, the server returns an error, or the
+    ///         WebSocket connection cannot be established.
     private WebSocket negotiateWebsocket() throws IOException {
         setConnectionState(State.CONNECTING);
 
@@ -547,24 +510,22 @@ public abstract class F1HubConnection {
         }
     }
 
-    /**
-     * Processes a raw message received from the WebSocket and directs it based on the current connection state.
-     * <p>
-     * This method acts as the central router for all incoming SignalR messages. Its behavior changes
-     * depending on whether the client is in the process of connecting or is fully connected:
-     * <ul>
-     *     <li><b>Logging:</b> If message logging is enabled, it first writes the raw message to a file.</li>
-     *     <li><b>Connecting State:</b> When in the {@code CONNECTING} state, it waits for a SignalR
-     *         initialization message. Upon receiving it, the connection state is transitioned to {@code CONNECTED}.</li>
-     *     <li><b>Connected State:</b> Once {@code CONNECTED}, it distinguishes between keep-alive pings (which
-     *         update the {@link #lastKeepAliveMessage} timestamp) and actual data messages (which are passed to
-     *         {@link #notifySubscribers(String)} for parsing and distribution).</li>
-     * </ul>
-     * Any unexpected messages or parsing failures will be logged as errors. A critical parsing failure
-     * will result in a {@link RuntimeException}, which will likely terminate the connection.
-     *
-     * @param message The complete, raw message string received from the WebSocket.
-     */
+    /// Processes a raw message received from the WebSocket and directs it based on the current connection state.
+    ///
+    /// This method acts as the central router for all incoming SignalR messages. Its behavior changes
+    /// depending on whether the client is in the process of connecting or is fully connected:
+    ///
+    ///   - **Logging:** If message logging is enabled, it first writes the raw message to a file.
+    ///   - **Connecting State:** When in the `CONNECTING` state, it waits for a SignalR
+    ///     initialization message. Upon receiving it, the connection state is transitioned to `CONNECTED`.
+    ///   - **Connected State:** Once `CONNECTED`, it distinguishes between keep-alive pings (which
+    ///     update the [#lastKeepAliveMessage] timestamp) and actual data messages (which are passed to
+    ///     [#notifySubscribers(String)] for parsing and distribution).
+    ///
+    /// Any unexpected messages or parsing failures will be logged as errors. A critical parsing failure
+    /// will result in a [RuntimeException], which will likely terminate the connection.
+    ///
+    /// @param message The complete, raw message string received from the WebSocket.
     private void processMessage(String message) {
         String loggingPrefix = "processMessage() - ";
 
@@ -637,18 +598,16 @@ public abstract class F1HubConnection {
         }
     }
 
-    /**
-     * Parses a raw message string from the SignalR hub and notifies the registered consumer.
-     * <p>
-     * This method takes the raw JSON payload from the WebSocket, which can contain an array of
-     * different data updates (e.g., TimingData, TimingAppData), and uses the {@link MessageDecoder}
-     * to parse it into a list of {@link LiveTimingMessage} objects.
-     * <p>
-     * If a consumer has been registered via {@link #withConsumer(Consumer)}, this method iterates
-     * through the parsed messages and passes each one to the consumer's {@code accept} method for processing.
-     *
-     * @param rawMessage The raw JSON string received from the WebSocket.
-     */
+    /// Parses a raw message string from the SignalR hub and notifies the registered consumer.
+    ///
+    /// This method takes the raw JSON payload from the WebSocket, which can contain an array of
+    /// different data updates (e.g., TimingData, TimingAppData), and uses the [MessageDecoder]
+    /// to parse it into a list of [LiveTimingMessage] objects.
+    ///
+    /// If a consumer has been registered via [#withConsumer(Consumer)], this method iterates
+    /// through the parsed messages and passes each one to the consumer's `accept` method for processing.
+    ///
+    /// @param rawMessage The raw JSON string received from the WebSocket.
     private void notifySubscribers(String rawMessage) {
         String loggingPrefix = "notifySubscribers() - ";
         LOG.debug(loggingPrefix + "Raw message: {}", rawMessage);
@@ -713,34 +672,24 @@ public abstract class F1HubConnection {
         }
     }
 
-    /**
-     * Represents the granular, low-level status of the underlying WebSocket connection.
-     * This enum tracks the different phases of establishing and maintaining a connection
-     * to the SignalR hub. It is managed internally and is distinct from
-     * {@link OperationalState}, which reflects the user's high-level intent for the client.
-     */
+    /// Represents the granular, low-level status of the underlying WebSocket connection.
+    /// This enum tracks the different phases of establishing and maintaining a connection
+    /// to the SignalR hub. It is managed internally and is distinct from
+    /// [OperationalState], which reflects the user's high-level intent for the client.
     enum State {
-        /**
-         * The client is not connected but is ready to initiate a new connection.
-         * This is the initial state, and also the state after a WebSocket is cleanly closed.
-         * From this state, a new connection attempt can begin.
-         */
+        /// The client is not connected but is ready to initiate a new connection.
+        /// This is the initial state, and also the state after a WebSocket is cleanly closed.
+        /// From this state, a new connection attempt can begin.
         READY (0),
-        /**
-         * The client is in the process of establishing a connection. This includes
-         * the HTTP negotiation phase and waiting for the WebSocket to become fully
-         * open and receive the SignalR initialization message.
-         */
+        /// The client is in the process of establishing a connection. This includes
+        /// the HTTP negotiation phase and waiting for the WebSocket to become fully
+        /// open and receive the SignalR initialization message.
         CONNECTING (1),
-        /**
-         * The WebSocket connection is established, and the SignalR protocol handshake
-         * is complete. The client is now able to send and receive data messages.
-         */
+        /// The WebSocket connection is established, and the SignalR protocol handshake
+        /// is complete. The client is now able to send and receive data messages.
         CONNECTED (2),
-        /**
-         * The WebSocket connection has been lost due to an error. The background
-         * keep-alive loop will attempt to reconnect when the client is in this state.
-         */
+        /// The WebSocket connection has been lost due to an error. The background
+        /// keep-alive loop will attempt to reconnect when the client is in this state.
         DISCONNECTED (3);
 
         private final int statusValue;
@@ -754,24 +703,18 @@ public abstract class F1HubConnection {
         }
     }
 
-    /**
-     * Defines the high-level operational state of the F1HubConnection client.
-     * This state determines whether the client is actively trying to maintain a connection
-     * or if it has been shut down. It is distinct from the {@link State} enum, which
-     * tracks the more granular status of the underlying WebSocket connection.
-     */
+    /// Defines the high-level operational state of the F1HubConnection client.
+    /// This state determines whether the client is actively trying to maintain a connection
+    /// or if it has been shut down. It is distinct from the [State] enum, which
+    /// tracks the more granular status of the underlying WebSocket connection.
     enum OperationalState {
-        /**
-         * The client is shut down. In this state, no new connections will be attempted,
-         * and the background keep-alive and reconnection tasks will not run. This is the
-         * initial state and the state after {@link #close()} is called.
-         */
+        /// The client is shut down. In this state, no new connections will be attempted,
+        /// and the background keep-alive and reconnection tasks will not run. This is the
+        /// initial state and the state after [#close()] is called.
         CLOSED(0),
-        /**
-         * The client is active. It will attempt to establish and maintain a connection
-         * to the SignalR hub. The background keep-alive and reconnection logic is active
-         * in this state. This state is set by a call to {@link #connect()}.
-         */
+        /// The client is active. It will attempt to establish and maintain a connection
+        /// to the SignalR hub. The background keep-alive and reconnection logic is active
+        /// in this state. This state is set by a call to [#connect()].
         OPEN(1);
 
         private final int statusValue;

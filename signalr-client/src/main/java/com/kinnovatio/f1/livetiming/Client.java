@@ -21,17 +21,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * The main entry point for the F1 Live Timing SignalR client application.
- * <p>
- * This class is responsible for initializing and orchestrating all the major components:
- * <ul>
- *     <li>Connecting to the F1 SignalR hub using {@link F1HubConnection}.</li>
- *     <li>Processing incoming live timing messages and forwarding them to Kafka if enabled.</li>
- *     <li>Managing the application's lifecycle and connection state based on F1 session activity.</li>
- *     <li>Exposing application status and metrics via HTTP endpoints.</li>
- * </ul>
- */
+/// The main entry point for the F1 Live Timing SignalR client application.
+///
+/// This class is responsible for initializing and orchestrating all the major components:
+///
+///   - Connecting to the F1 SignalR hub using [F1HubConnection].
+///   - Processing incoming live timing messages and forwarding them to Kafka if enabled.
+///   - Managing the application's lifecycle and connection state based on F1 session activity.
+///   - Exposing application status and metrics via HTTP endpoints.
+///
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -53,83 +51,71 @@ public class Client {
     private static final String signalRBaseUrl =
             ConfigProvider.getConfig().getValue("source.baseUrl", String.class);
 
-    /**
-     * Flag to control whether messages are published to Kafka.
-     * Loaded from the "target.kafka.enable" configuration property.
-     */
+    /// Flag to control whether messages are published to Kafka.
+    /// Loaded from the "target.kafka.enable" configuration property.
     private static final boolean enableKafka =
             ConfigProvider.getConfig().getValue("target.kafka.enable", Boolean.class);
 
     // connector components
     //private static ConnectorStatusHttpServer statusHttpServer;
-    /** The connection to the F1 SignalR hub. */
+    /// The connection to the F1 SignalR hub.
     private static F1HubConnection hubConnection;
-    /** The high-level operational state of this client application. */
+    /// The high-level operational state of this client application.
     private static State connectorState = State.UNKNOWN;
-    /** Timestamp of the last time the F1 session status was checked. */
+    /// Timestamp of the last time the F1 session status was checked.
     private static Instant lastSessionCheck = Instant.now();
-    /** Timestamp of the last message received from the F1 hub. */
+    /// Timestamp of the last message received from the F1 hub.
     private static Instant lastMessageReceived = Instant.now();
     private static final String defaultSessionStringValue = "No information available";
-    /** Executor service for the background keep-alive and state management loop. */
+    /// Executor service for the background keep-alive and state management loop.
     private static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-    /** Holds the latest information about the current or upcoming F1 session. */
+    /// Holds the latest information about the current or upcoming F1 session.
     private static SessionInfo sessionInfo = null;
-    /** A monitor for tracking message statistics like rate and queue size. */
+    /// A monitor for tracking message statistics like rate and queue size.
     private static final StatsMonitor statsMonitor = StatsMonitor.create().start();
 
     // Metrics configs. From config file / env variables
-    /**
-     * Flag to control whether the Prometheus metrics server is started.
-     * Loaded from the "metrics.enable" configuration property.
-     */
+    /// Flag to control whether the Prometheus metrics server is started.
+    /// Loaded from the "metrics.enable" configuration property.
     private static final boolean enableMetrics =
             ConfigProvider.getConfig().getValue("metrics.enable", Boolean.class);
 
     /*
     Metrics section. Define the metrics to expose.
      */
-    /**
-     * A Prometheus counter for the total number of {@link LiveTimingRecord}s received
-     * from the WebSocket connection.
-     */
+    /// A Prometheus counter for the total number of [LiveTimingRecord]s received
+    /// from the WebSocket connection.
     static final Counter recordReceivedCounter = Counter.builder()
             .name("livetiming_connector_record_received_total")
             .help("Total number of live timing records received")
             .register();
 
-    /**
-     * A Prometheus counter for the total number of individual {@link LiveTimingMessage}s
-     * processed, labeled by their category (e.g., "TimingData", "SessionInfo").
-     */
+    /// A Prometheus counter for the total number of individual [LiveTimingMessage]s
+    /// processed, labeled by their category (e.g., "TimingData", "SessionInfo").
     static final Counter messageReceivedCounter = Counter.builder()
             .name("livetiming_connector_message_received_total")
             .help("Total number of live timing messages received")
             .labelNames("category")
             .register();
 
-    /**
-     * A Prometheus gauge representing the current {@link State} of the connector,
-     * indicating whether it's live, waiting, or in an unknown state.
-     */
+    /// A Prometheus gauge representing the current [State] of the connector,
+    /// indicating whether it's live, waiting, or in an unknown state.
     static final Gauge connectorSessionStateGauge = Gauge.builder()
             .name("livetiming_connector_session_state")
             .help("Connector session state")
             .register();
 
-    /** A Prometheus gauge to track the total number of unrecoverable errors. */
+    /// A Prometheus gauge to track the total number of unrecoverable errors.
     static final Gauge errorGauge= Gauge.builder()
             .name("job.errors").help("Total job errors")
             .register();
 
 
-    /**
-     * The main entry point for the application.
-     * It initializes and runs the client, catching any unrecoverable exceptions.
-     *
-     * @param args Command line arguments (not used).
-     */
+    /// The main entry point for the application.
+    /// It initializes and runs the client, catching any unrecoverable exceptions.
+    ///
+    /// @param args Command line arguments (not used).
     public static void main(String[] args) {
         try {
             // Execute the main logic
@@ -141,12 +127,10 @@ public class Client {
         }
     }
 
-    /**
-     * Initializes and starts all application components.
-     * This includes the SignalR connection, the status HTTP server, the metrics server,
-     * and the background task for connection management.
-     * @throws Exception if initialization of the SignalR client fails.
-     */
+    /// Initializes and starts all application components.
+    /// This includes the SignalR connection, the status HTTP server, the metrics server,
+    /// and the background task for connection management.
+    /// @throws Exception if initialization of the SignalR client fails.
     private static void run() throws Exception {
         LOG.info("Starting container...");
 
@@ -172,12 +156,10 @@ public class Client {
         executorService.scheduleAtFixedRate(Client::asyncKeepAliveLoop, 10, 2, TimeUnit.SECONDS);
     }
 
-    /**
-     * Creates and connects the {@link F1HubConnection} instance.
-     * It configures the connection with the base URL from properties and sets
-     * {@link #processMessage(LiveTimingRecord)} as the consumer for incoming data.
-     * @throws Exception if the connection cannot be established.
-     */
+    /// Creates and connects the [F1HubConnection] instance.
+    /// It configures the connection with the base URL from properties and sets
+    /// [#processMessage(LiveTimingRecord)] as the consumer for incoming data.
+    /// @throws Exception if the connection cannot be established.
     private static void useSignalrCustomClient() throws Exception {
         hubConnection = F1HubConnection.of(signalRBaseUrl) //.of(signalRBaseUrl) of(testBaseUrl)
                 //.enableMessageLogging(true)
@@ -186,13 +168,11 @@ public class Client {
         hubConnection.connect();
     }
 
-    /**
-     * The primary callback method for processing all data received from the {@link F1HubConnection}.
-     * It increments the record counter and delegates the contained messages to the appropriate handler.
-     *
-     * @param message The {@link LiveTimingRecord} received from the hub, which can be a single message
-     *                or a container for multiple messages.
-     */
+    /// The primary callback method for processing all data received from the [F1HubConnection].
+    /// It increments the record counter and delegates the contained messages to the appropriate handler.
+    ///
+    /// @param message The [LiveTimingRecord] received from the hub, which can be a single message
+    ///                or a container for multiple messages.
     private static void processMessage(LiveTimingRecord message) {
         LOG.debug("Received live timing record: {}", message);
         recordReceivedCounter.inc();
@@ -208,13 +188,11 @@ public class Client {
         }
     }
 
-    /**
-     * Processes an individual {@link LiveTimingMessage}.
-     * This method updates metrics, forwards the message to Kafka (if enabled),
-     * and passes session-related messages to {@link #updateSessionStatus(LiveTimingMessage)}.
-     *
-     * @param message The live timing message to process.
-     */
+    /// Processes an individual [LiveTimingMessage].
+    /// This method updates metrics, forwards the message to Kafka (if enabled),
+    /// and passes session-related messages to [#updateSessionStatus(LiveTimingMessage)].
+    ///
+    /// @param message The live timing message to process.
     private static void processLiveTimingMessage(LiveTimingMessage message) {
         messageReceivedCounter.labelValues(message.category()).inc();
         lastMessageReceived = Instant.now();
@@ -231,13 +209,11 @@ public class Client {
         }
     }
 
-    /**
-     * Parses {@code SessionInfo} and {@code SessionData} messages to update the application's
-     * understanding of the current F1 session state.
-     * It extracts details like session status ("Started", "Finished") and updates the global {@link #sessionInfo} object.
-     *
-     * @param message A {@link LiveTimingMessage} with the category "SessionInfo" or "SessionData".
-     */
+    /// Parses `SessionInfo` and `SessionData` messages to update the application's
+    /// understanding of the current F1 session state.
+    /// It extracts details like session status ("Started", "Finished") and updates the global [#sessionInfo] object.
+    ///
+    /// @param message A [LiveTimingMessage] with the category "SessionInfo" or "SessionData".
     private static void updateSessionStatus(LiveTimingMessage message) {
         String loggingPrefix = "updateSessionStatus() - ";
 
@@ -344,40 +320,32 @@ public class Client {
         lastSessionCheck = Instant.now();
     }
 
-    /**
-     * Gets the current F1 session information.
-     *
-     * @return An {@link Optional} containing the {@link SessionInfo} if available, otherwise an empty Optional.
-     */
+    /// Gets the current F1 session information.
+    ///
+    /// @return An [Optional] containing the [SessionInfo] if available, otherwise an empty Optional.
     public static Optional<SessionInfo> getSessionInfo() {
         return Optional.ofNullable(sessionInfo);
     }
 
-    /**
-     * Gets the active {@link F1HubConnection} instance.
-     *
-     * @return The F1 hub connection client.
-     */
+    /// Gets the active [F1HubConnection] instance.
+    ///
+    /// @return The F1 hub connection client.
     public static F1HubConnection getHubConnection() {
         return hubConnection;
     }
 
-    /**
-     * Gets a snapshot of the connector's current status.
-     *
-     * @return A {@link ConnectorStatus} object containing the current state, last check time, and message statistics.
-     */
+    /// Gets a snapshot of the connector's current status.
+    ///
+    /// @return A [ConnectorStatus] object containing the current state, last check time, and message statistics.
     public static ConnectorStatus getConnectorStatus() {
         return new ConnectorStatus(connectorState.getStatus(), lastSessionCheck, statsMonitor.getMessagesFromQueue(),
                 statsMonitor.getMessageRatePerSecond(), statsMonitor.getMessageRatePerMinute());
     }
 
-    /**
-     * A background task that periodically checks the health of the connection and the state of the F1 session.
-     * It implements the core logic for automatically connecting and disconnecting from the SignalR hub
-     * based on whether an F1 session is active, starting soon, or has finished. This helps to conserve
-     * resources by not maintaining a connection when no data is expected.
-     */
+    /// A background task that periodically checks the health of the connection and the state of the F1 session.
+    /// It implements the core logic for automatically connecting and disconnecting from the SignalR hub
+    /// based on whether an F1 session is active, starting soon, or has finished. This helps to conserve
+    /// resources by not maintaining a connection when no data is expected.
     private static void asyncKeepAliveLoop() {
         final String loggingPrefix = "Connector connection loop - ";
         Duration timeSinceLastMessage = Duration.between(lastMessageReceived, Instant.now());
@@ -429,21 +397,17 @@ public class Client {
         }
     }
 
-    /**
-     * Sets the high-level operational state of the client.
-     *
-     * @param connectorState The new state to set.
-     */
+    /// Sets the high-level operational state of the client.
+    ///
+    /// @param connectorState The new state to set.
     private static void setConnectorState(State connectorState) {
         LOG.info("Client - changing connector state from {} to {}", Client.connectorState, connectorState);
         Client.connectorState = connectorState;
         connectorSessionStateGauge.set(connectorState.getStatusValue());
     }
 
-    /**
-     * Represents the high-level operational state of the client application,
-     * primarily concerning its relationship to an F1 session.
-     */
+    /// Represents the high-level operational state of the client application,
+    /// primarily concerning its relationship to an F1 session.
     enum State {
         UNKNOWN (0, "Unknown state."),
         NO_SESSION (1,"Waiting for next session to start."),

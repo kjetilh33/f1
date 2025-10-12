@@ -20,77 +20,65 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-/**
- * An embedded HTTP server that provides status information about the F1 live timing connector.
- * <p>
- * This server exposes two endpoints:
- * <ul>
- *     <li>{@code /}: Serves static files from the classpath's {@code /static} directory.</li>
- *     <li>{@code /status}: Provides a JSON response with detailed status information about the connector,
- *     including connection state, session details, and message rate statistics.</li>
- * </ul>
- * The server should be started via {@link #start()} and properly shut down using {@link #stop()}
- * to release the network port.
- */
+/// An embedded HTTP server that provides status information about the F1 live timing connector.
+///
+/// This server exposes two endpoints:
+///
+///   - `/`: Serves static files from the classpath's `/static` directory.
+///   - `/status`: Provides a JSON response with detailed status information about the connector,
+///     including connection state, session details, and message rate statistics.
+///
+/// The server should be started via [#start()] and properly shut down using [#stop()]
+/// to release the network port.
 public class ConnectorStatusHttpServer {
-    /** The logger for this class. */
+    /// The logger for this class.
     private static final Logger LOG = LoggerFactory.getLogger(ConnectorStatusHttpServer.class);
-    /** A shared {@link ObjectMapper} instance for JSON serialization. */
+    /// A shared [ObjectMapper] instance for JSON serialization.
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    /** The port number the HTTP server will listen on. */
+    /// The port number the HTTP server will listen on.
     private final int port;
-    /** The socket address for the HTTP server. */
+    /// The socket address for the HTTP server.
     private final InetSocketAddress serverAddress;
-    /** The underlying {@link HttpServer} instance. It is null until {@link #start()} is called. */
+    /// The underlying [HttpServer] instance. It is null until [#start()] is called.
     private HttpServer server;
 
-    /**
-     * Private constructor to create a server instance on a specific port.
-     *
-     * @param port The port number for the server to listen on.
-     */
+    /// Private constructor to create a server instance on a specific port.
+    ///
+    /// @param port The port number for the server to listen on.
     private ConnectorStatusHttpServer(int port) {
         this.port = port;
         this.serverAddress = new InetSocketAddress(port);
     }
 
-    /**
-     * Private constructor to create a server instance on the default port (8080).
-     */
+    /// Private constructor to create a server instance on the default port (8080).
     private ConnectorStatusHttpServer() {
         this(8080); // set default port to 8080
     }
 
-    /**
-     * Creates a new {@link ConnectorStatusHttpServer} instance that will listen on the default port (8080).
-     *
-     * @return A new server instance.
-     */
+    /// Creates a new [ConnectorStatusHttpServer] instance that will listen on the default port (8080).
+    ///
+    /// @return A new server instance.
     public static ConnectorStatusHttpServer create() {
         return new ConnectorStatusHttpServer();
     }
 
-    /**
-     * Creates a new {@link ConnectorStatusHttpServer} instance that will listen on the specified port.
-     *
-     * @param port The port number for the server.
-     * @return A new server instance.
-     */
+    /// Creates a new [ConnectorStatusHttpServer] instance that will listen on the specified port.
+    ///
+    /// @param port The port number for the server.
+    /// @return A new server instance.
     public static ConnectorStatusHttpServer on(int port) {
         return new ConnectorStatusHttpServer(port);
     }
 
-    /**
-     * Starts the HTTP server.
-     * <p>
-     * If the server is not already initialized, it creates the server, sets up the context handlers
-     * for static files and the status endpoint, and then starts it. If the server is already running,
-     * this method has no effect.
-     *
-     * @throws IOException if an I/O error occurs when creating or starting the server.
-     * @throws URISyntaxException if there is an error parsing the static resource path.
-     */
+    /// Starts the HTTP server.
+    ///
+    /// If the server is not already initialized, it creates the server, sets up the context handlers
+    /// for static files and the status endpoint, and then starts it. If the server is already running,
+    /// this method has no effect.
+    ///
+    /// @throws IOException if an I/O error occurs when creating or starting the server.
+    /// @throws URISyntaxException if there is an error parsing the static resource path.
     public void start() throws IOException, URISyntaxException {
         if (server == null) {
             Path staticResourceRoot = Paths.get("/static");
@@ -104,12 +92,10 @@ public class ConnectorStatusHttpServer {
         LOG.info("HTTP Server: Started on port {}", port);
     }
 
-    /**
-     * Stops the HTTP server immediately.
-     * <p>
-     * If the server is running, it is stopped, and the underlying instance is set to null.
-     * If the server is not running, this method does nothing.
-     */
+    /// Stops the HTTP server immediately.
+    ///
+    /// If the server is running, it is stopped, and the underlying instance is set to null.
+    /// If the server is not running, this method does nothing.
     public void stop() {
         if (server != null) {
             server.stop(0);
@@ -120,28 +106,22 @@ public class ConnectorStatusHttpServer {
         }
     }
 
-    /**
-     * An {@link HttpHandler} that serves connector status data as a JSON response.
-     * <p>
-     * This handler responds to GET requests on the {@code /status} path. It gathers status
-     * information from the main {@link Client} and formats it into a comprehensive JSON object.
-     */
+    /// An [HttpHandler] that serves connector status data as a JSON response.
+    ///
+    /// This handler responds to GET requests on the `/status` path. It gathers status
+    /// information from the main [Client] and formats it into a comprehensive JSON object.
     private static class StatusDataHandler implements HttpHandler {
-        /**
-         * Default constructor for the status data handler.
-         */
+        /// Default constructor for the status data handler.
         public StatusDataHandler() {
         }
 
-        /**
-         * Handles an incoming HTTP request for the status endpoint.
-         * <p>
-         * This method only accepts GET requests. It retrieves the current connector and session status,
-         * builds a JSON response, and sends it to the client.
-         *
-         * @param exchange The {@link HttpExchange} representing the client request and server response.
-         * @throws IOException if an I/O error occurs while handling the request or sending the response.
-         */
+        /// Handles an incoming HTTP request for the status endpoint.
+        ///
+        /// This method only accepts GET requests. It retrieves the current connector and session status,
+        /// builds a JSON response, and sends it to the client.
+        ///
+        /// @param exchange The [HttpExchange] representing the client request and server response.
+        /// @throws IOException if an I/O error occurs while handling the request or sending the response.
         public void handle(HttpExchange exchange) throws IOException {
             try (exchange) {
                 if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
