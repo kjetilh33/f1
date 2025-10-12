@@ -48,7 +48,7 @@ public class KafkaProducer {
         props.put("client.id", kafkaClientId);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("acks", "1");
+        props.put("acks", "all");
         props.put("linger.ms", 5);
 
         producer = new org.apache.kafka.clients.producer.KafkaProducer<>(props);
