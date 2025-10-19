@@ -1,0 +1,18 @@
+# Custom configuration options should be added to this file. It will be mapped into the
+# application pod and made available to the container as /config/application.yaml
+
+mp:
+  messaging:
+    incoming:
+      words-in:
+        auto-offset-reset: earliest
+    outgoing:
+      words-out:
+        topic: words
+
+quarkus:
+  log:
+    level: INFO
+
+  jib:
+    base-jvm-image: eclipse-temurin:25-jre
