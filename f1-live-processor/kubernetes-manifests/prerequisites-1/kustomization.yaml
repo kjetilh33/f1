@@ -14,19 +14,19 @@ resources:
   #- signalr-mock-server.deployment.yaml
   #- signalr-mock-server.service.yaml
 
-  - patches:
-    - target:
-        group: rbac.authorization.k8s.io
-        version: v1
-        kind: RoleBinding
-        name: strimzi-cluster-operator
-      path: namespace-patch.yaml
-    - target:
-        group: rbac.authorization.k8s.io
-        version: v1
-        kind: ClusterRoleBinding
-        name: strimzi-cluster-operator
-      path: namespace-patch.yaml
+patches:
+  - target:
+      group: rbac.authorization.k8s.io
+      version: v1
+      kind: RoleBinding
+      name: strimzi-cluster-operator
+    path: namespace-patch.yaml
+  - target:
+      group: rbac.authorization.k8s.io
+      version: v1
+      kind: ClusterRoleBinding
+      name: strimzi-cluster-operator
+    path: namespace-patch.yaml
   - target:
       group: rbac.authorization.k8s.io
       version: v1
