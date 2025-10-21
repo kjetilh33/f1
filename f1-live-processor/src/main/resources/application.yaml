@@ -1,11 +1,16 @@
 mp:
   messaging:
     incoming:
+      f1-live-raw:
+        connector: smallrye-kafka
       words-in:
-        auto-offset-reset: earliest
+        "auto.offset.reset": earliest
     outgoing:
       words-out:
         topic: words
+
+kafka:
+  bootstrap.servers: kafka-main-kafka-bootstrap:9092
 
 quarkus:
   log:
