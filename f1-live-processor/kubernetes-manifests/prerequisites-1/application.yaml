@@ -1,0 +1,6 @@
+# Custom configuration options should be added to this file. It will be mapped into the
+# application pod and made available to the container as /config/application.yaml
+
+quarkus:
+  log:
+    level: INFO

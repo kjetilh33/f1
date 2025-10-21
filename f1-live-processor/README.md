@@ -4,6 +4,23 @@ This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
 
+## Testing the application with local K8s
+This application depends on interacting with other components, both upstream and downstream to do its job:
+
+```mermaid
+---
+config:
+    look: handDrawn
+---
+flowchart LR
+    A(F1 mock server) --> B(F1 live timing connector)
+    B --> C(Kafka)
+    C --> D("`**F1 live processor**`")
+    D --> E[(Postgresql)]
+```
+When developing and testing with a local K8s runtime, you can activate all the prerequisites by running the following commands:
+
+
 ## Running the application in dev mode
 
 You can run your application in dev mode that enables live coding using:
