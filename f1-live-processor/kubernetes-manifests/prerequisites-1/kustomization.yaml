@@ -8,8 +8,11 @@ resources:
   - https://github.com/cloudnative-pg/plugin-barman-cloud/releases/download/v0.7.0/manifest.yaml
   - https://raw.githubusercontent.com/cloudnative-pg/postgres-containers/main/Debian/ClusterImageCatalog-bookworm.yaml
   - https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.48.0/strimzi-cluster-operator-0.48.0.yaml
-  - signalr-mock-server.deployment.yaml
-  - signalr-mock-server.service.yaml
+  - kafka-main.kafkanodepool.yaml
+  - kafka-main-kraft.kafka.yaml
+  - kafka-main-f1-live-raw.kafkatopic.yaml
+  #- signalr-mock-server.deployment.yaml
+  #- signalr-mock-server.service.yaml
 
   - patches:
     - target:
@@ -57,10 +60,10 @@ resources:
 
 # The generator will convert the application.yaml file into a K8 config map which can be mapped
 # into the container
-configMapGenerator:
-  - name: signalr-mock-server-config
-    files:
-      - application.yaml=application.yaml
+#configMapGenerator:
+#  - name: signalr-mock-server-config
+#    files:
+#      - application.yaml=application.yaml
 
-generatorOptions:
-  disableNameSuffixHash: true
+#generatorOptions:
+#  disableNameSuffixHash: true

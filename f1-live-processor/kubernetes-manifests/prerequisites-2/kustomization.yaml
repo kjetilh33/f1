@@ -3,7 +3,16 @@ kind: Kustomization
 namespace: default
 
 resources:
-  - kafka-main.kafkanodepool.yaml
-  - kafka-main-kraft.kafka.yaml
-  - kafka-main-f1-live-raw.kafkatopic.yaml
-  - f1-db.postgresql.yamln
+  - f1-db.postgresql.yaml
+  - signalr-to-kafka.deployment.yaml
+  - signalr-to-kafka.service.yaml
+
+  # The generator will convert the config.yaml file into a K8 config map which can be mapped
+# into the container
+configMapGenerator:
+  - name: signalr-to-kafka-config
+    files:
+      - config.yaml=config.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true

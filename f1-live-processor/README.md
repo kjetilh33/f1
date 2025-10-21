@@ -20,6 +20,22 @@ flowchart LR
 ```
 When developing and testing with a local K8s runtime, you can activate all the prerequisites by running the following commands:
 
+Navigate to the folder `./kubernetes-manifests/prerequisites-1` and run the following command:
+```console
+$ kubectl apply --server-side -k .
+```
+> The installation may report errors on the first run. In that case just re-run the install command.
+
+In order to uninstall the services, run:
+```console
+$ kubectl delete -k .
+```
+Do the same for the folder `./kubernetes-manifests/prerequisites-1`.
+
+Lastly, start the `f1-live-processor` application via skaffold. Navigate to the project root and run
+```console
+$ skaffold dev
+```
 
 ## Running the application in dev mode
 
