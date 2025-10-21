@@ -1,0 +1,14 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: f1-live-raw
+  labels:
+    strimzi.io/cluster: kafka-main
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    min.insync.replicas: 1
+    segment.ms: 86400000 # 24 hours
+    segment.bytes: 100000000 # 1 MB
+    retention.ms: 172000000   # 48 hours
