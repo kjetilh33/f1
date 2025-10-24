@@ -35,4 +35,12 @@ profiles:
     patches:
       - op: replace
         path: /build/artifacts/0/image
-        value: local/signalr-mock-server      
+        value: local/signalr-mock-server
+  - name: win
+    patches:
+      - op: replace
+        path: /build/artifacts/0/image
+        value: local/signalr-mock-server
+      - op: replace
+        path: /build/artifacts/0/custom/buildCommand
+        value: "./build.ps1"
