@@ -53,7 +53,8 @@ public class LiveDataFeed implements Runnable {
     }
 
     private Path getFilePath() throws URISyntaxException {
-        List<Path> pathList = List.of(practicePath, qualifyingPath, racePath, raceImolaPath);
+        //List<Path> pathList = List.of(practicePath, qualifyingPath, racePath, raceImolaPath);
+        List<Path> pathList = List.of(practicePath, racePath, racePath, raceImolaPath);
         Path filePath = pathList.get(ThreadLocalRandom.current().nextInt(0, 4));
         if (!Files.exists(filePath)) {
             LOG.warnf("Unable to read file %s. Will use bundled file instead.", filePath);
