@@ -1,5 +1,6 @@
 package com.kinnovatio;
 
+import io.quarkus.virtual.threads.VirtualThreads;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -9,6 +10,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Path("signalr/negotiate")
 public class NegotiateResource {
 
+    @VirtualThreads
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public RestResponse<String> negotiate() {
