@@ -21,7 +21,7 @@
         <kafka-clients.version>4.1.0</kafka-clients.version>
         <logback-classic.version>1.5.20</logback-classic.version>
         <smallrye.config.version>3.14.1</smallrye.config.version>
-        <io.prometheus.version>1.4.1</io.prometheus.version>
+        <io.prometheus.version>1.4.2</io.prometheus.version>
         <maven-compiler.version>3.14.1</maven-compiler.version>
         <jib.maven.plugin.version>3.4.6</jib.maven.plugin.version>
         <junit.version>6.0.0</junit.version>
