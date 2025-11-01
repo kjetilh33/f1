@@ -3,11 +3,18 @@ mp:
     incoming:
       f1-live-raw:
         connector: smallrye-kafka
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
       words-in:
         "auto.offset.reset": earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
     outgoing:
       words-out:
         topic: words
+        value:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+
 
 kafka:
   bootstrap.servers: kafka-main-kafka-bootstrap:9092

@@ -32,6 +32,16 @@ $ kubectl delete -k .
 ```
 Do the same for the folder `./kubernetes-manifests/prerequisites-1`.
 
+Temporary fix on Windows: 
+Build the application image:
+```console
+$ .\build-local.ps1
+```
+Then deploy the app to your local K8s cluster:
+```console
+$  kubectl apply --server-side -k kubernetes-manifests\
+```
+
 Lastly, start the `f1-live-processor` application via skaffold. Navigate to the project root and run
 ```console
 $ skaffold dev
