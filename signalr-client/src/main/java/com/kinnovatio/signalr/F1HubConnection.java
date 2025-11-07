@@ -555,7 +555,8 @@ public abstract class F1HubConnection {
         // Process the message based on the current connection state
         try {
             switch (connectionState) {
-                case READY -> LOG.error(loggingPrefix + "Message received before connection has been set up. Should not happen.");
+                case READY -> LOG.error(loggingPrefix + "Message received before connection has been set up. Should not happen. Message: {}",
+                        message);
                 case CONNECTING -> {
                     if (MessageDecoder.isInitMessage(message)) {
                         setConnectionState(State.CONNECTED);
