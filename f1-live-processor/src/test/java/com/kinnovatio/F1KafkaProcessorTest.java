@@ -1,7 +1,5 @@
 package com.kinnovatio;
 
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.junit.QuarkusTest;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -12,10 +10,10 @@ import jakarta.inject.Inject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
-class MyMessagingApplicationTest {
+class F1KafkaProcessorTest {
 
     @Inject
-    MyMessagingApplication application;
+    F1KafkaProcessor application;
 
     @Test
     void test() {
