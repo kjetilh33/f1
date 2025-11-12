@@ -14,7 +14,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>25</maven.compiler.release>
 
-        <auto-value.version>1.11.0</auto-value.version>
+        <auto-value.version>1.11.1</auto-value.version>
         <jackson.version>2.20.1</jackson.version>
         <slf4j-api.version>2.0.17</slf4j-api.version>
         <commons-lang3.version>3.19.0</commons-lang3.version>
