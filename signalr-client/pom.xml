@@ -23,7 +23,7 @@
         <smallrye.config.version>3.14.1</smallrye.config.version>
         <io.prometheus.version>1.4.3</io.prometheus.version>
         <maven-compiler.version>3.14.1</maven-compiler.version>
-        <jib.maven.plugin.version>3.4.6</jib.maven.plugin.version>
+        <jib.maven.plugin.version>3.5.0</jib.maven.plugin.version>
         <junit.version>6.0.1</junit.version>
     </properties>
 
