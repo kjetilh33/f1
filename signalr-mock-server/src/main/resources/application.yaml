@@ -3,4 +3,4 @@ quarkus:
     level: INFO
 
   jib:
-    base-jvm-image: eclipse-temurin:25-jre
+    base-jvm-image: eclipse-temurin:25-jre-noble
