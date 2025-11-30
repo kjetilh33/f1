@@ -569,6 +569,7 @@ public abstract class F1HubConnection {
                         lastKeepAliveMessage = Instant.now();
                     } else {
                         LOG.debug(loggingPrefix + "Client in state _connected_, received subscription message.");
+                        lastKeepAliveMessage = Instant.now();
                         notifySubscribers(message);
                     }
                 }

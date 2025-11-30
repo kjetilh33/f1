@@ -153,7 +153,7 @@ public class Client {
         }
 
         // Start the background keep-alive task
-        executorService.scheduleAtFixedRate(Client::asyncKeepAliveLoop, 10, 2, TimeUnit.SECONDS);
+        executorService.scheduleAtFixedRate(Client::asyncKeepAliveLoop, 20, 5, TimeUnit.SECONDS);
     }
 
     /// Creates and connects the [F1HubConnection] instance.
