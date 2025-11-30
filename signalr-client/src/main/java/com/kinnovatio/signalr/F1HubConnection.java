@@ -30,7 +30,6 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -250,13 +249,18 @@ public abstract class F1HubConnection {
     /// @throws IOException if an I/O error occurs during negotiation or if the connection times out.
     /// @throws InterruptedException if the thread is interrupted during the connection process.
     private boolean connect(boolean forceConnect) throws IOException, InterruptedException {
+        String loggingPrefix = "connect() - ";
+
         if (operationalState == OperationalState.OPEN  && !forceConnect) {
-            LOG.warn("F1HubConnection - The connection is already open. Connect() has no effect.");
-            return false;
+            LOG.warn(loggingPrefix + "The connection is already open. Connect() has no effect.");
+            return true;
         }
 
         // In case we have an open websocket, close it
-        if (null != webSocket) webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "Closing before reconnection.");
+        if (null != webSocket) {
+            LOG.warn(loggingPrefix + "The websocket connection is already open. Will close it before reconnecting.");
+            this.close();
+        }
 
         // Check if we need to instantiate the http client
         if (null == httpClient) httpClient = HttpClient.newHttpClient();
@@ -286,29 +290,21 @@ public abstract class F1HubConnection {
             executorService.scheduleAtFixedRate(this::asyncKeepAliveLoop, 5, 1, TimeUnit.SECONDS);
 
             // Start subscribing to the F1 live timing data.
-            subscribeToAll();
+            webSocket.sendText(MessageDecoder.toMessageJson(
+                "Streaming",                        // hub
+                    "Subscribe",                        // method
+                    List.of(List.of(dataStreams)),      // arguments
+                    1),                                 // identifier
+                    true);
         } catch (Exception e) {
+            LOG.warn(loggingPrefix + "Failed to negotiate a connection. Will try to clean up resources. Error: {}", e.toString());
             close();
-
             throw e;
         }
 
         return true;
     }
-    
-    /// Start subscribing to the live timing data (all data streams/types)
-    private void subscribeToAll() {
-        final String hub = "Streaming";
-        final String method = "Subscribe";
-        final List<Object> arguments = List.of(List.of(dataStreams));
-        final int identifier = 1;
-        try {
-            webSocket.sendText(MessageDecoder.toMessageJson(hub, method, arguments, identifier), true);
-        } catch (Exception e) {
-            LOG.warn("Failed to start subscription: {}", e.toString());
-        }
-        
-    }
+
 
     /// Gracefully closes the connection to the F1 SignalR hub and cleans up resources.
     ///
@@ -320,7 +316,8 @@ public abstract class F1HubConnection {
 
         if (null != executorService) executorService.shutdown();
         if (null != webSocket) {
-            webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "Closing the connection.");
+            webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "").join();
+            webSocket.abort();
             webSocket = null;
         }
         if (connectionState != State.READY) setConnectionState(State.READY);
@@ -362,9 +359,9 @@ public abstract class F1HubConnection {
                     errorCounter = 0;
                 } catch (Exception e) {
                     errorCounter++;
-                    LOG.warn("Error connecting to hub: {}", e.toString());
+                    LOG.warn(loggingPrefix + "Error connecting to hub: {}", e.toString());
                     if (errorCounter > 9) {
-                        LOG.error("Too many subsequent connections errors: {}. Will shut down the listener", 10);
+                        LOG.error(loggingPrefix + "Too many subsequent connections errors: {}. Will shut down the listener", 10);
                         close();
                     }
                 }     
@@ -385,9 +382,9 @@ public abstract class F1HubConnection {
                         errorCounter = 0;
                     } catch (Exception e) {
                         errorCounter++;
-                        LOG.warn("Error connecting to hub: {}", e.toString());
+                        LOG.warn(loggingPrefix + "Error connecting to hub: {}", e.toString());
                         if (errorCounter > 9) {
-                            LOG.error("Too many subsequent connections errors: {}. Will shut down the listener", 10);
+                            LOG.error(loggingPrefix + "Too many subsequent connections errors: {}. Will shut down the listener", 10);
                             close();
                         }
                     }
@@ -418,6 +415,7 @@ public abstract class F1HubConnection {
     /// @throws IOException if the negotiation request fails, the server returns an error, or the
     ///         WebSocket connection cannot be established.
     private WebSocket negotiateWebsocket() throws IOException {
+        String loggingPrefix = "negotiateWebsocket() - ";
         setConnectionState(State.CONNECTING);
 
         final ObjectReader objectReader = objectMapper.reader();
@@ -427,8 +425,8 @@ public abstract class F1HubConnection {
                 URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
                 clientProtocolKey,
                 clientProtocol));
-        LOG.info("Negotiating connection to {}", negotiateURI.getAuthority());
-        LOG.trace("Negotiate URI: {}", negotiateURI.toString());
+        LOG.info(loggingPrefix + "Negotiating connection to {}", negotiateURI.getAuthority());
+        LOG.trace(loggingPrefix + "Negotiate URI: {}", negotiateURI.toString());
 
         HttpRequest negotiateRequest = HttpRequest.newBuilder()
                 .uri(negotiateURI)
@@ -440,11 +438,11 @@ public abstract class F1HubConnection {
                     .send(negotiateRequest, HttpResponse.BodyHandlers.ofString());
             String responseBody = negotiateResponse.body();
 
-            LOG.debug("Negotiate response:\n {}", negotiateResponse.toString());
-            LOG.debug("Response headers: \n{}", negotiateResponse.headers().toString());
-            LOG.debug("Response body: \n{}", responseBody);
+            LOG.debug(loggingPrefix + "Negotiate response:\n {}", negotiateResponse.toString());
+            LOG.debug(loggingPrefix + "Response headers: \n{}", negotiateResponse.headers().toString());
+            LOG.debug(loggingPrefix + "Response body: \n{}", responseBody);
             if (negotiateResponse.statusCode() >= 300) {
-                String message = "Failed to negotiate connection to %s. Response: %s".formatted(
+                String message = loggingPrefix +  "Failed to negotiate connection to %s. Response: %s".formatted(
                         negotiateURI.getAuthority(),
                         negotiateResponse.toString()
                 );
@@ -455,23 +453,23 @@ public abstract class F1HubConnection {
             // Parse the response
             String connectionToken = "";
             String cookie = negotiateResponse.headers().firstValue("set-cookie").orElse("");
-            LOG.debug("Negotiate cookie: {}", cookie);
+            LOG.debug(loggingPrefix + "Negotiate cookie: {}", cookie);
             JsonNode responseBodyRoot = objectReader.readTree(responseBody);
             if (responseBodyRoot.path("ConnectionToken").isTextual()) {
                 connectionToken = responseBodyRoot.path("ConnectionToken").asText();
             } else {
                 // A connection token is mandatory for the next step.
-                throw new IOException("Unable to get connection token from the SignalR service during negotiation.");
+                throw new IOException(loggingPrefix + "Unable to get connection token from the SignalR service during negotiation.");
             }
 
             // Check keep alive timeout.
             if (responseBodyRoot.path("KeepAliveTimeout").isNumber()) {
                 keepAliveTimeout = Duration.ofSeconds(responseBodyRoot.path("KeepAliveTimeout").asInt());
-                LOG.debug("Found keep alive timeout spec in connection negotiation: {}",
+                LOG.debug(loggingPrefix + "Found keep alive timeout spec in connection negotiation: {}",
                         responseBodyRoot.path("KeepAliveTimeout").asText());
             } else if (responseBodyRoot.path("KeepAliveTimeout").isNull()) {
                 keepAliveTimeout = Duration.ofDays(365);
-                LOG.debug("KeepAliveTimeout = null. Setting the reconnect timeout to one year.");
+                LOG.debug(loggingPrefix + "KeepAliveTimeout = null. Setting the reconnect timeout to one year.");
             }
 
             // Build the websocket URI. If the base URI was http, we need to use the ws scheme. Else, use wss.
@@ -490,8 +488,8 @@ public abstract class F1HubConnection {
                             URLEncoder.encode(connectionToken, StandardCharsets.UTF_8))
                     );
 
-            LOG.debug("Websocket URI: {}", wssURI.toString());
-            LOG.info("Setting up websocket connection...");
+            LOG.debug(loggingPrefix + "Websocket URI: {}", wssURI.toString());
+            LOG.info(loggingPrefix + "Setting up websocket connection...");
 
             return httpClient.newWebSocketBuilder()
                     .header("User-Agent", "BestHTTP")
@@ -502,9 +500,8 @@ public abstract class F1HubConnection {
                     .join();
 
         } catch (Exception e) {
-            LOG.error("Error connecting to hub: {}", e.toString());
-            connectionState = State.READY;
-            connectorConnectionState.set(0);
+            LOG.error(loggingPrefix + "Error connecting to hub: {}", e.toString());
+            setConnectionState(State.READY);
 
             throw new IOException(e);
         }
