@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -316,7 +317,12 @@ public abstract class F1HubConnection {
 
         if (null != executorService) executorService.shutdown();
         if (null != webSocket) {
-            webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "").join();
+            try {
+                webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "").join();
+            } catch (CompletionException e) {
+                LOG.warn("close() - Something happened when trying to close the websocket. "
+                        + "Most probably it was already closed. Error: {}", e.getCause());
+            }
             webSocket.abort();
             webSocket = null;
         }
