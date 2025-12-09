@@ -368,7 +368,7 @@ public class Client {
                 try {
                     hubConnection.connect();
                 } catch (Exception e) {
-                    LOG.warn("Error connecting to hub: {}", e.toString());
+                    LOG.warn(loggingPrefix + "Error connecting to hub: {}", e.toString());
                 }
             }
         } else if (connectorState == State.NO_SESSION) {
@@ -382,7 +382,7 @@ public class Client {
                 try {
                     hubConnection.connect();
                 } catch (Exception e) {
-                    LOG.warn("Error connecting to hub: {}", e.toString());
+                    LOG.warn(loggingPrefix + "Error connecting to hub: {}", e.toString());
                 }
             }
         } else {
@@ -392,7 +392,7 @@ public class Client {
             try {
                 hubConnection.connect();
             } catch (Exception e) {
-                LOG.warn("Error connecting to hub: {}", e.toString());
+                LOG.warn(loggingPrefix + "Error connecting to hub: {}", e.toString());
             }
         }
     }
