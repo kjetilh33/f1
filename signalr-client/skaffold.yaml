@@ -9,7 +9,7 @@ build:
   - image: signalr-to-kafka                                         # Image name
     context: .
     jib:                                                   # Use Jib as the container builder
-      fromImage: "eclipse-temurin:25-jre-noble"       # Use a "distroless" base image
+      fromImage: "gcr.io/distroless/java25-debian13"       # Use a "distroless" base image
   tagPolicy:
     dateTime:                                              # The image will be tagged with the build timestamp
       format: "20060102T150405"
