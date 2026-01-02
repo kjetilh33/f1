@@ -30,6 +30,7 @@ public class F1KafkaProcessor {
      **/
     @Incoming("words-in")
     @Outgoing("uppercase")
+    @RunOnVirtualThread
     public Message<String> toUpperCase(Message<String> message) {
         return message.withPayload(message.getPayload().toUpperCase());
     }
@@ -38,6 +39,7 @@ public class F1KafkaProcessor {
      * Consume the uppercase channel (in-memory) and print the messages.
      **/
     @Incoming("uppercase")
+    @RunOnVirtualThread
     public void sink(String word) {
         System.out.println(">> " + word);
     }

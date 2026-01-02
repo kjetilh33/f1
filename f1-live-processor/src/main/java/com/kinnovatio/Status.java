@@ -27,8 +27,8 @@ public class Status {
     Sse sse;
 
     @GET
-    @RunOnVirtualThread
     @Produces(MediaType.SERVER_SENT_EVENTS)
+    @RunOnVirtualThread
     public Multi<OutboundSseEvent> getStatus() {
         return statusMessages.map(message -> sse.newEventBuilder()
                 .name("status")
