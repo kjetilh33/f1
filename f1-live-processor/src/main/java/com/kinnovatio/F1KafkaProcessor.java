@@ -1,6 +1,7 @@
 package com.kinnovatio;
 
 import io.quarkus.runtime.StartupEvent;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import org.eclipse.microprofile.reactive.messaging.*;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -40,4 +41,5 @@ public class F1KafkaProcessor {
     public void sink(String word) {
         System.out.println(">> " + word);
     }
+
 }
