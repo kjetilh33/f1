@@ -17,13 +17,13 @@ mp:
         value:
           serializer: org.apache.kafka.common.serialization.StringSerializer
 
-
-kafka:
-  bootstrap.servers: kafka-main-kafka-bootstrap:9092
-
 quarkus:
   log:
     level: INFO
 
   jib:
     base-jvm-image: gcr.io/distroless/java25-debian13
+
+"%prod":
+   kafka:
+     bootstrap.servers: kafka-main-kafka-bootstrap:9092

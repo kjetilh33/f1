@@ -13,6 +13,7 @@ import jakarta.ws.rs.sse.Sse;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 
 import java.awt.print.Book;
+import java.time.Duration;
 
 
 @ApplicationScoped
@@ -30,9 +31,17 @@ public class Status {
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @RunOnVirtualThread
     public Multi<OutboundSseEvent> getStatus() {
-        return statusMessages.map(message -> sse.newEventBuilder()
-                .name("status")
-                .data(message)
-                .build());
+        return Multi.createBy().merging()
+                        .streams(statusMessages, emitAPeriodicPing())
+                        .map(message -> sse.newEventBuilder()
+                                .name("status")
+                                .data(message)
+                                .build());
     }
+
+    Multi<String> emitAPeriodicPing() {
+        return Multi.createFrom().ticks().every(Duration.ofSeconds(10))
+                .onItem().transform(x -> "{}");
+    }
+
 }

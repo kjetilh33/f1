@@ -2,11 +2,16 @@ package com.kinnovatio;
 
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
+import jakarta.transaction.Transactional;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.eclipse.microprofile.reactive.messaging.*;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 @ApplicationScoped
@@ -17,33 +22,16 @@ public class F1KafkaProcessor {
     @Channel("status-out")
     Emitter<String> statusEmitter;
 
-    /**
-     * Sends message to the "words-out" channel, can be used from a JAX-RS resource or any bean of your application.
-     * Messages are sent to the broker.
-     **/
-    void onStart(@Observes StartupEvent ev) {
-        Stream.of("Hello", "with", "Quarkus", "Messaging", "message")
-                .forEach(string -> statusEmitter.send(string));
-    }
-
-    /**
-     * Consume the message from the "words-in" channel, uppercase it and send it to the uppercase channel.
-     * Messages come from the broker.
-     **/
-    @Incoming("words-in")
-    @Outgoing("uppercase")
+    @Incoming("f1-live-raw")
     @RunOnVirtualThread
-    public Message<String> toUpperCase(Message<String> message) {
-        return message.withPayload(message.getPayload().toUpperCase());
-    }
+    @Transactional
+    public void toStorage(ConsumerRecords<String, String> records) {
+        for (ConsumerRecord<String, String> record : records) {
+            System.out.printf(">> offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
 
-    /**
-     * Consume the uppercase channel (in-memory) and print the messages.
-     **/
-    @Incoming("uppercase")
-    @RunOnVirtualThread
-    public void sink(String word) {
-        System.out.println(">> " + word);
-    }
+            statusEmitter.send(record.value());
+        }
 
+        return;
+    }
 }
