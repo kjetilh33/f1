@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 public class F1KafkaProcessor {
 
     @Inject
+    @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("status-out")
     Emitter<String> statusEmitter;
 
@@ -21,7 +22,8 @@ public class F1KafkaProcessor {
      * Messages are sent to the broker.
      **/
     void onStart(@Observes StartupEvent ev) {
-        Stream.of("Hello", "with", "Quarkus", "Messaging", "message").forEach(string -> statusEmitter.send(string));
+        Stream.of("Hello", "with", "Quarkus", "Messaging", "message")
+                .forEach(string -> statusEmitter.send(string));
     }
 
     /**
