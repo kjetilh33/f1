@@ -4,15 +4,22 @@
 mp:
   messaging:
     incoming:
-      words-in:
-        auto-offset-reset: earliest
+      f1-live-raw:
+        connector: smallrye-kafka
+        "auto.offset.reset": earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
     outgoing:
       words-out:
+        connector: smallrye-kafka
         topic: words
+        value:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
 
 quarkus:
   log:
     level: INFO
 
-  jib:
-    base-jvm-image: eclipse-temurin:25-jre
+"%prod":
+  kafka:
+    bootstrap.servers: kafka-main-kafka-bootstrap:9092
