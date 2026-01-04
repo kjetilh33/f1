@@ -24,6 +24,14 @@ quarkus:
   jib:
     base-jvm-image: gcr.io/distroless/java25-debian13
 
+  datasource:
+      db-kind: postgresql
+      #username: <your username>
+      #password: <your password>
+      #jdbc:
+        #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
+        #max-size: 16
+
 "%prod":
    kafka:
      bootstrap.servers: kafka-main-kafka-bootstrap:9092
