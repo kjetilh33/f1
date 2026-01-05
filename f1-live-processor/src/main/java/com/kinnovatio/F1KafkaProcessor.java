@@ -8,6 +8,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
+import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.*;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -18,11 +19,13 @@ import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -88,29 +91,59 @@ public class F1KafkaProcessor {
     }
 
     @Incoming("f1-live-raw")
+    @Retry(delay = 100, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
-    public void toStorage(ConsumerRecords<String, String> records) {
+    public void toStorage(ConsumerRecords<String, String> records) throws Exception {
+        final int batchSize = 1000;
+        int recordCount = 0;
+
         String sql = """
-                INSERT INTO live_timing_messages(category, message, message_timestamp) VALUES(?, ?, ?);
+                INSERT INTO live_timing_messages(category, message, message_timestamp) VALUES(?, ?::jsonb, ?::timestamptz);
                 """;
 
-        for (ConsumerRecord<String, String> record : records) {
-            ZonedDateTime messageTimestamp = null;
-            Headers headers = record.headers();
-            Header timestampHeader = headers.lastHeader("timestamp");
-            if (timestampHeader != null) {
-                String timeStampString = new String(timestampHeader.value());
-                try {
-                    messageTimestamp = ZonedDateTime.parse(timeStampString);
-                } catch (DateTimeParseException e) {
-                    LOG.errorf("Unable to parse the message timestamp from message header: %s", timeStampString);
+        try (Connection connection = storageDataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (ConsumerRecord<String, String> record : records) {
+                // Extract the timestamp from the message header
+                // ZonedDateTime messageTimestamp = null;
+                Headers headers = record.headers();
+                Header timestampHeader = headers.lastHeader("timestamp");
+                /*
+                if (timestampHeader != null) {
+                    String timeStampString = new String(timestampHeader.value());
+                    try {
+                        messageTimestamp = ZonedDateTime.parse(timeStampString);
+                    } catch (DateTimeParseException e) {
+                        LOG.errorf("Unable to parse the message timestamp from message header: %s", timeStampString);
+                    }
                 }
+
+                 */
+
+                statement.setString(1, record.key());
+                statement.setString(2, record.value());
+                if (timestampHeader != null) {
+                    statement.setString(3, new String(timestampHeader.value()));
+                } else {
+                    statement.setString(3, null);
+                }
+                statement.addBatch();
+
+                // Submit batch in case we reach the batch size
+                if (++recordCount % batchSize == 0) {
+                    statement.executeBatch();
+                    statement.clearBatch(); // Optional, but good practice
+                }
+
+                System.out.printf(">> offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
+                statusEmitter.send(record.value());
             }
+            statement.executeBatch();
 
-            System.out.printf(">> offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
-
-            statusEmitter.send(record.value());
+        } catch (Exception e) {
+            LOG.warnf("Error when trying to store message. Will retry shortly. Error: %s", e.getMessage());
+            throw e;
         }
 
         return;
