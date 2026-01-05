@@ -3,19 +3,15 @@ mp:
     incoming:
       f1-live-raw:
         connector: smallrye-kafka
-        value:
-          deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      words-in:
-        connector: smallrye-kafka
         "auto.offset.reset": earliest
         value:
           deserializer: org.apache.kafka.common.serialization.StringDeserializer
-    outgoing:
-      words-out:
-        connector: smallrye-kafka
-        topic: words
-        value:
-          serializer: org.apache.kafka.common.serialization.StringSerializer
+    #outgoing:
+      #words-out:
+        #connector: smallrye-kafka
+        #topic: words
+        #value:
+          #serializer: org.apache.kafka.common.serialization.StringSerializer
 
 quarkus:
   log:
