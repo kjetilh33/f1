@@ -17,7 +17,7 @@
 <div class="container mt-5">
         <div class="row">
         <div class="col-sm-12">
-            <h3 class="text-lg font-bold text-center">Messages</h3>
+            <h3 class="text-lg font-bold text-center">Messages (last 20)</h3>
             <p>SSE connection status: <span id="sse-connection-status">Not connected</span></p>
             <div id="live-timing-messages-container" class="text-sm"></div>
         </div>
@@ -28,8 +28,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <script>
-    const messages = new Array();
-    let lastMessageUpdate = Temporal.NOW.instant();
+    const messages = [];
+    let lastMessageUpdate = Date.now();
 
     document.addEventListener('DOMContentLoaded', () => {
         fetchData();
@@ -85,7 +85,11 @@
             messages.shift();
         }
 
-
+        if (Math.abs(new Date() - lastMessageUpdate) > 500) {
+            // It has been 500 ms since last update, update the table
+            updateLiveTimingMessages(messages);
+            lastMessageUpdate = new Date();
+        }
     }
 
     function updateLiveTimingMessages(messages) {
