@@ -9,17 +9,16 @@ mp:
         "auto.offset.reset": earliest
         value:
           deserializer: org.apache.kafka.common.serialization.StringDeserializer
-    outgoing:
-      words-out:
-        connector: smallrye-kafka
-        topic: words
-        value:
-          serializer: org.apache.kafka.common.serialization.StringSerializer
-
 quarkus:
   log:
     level: INFO
 
-"%prod":
-  kafka:
-    bootstrap.servers: kafka-main-kafka-bootstrap:9092
+  datasource:
+    db-kind: postgresql
+    #username: <your username>
+    #password: <your password>
+    #jdbc:
+      #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
+      #max-size: 16
+kafka:
+  bootstrap.servers: kafka-main-kafka-bootstrap:9092

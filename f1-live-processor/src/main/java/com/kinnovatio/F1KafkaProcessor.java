@@ -145,7 +145,5 @@ public class F1KafkaProcessor {
             LOG.warnf("Error when trying to store message. Will retry shortly. Error: %s", e.getMessage());
             throw e;
         }
-
-        return;
     }
 }

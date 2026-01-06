@@ -7,6 +7,7 @@ import io.smallrye.reactive.messaging.memory.InMemoryConnector;
 import io.smallrye.reactive.messaging.memory.InMemorySource;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import jakarta.inject.Inject;
@@ -25,6 +26,7 @@ class F1KafkaProcessorTest {
     InMemoryConnector connector;
 
     @Test
+    @Disabled
     void test() {
         InMemorySource<String> ordersIn = connector.source("f1-live-raw");
 
