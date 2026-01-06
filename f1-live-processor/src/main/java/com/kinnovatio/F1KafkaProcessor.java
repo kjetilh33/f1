@@ -1,5 +1,6 @@
 package com.kinnovatio;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
@@ -16,25 +17,21 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
+import com.kinnovatio.signalr.messages.LiveTimingMessage;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 
 @ApplicationScoped
 public class F1KafkaProcessor {
     private static final Logger LOG = Logger.getLogger(F1KafkaProcessor.class);
 
     private final AtomicBoolean isDbHealthy = new AtomicBoolean();
+
+    @Inject
+    ObjectMapper objectMapper;
 
     @Inject
     AgroalDataSource storageDataSource;
@@ -105,29 +102,11 @@ public class F1KafkaProcessor {
         try (Connection connection = storageDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             for (ConsumerRecord<String, String> record : records) {
-                // Extract the timestamp from the message header
-                // ZonedDateTime messageTimestamp = null;
-                Headers headers = record.headers();
-                Header timestampHeader = headers.lastHeader("timestamp");
-                /*
-                if (timestampHeader != null) {
-                    String timeStampString = new String(timestampHeader.value());
-                    try {
-                        messageTimestamp = ZonedDateTime.parse(timeStampString);
-                    } catch (DateTimeParseException e) {
-                        LOG.errorf("Unable to parse the message timestamp from message header: %s", timeStampString);
-                    }
-                }
+                LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
 
-                 */
-
-                statement.setString(1, record.key());
-                statement.setString(2, record.value());
-                if (timestampHeader != null) {
-                    statement.setString(3, new String(timestampHeader.value()));
-                } else {
-                    statement.setString(3, null);
-                }
+                statement.setString(1, message.category());
+                statement.setString(2, message.message());
+                statement.setString(3, message.timestamp().toString());
                 statement.addBatch();
 
                 // Submit batch in case we reach the batch size
