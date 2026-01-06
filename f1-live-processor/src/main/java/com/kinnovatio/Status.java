@@ -12,7 +12,6 @@ import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 
-import java.awt.print.Book;
 import java.time.Duration;
 
 
