@@ -7,8 +7,6 @@ import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.transaction.Transactional;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.common.header.Header;
-import org.apache.kafka.common.header.Headers;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.*;
 
@@ -27,8 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @ApplicationScoped
 public class F1KafkaProcessor {
     private static final Logger LOG = Logger.getLogger(F1KafkaProcessor.class);
-
-    private final AtomicBoolean isDbHealthy = new AtomicBoolean();
+    private static final String dbTableName = "live_timing_messages";
 
     @Inject
     ObjectMapper objectMapper;
@@ -42,32 +39,27 @@ public class F1KafkaProcessor {
     Emitter<String> statusEmitter;
 
     public void onStartup(@Observes StartupEvent ev) {
-        isDbHealthy.set(false);
         LOG.infof("Starting the live timing message storage processor...");
 
-        isDbHealthy.set(createDbTableIfNotExists());
-        if (!isDbHealthy.get()) {
-            LOG.warn("The storage DB is not healthy. The processor will ignore messages and not store them.");
-        }
+        createDbTableIfNotExists();
 
         LOG.infof("The processor is ready. Waiting for live timing messages...");
     }
 
-    private boolean createDbTableIfNotExists() {
-        boolean isDbHealthy = false;
+    private void createDbTableIfNotExists() {
         String createTableSql = """
-                CREATE TABLE IF NOT EXISTS live_timing_messages (
+                CREATE TABLE IF NOT EXISTS %s (
                     message_id SERIAL PRIMARY KEY,
                     category VARCHAR(100) DEFAULT 'N/A',
                     message JSONB,
                     message_timestamp TIMESTAMPTZ,
                     created_timestamp TIMESTAMPTZ DEFAULT NOW()                    
                 );
-                """;
+                """.formatted(dbTableName);
 
         String createIndexStatement = """
-                CREATE INDEX IF NOT EXISTS idx_category_timestamp ON live_timing_messages (category, message_timestamp);
-                """;
+                CREATE INDEX IF NOT EXISTS idx_category_timestamp ON %s (category, message_timestamp);
+                """.formatted(dbTableName);
 
         try (Connection connection = storageDataSource.getConnection(); Statement statement = connection.createStatement()) {
             LOG.infof("Successfully connected to the storage DB...");
@@ -77,14 +69,9 @@ public class F1KafkaProcessor {
 
             statement.execute(createIndexStatement);
             LOG.infof("Successfully created (if not already exists) the DB index...");
-
-            isDbHealthy = true;
         } catch (Exception e) {
             LOG.errorf("An error happened when creating the DB table: %s", e.getMessage());
-            isDbHealthy = false;
         }
-
-        return isDbHealthy;
     }
 
     @Incoming("f1-live-raw")
@@ -96,8 +83,8 @@ public class F1KafkaProcessor {
         int recordCount = 0;
 
         String sql = """
-                INSERT INTO live_timing_messages(category, message, message_timestamp) VALUES(?, ?::jsonb, ?::timestamptz);
-                """;
+                INSERT INTO %s(category, message, message_timestamp) VALUES(?, ?::jsonb, ?::timestamptz);
+                """.formatted(dbTableName);
 
         try (Connection connection = storageDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
