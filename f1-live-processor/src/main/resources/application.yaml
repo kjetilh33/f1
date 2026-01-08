@@ -28,6 +28,9 @@ quarkus:
         #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
         #max-size: 16
 
+log:
+  source: "Default config file."
+
 "%prod":
    kafka:
      bootstrap.servers: kafka-main-kafka-bootstrap:9092

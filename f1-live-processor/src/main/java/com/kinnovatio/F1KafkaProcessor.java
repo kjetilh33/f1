@@ -7,6 +7,7 @@ import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.transaction.Transactional;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.*;
 
@@ -33,6 +34,9 @@ public class F1KafkaProcessor {
     @Inject
     AgroalDataSource storageDataSource;
 
+    @ConfigProperty(name = "log.source")
+    String logSurce;
+
     @Inject
     @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("status-out")
@@ -40,6 +44,7 @@ public class F1KafkaProcessor {
 
     public void onStartup(@Observes StartupEvent ev) {
         LOG.infof("Starting the live timing message storage processor...");
+        LOG.infof("Config picked up from %s", logSurce);
 
         createDbTableIfNotExists();
 

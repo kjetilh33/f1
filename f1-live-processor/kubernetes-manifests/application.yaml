@@ -22,3 +22,6 @@ quarkus:
       max-size: 16
 kafka:
   "bootstrap.servers": kafka-main-kafka-bootstrap:9092
+
+log:
+  source: "External config file."
