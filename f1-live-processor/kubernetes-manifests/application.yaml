@@ -19,9 +19,11 @@ quarkus:
     #password: <your password>
     jdbc:
       url: jdbc:postgresql://f1-db-rw:5432/app
-      max-size: 16
-kafka:
-  bootstrap.servers: kafka-main-kafka-bootstrap:9092
+
+"%prod":
+  kafka:
+    bootstrap:
+      servers: kafka-main-kafka-bootstrap:9092
 
 log:
   source: "External config file."
