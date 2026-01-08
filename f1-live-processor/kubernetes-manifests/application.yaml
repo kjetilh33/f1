@@ -19,6 +19,7 @@ quarkus:
     #password: <your password>
     jdbc:
       url: jdbc:postgresql://f1-db-rw:5432/app
+      acquisition-timeout: 10s
 
 "%prod":
   kafka:
