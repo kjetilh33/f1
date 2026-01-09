@@ -107,7 +107,8 @@ public class F1KafkaProcessor {
                     statement.clearBatch(); // Optional, but good practice
                 }
 
-                System.out.printf(">> offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
+                //System.out.printf(">> offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
+                LOG.debugf(">> offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
                 statusEmitter.send(record.value());
             }
             statement.executeBatch();
