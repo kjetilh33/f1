@@ -11,5 +11,5 @@ jobs:
   package-signalr-to-kafka:
     uses: "kjetilh33/utilities/.github/workflows/java-maven-skaffold-build-push-ghcr.yml@main"
     with:
-      repositoryFolder: "./signalr-client/"
+      repositoryFolder: "./f1-live-processor/"
     secrets: inherit
