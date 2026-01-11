@@ -2,6 +2,8 @@ package com.kinnovatio;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agroal.api.AgroalDataSource;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.transaction.Transactional;
@@ -33,6 +35,9 @@ public class F1KafkaProcessor {
 
     @Inject
     AgroalDataSource storageDataSource;
+
+    @Inject
+    MeterRegistry registry;
 
     @ConfigProperty(name = "log.source")
     String logSurce;
@@ -100,6 +105,12 @@ public class F1KafkaProcessor {
                 statement.setString(2, message.message());
                 statement.setString(3, message.timestamp().toString());
                 statement.addBatch();
+
+                Counter.builder("livetiming_storage_processor_record_stored_total")
+                        .description("Total number of live timing records written to storage.")
+                        .tag("category" , message.category())
+                        .register(registry)
+                        .increment();
 
                 // Submit batch in case we reach the batch size
                 if (++recordCount % batchSize == 0) {
