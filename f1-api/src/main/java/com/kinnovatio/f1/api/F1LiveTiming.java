@@ -35,7 +35,7 @@ public class F1LiveTiming {
 
     @Inject
     @Channel("f1-live-raw")
-    Multi<LiveTimingMessage> LiveTimingMessage;
+    Multi<String> LiveTimingMessage;
 
     @Inject
     Sse sse;
@@ -73,7 +73,6 @@ public class F1LiveTiming {
         return Multi.createBy().merging()
                 .streams(LiveTimingMessage, emitAPeriodicPing())
                 .map(message -> sse.newEventBuilder()
-                        .name(message.category())
                         .data(message)
                         .build());
     }
@@ -83,15 +82,9 @@ public class F1LiveTiming {
     /// This helps to keep the SSE connection alive and detect disconnected clients.
     ///
     /// @return A `Multi` stream emitting a ping string every 10 seconds.
-    Multi<LiveTimingMessage> emitAPeriodicPing() {
+    Multi<String> emitAPeriodicPing() {
         return Multi.createFrom().ticks().every(Duration.ofSeconds(10))
-                .onItem().transform(x -> new LiveTimingMessage(
-                        "Heartbeat",
-                        """
-                                {}
-                                """,
-                        ZonedDateTime.now(),
-                        true));
+                .onItem().transform(x -> "{}");
     }
 
 }
