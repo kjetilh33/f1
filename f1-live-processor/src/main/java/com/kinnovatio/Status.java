@@ -15,6 +15,10 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import java.time.Duration;
 
 
+/// REST endpoint for streaming status updates via Server-Sent Events (SSE).
+/// This class exposes a `/status` endpoint that streams live updates from the
+/// `status-out` channel to connected clients. It also sends a periodic ping
+/// to keep the connection alive.
 @ApplicationScoped
 @Path("/status")
 public class Status {
@@ -26,6 +30,11 @@ public class Status {
     @Inject
     Sse sse;
 
+    /// Streams status updates to clients using Server-Sent Events (SSE).
+    /// This method merges the `statusMessages` stream with a periodic ping stream.
+    /// Each message is wrapped in an `OutboundSseEvent` with the name "status".
+    ///
+    /// @return A `Multi` stream of `OutboundSseEvent` objects.
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @RunOnVirtualThread
@@ -38,6 +47,11 @@ public class Status {
                                 .build());
     }
 
+    /// Creates a stream that emits a periodic ping message.
+    /// The ping message is an empty JSON object `{}` emitted every 10 seconds.
+    /// This helps to keep the SSE connection alive and detect disconnected clients.
+    ///
+    /// @return A `Multi` stream emitting a ping string every 10 seconds.
     Multi<String> emitAPeriodicPing() {
         return Multi.createFrom().ticks().every(Duration.ofSeconds(10))
                 .onItem().transform(x -> "{}");
