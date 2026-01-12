@@ -23,15 +23,12 @@ import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @ApplicationScoped
 public class F1KafkaProcessor {
     private static final Logger LOG = Logger.getLogger(F1KafkaProcessor.class);
     private static final String dbTableName = "live_timing_messages";
-
 
     private static final Set<String> excludeCategories = Set.of("Heartbeat");
 
