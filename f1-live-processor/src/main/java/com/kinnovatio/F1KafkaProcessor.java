@@ -63,16 +63,18 @@ public class F1KafkaProcessor {
                 CREATE TABLE IF NOT EXISTS %s (
                     message_id SERIAL PRIMARY KEY,
                     category VARCHAR(100) DEFAULT 'N/A',
-                    message JSONB,
                     is_streaming BOOLEAN DEFAULT FALSE,
+                    message JSONB,
                     message_timestamp TIMESTAMPTZ,
+                    message_hash TEXT,
                     created_timestamp TIMESTAMPTZ DEFAULT NOW()
                 );
                 """.formatted(dbTableName);
 
         String createIndexStatement = """
                 CREATE INDEX IF NOT EXISTS idx_category_timestamp ON %s (category, message_timestamp);
-                """.formatted(dbTableName);
+                CREATE INDEX IF NOT EXISTS idx_hash ON %s (message_hash);
+                """.formatted(dbTableName, dbTableName);
 
         try (Connection connection = storageDataSource.getConnection(); Statement statement = connection.createStatement()) {
             LOG.infof("Successfully connected to the storage DB...");
@@ -96,7 +98,7 @@ public class F1KafkaProcessor {
         int recordCount = 0;
 
         String sql = """
-                INSERT INTO %s(category, message, message_timestamp) VALUES(?, ?::jsonb, ?::timestamptz);
+                INSERT INTO %s(category, is_streaming, message, message_timestamp, message_hash) VALUES(?, ?, ?::jsonb, ?::timestamptz, MD5(?));
                 """.formatted(dbTableName);
 
         try (Connection connection = storageDataSource.getConnection();
@@ -104,7 +106,7 @@ public class F1KafkaProcessor {
             for (ConsumerRecord<String, String> record : records) {
                 LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
 
-                if (excludeCategories.contains(message.category())) {
+                if (message.message().isEmpty() || excludeCategories.contains(message.category())) {
                     Counter.builder("livetiming_storage_processor_record_discarded_total")
                             .description("Total number of live timing records discarded.")
                             .tag("category" , message.category())
@@ -116,8 +118,10 @@ public class F1KafkaProcessor {
                 }
 
                 statement.setString(1, message.category());
-                statement.setString(2, message.message());
-                statement.setString(3, message.timestamp().toString());
+                statement.setBoolean(2, message.isStreaming());
+                statement.setString(3, message.message());
+                statement.setString(4, message.timestamp().toString());
+                statement.setString(5, message.message() + message.timestamp().toString());
                 statement.addBatch();
 
                 Counter.builder("livetiming_storage_processor_record_stored_total")
