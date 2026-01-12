@@ -19,19 +19,24 @@ smallrye:
       enabled: true
 
 quarkus:
+  rest:
+    path: "/api/v1"
+
   log:
     level: INFO
+
+  datasource:
+    db-kind: postgresql
+      #username: <your username>
+      #password: <your password>
+      #jdbc:
+    #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
+    #max-size: 16
 
   jib:
     base-jvm-image: gcr.io/distroless/java25-debian13
 
-  datasource:
-      db-kind: postgresql
-      #username: <your username>
-      #password: <your password>
-      #jdbc:
-        #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
-        #max-size: 16
+
 
 log:
   source: "Default config file."

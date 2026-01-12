@@ -1,11 +1,11 @@
 package com.kinnovatio;
 
+import com.kinnovatio.f1.api.F1LiveTiming;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 import io.smallrye.reactive.messaging.memory.InMemoryConnector;
 import io.smallrye.reactive.messaging.memory.InMemorySource;
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -16,10 +16,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
 @QuarkusTestResource(KafkaTestLifecycleManager.class)
-class F1KafkaProcessorTest {
+class F1LiveTimingTest {
 
     @Inject
-    F1KafkaProcessor application;
+    F1LiveTiming application;
 
     @Inject
     @Connector("smallrye-in-memory")

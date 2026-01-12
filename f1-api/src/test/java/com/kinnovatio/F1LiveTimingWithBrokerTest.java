@@ -18,7 +18,7 @@ import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
 @QuarkusTest
 @QuarkusTestResource(KafkaCompanionResource.class)
-public class F1KafkaProcessorWithBrokerTest {
+public class F1LiveTimingWithBrokerTest {
 
     @InjectKafkaCompanion
     KafkaCompanion companion;
