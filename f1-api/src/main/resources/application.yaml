@@ -20,7 +20,7 @@ smallrye:
 
 quarkus:
   rest:
-    path: "/api/v1"
+    path: "f1/api/v1"
 
   log:
     level: INFO

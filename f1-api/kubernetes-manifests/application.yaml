@@ -16,6 +16,9 @@ smallrye:
       enabled: true
 
 quarkus:
+  rest:
+    path: "f1/api/v1"
+
   log:
     level: INFO
 
