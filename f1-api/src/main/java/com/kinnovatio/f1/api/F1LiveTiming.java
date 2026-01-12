@@ -21,6 +21,7 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.ResponseHeader;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -68,6 +69,7 @@ public class F1LiveTiming {
     /// @return A `Multi` stream of `OutboundSseEvent` objects.
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
+    @ResponseHeader(name = "X-Accel-Buffering", value = "no")
     @RunOnVirtualThread
     public Multi<OutboundSseEvent> getStatus() {
         return Multi.createBy().merging()
