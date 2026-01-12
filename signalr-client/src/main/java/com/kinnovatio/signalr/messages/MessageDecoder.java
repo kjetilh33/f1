@@ -182,7 +182,7 @@ public class MessageDecoder {
                     messageValue = inflate(array.get(1).textValue());
                 }
 
-                returnValue = Optional.of(new LiveTimingMessage(category, messageValue, timeStamp));
+                returnValue = Optional.of(new LiveTimingMessage(category, messageValue, timeStamp, true));
             }
         } catch (Exception e) {
             LOG.warnf("Error while parsing streaming message: %s", e.toString());
@@ -219,7 +219,7 @@ public class MessageDecoder {
                         if (entry.getKey().endsWith(".z")) {
                                 messageValue = inflate(entry.getValue().textValue());
                         }
-                        LiveTimingMessages.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp));
+                        LiveTimingMessages.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp, false));
 
                     } catch (DataFormatException e) {
                         LOG.warnf("Error while deflating data in message with category %s: %s",

@@ -67,6 +67,7 @@ public class F1KafkaProcessor {
                     message_id SERIAL PRIMARY KEY,
                     category VARCHAR(100) DEFAULT 'N/A',
                     message JSONB,
+                    is_streaming BOOLEAN DEFAULT FALSE,
                     message_timestamp TIMESTAMPTZ,
                     created_timestamp TIMESTAMPTZ DEFAULT NOW()
                 );

@@ -12,5 +12,6 @@ import java.time.ZonedDateTime;
 /// @param message   The raw JSON payload for this category. This string contains the detailed
 ///                  data that can be further parsed by the consumer.
 /// @param timestamp The server-provided UTC timestamp indicating when the event occurred.
-public record LiveTimingMessage(String category, String message, ZonedDateTime timestamp) implements LiveTimingRecord {
+/// @param isStreaming `true` if this message originates from the streaming feed. `false` if it originates from a hub response.
+public record LiveTimingMessage(String category, String message, ZonedDateTime timestamp, boolean isStreaming) implements LiveTimingRecord {
 }
