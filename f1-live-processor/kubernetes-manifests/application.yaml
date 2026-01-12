@@ -9,6 +9,12 @@ mp:
         "auto.offset.reset": earliest
         value:
           deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+smallrye:
+  messaging:
+    observation:
+      enabled: true
+
 quarkus:
   log:
     level: INFO

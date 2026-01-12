@@ -13,6 +13,11 @@ mp:
         #value:
           #serializer: org.apache.kafka.common.serialization.StringSerializer
 
+smallrye:
+  messaging:
+    observation:
+      enabled: true
+
 quarkus:
   log:
     level: INFO
@@ -32,8 +37,9 @@ log:
   source: "Default config file."
 
 "%prod":
-   kafka:
-     bootstrap.servers: kafka-main-kafka-bootstrap:9092
+  kafka:
+    bootstrap:
+      servers: kafka-main-kafka-bootstrap:9092
 
 "%test":
   quarkus:

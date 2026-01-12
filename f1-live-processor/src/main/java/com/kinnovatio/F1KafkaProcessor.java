@@ -23,12 +23,17 @@ import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @ApplicationScoped
 public class F1KafkaProcessor {
     private static final Logger LOG = Logger.getLogger(F1KafkaProcessor.class);
     private static final String dbTableName = "live_timing_messages";
+
+
+    private static final Set<String> excludeCategories = Set.of("Heartbeat");
 
     @Inject
     ObjectMapper objectMapper;
@@ -63,7 +68,7 @@ public class F1KafkaProcessor {
                     category VARCHAR(100) DEFAULT 'N/A',
                     message JSONB,
                     message_timestamp TIMESTAMPTZ,
-                    created_timestamp TIMESTAMPTZ DEFAULT NOW()                    
+                    created_timestamp TIMESTAMPTZ DEFAULT NOW()
                 );
                 """.formatted(dbTableName);
 
@@ -101,6 +106,17 @@ public class F1KafkaProcessor {
             for (ConsumerRecord<String, String> record : records) {
                 LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
 
+                if (excludeCategories.contains(message.category())) {
+                    Counter.builder("livetiming_storage_processor_record_discarded_total")
+                            .description("Total number of live timing records discarded.")
+                            .tag("category" , message.category())
+                            .register(registry)
+                            .increment();
+
+                    LOG.debugf("Discarded >> offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
+                    continue;
+                }
+
                 statement.setString(1, message.category());
                 statement.setString(2, message.message());
                 statement.setString(3, message.timestamp().toString());
@@ -118,8 +134,7 @@ public class F1KafkaProcessor {
                     statement.clearBatch(); // Optional, but good practice
                 }
 
-                //System.out.printf(">> offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
-                LOG.debugf(">> offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
+                LOG.debugf("to Storage >> offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
                 statusEmitter.send(record.value());
             }
             statement.executeBatch();
