@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: default
+
+resources:
+  - f1-db.postgresql.yaml
+  - signalr-to-kafka.deployment.yaml
+  - signalr-to-kafka.service.yaml
+
+  # The generator will convert the config.yaml file into a K8 config map which can be mapped
+# into the container
+configMapGenerator:
+  - name: signalr-to-kafka-config
+    files:
+      - config.yaml=config.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true

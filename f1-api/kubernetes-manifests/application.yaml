@@ -1,0 +1,35 @@
+# Custom configuration options should be added to this file. It will be mapped into the
+# application pod and made available to the container as /config/application.yaml
+
+mp:
+  messaging:
+    incoming:
+      f1-live-raw:
+        connector: smallrye-kafka
+        "auto.offset.reset": earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+smallrye:
+  messaging:
+    observation:
+      enabled: true
+
+quarkus:
+  log:
+    level: INFO
+
+  datasource:
+    db-kind: postgresql
+    #username: <your username>
+    #password: <your password>
+    jdbc:
+      url: jdbc:postgresql://f1-db-rw:5432/app
+      acquisition-timeout: 5s
+
+kafka:
+  bootstrap:
+    servers: kafka-main-kafka-bootstrap:9092
+
+log:
+  source: "External config file."

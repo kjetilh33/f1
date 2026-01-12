@@ -1,0 +1,47 @@
+mp:
+  messaging:
+    incoming:
+      f1-live-raw:
+        connector: smallrye-kafka
+        "auto.offset.reset": earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    #outgoing:
+      #words-out:
+        #connector: smallrye-kafka
+        #topic: words
+        #value:
+          #serializer: org.apache.kafka.common.serialization.StringSerializer
+
+smallrye:
+  messaging:
+    observation:
+      enabled: true
+
+quarkus:
+  log:
+    level: INFO
+
+  jib:
+    base-jvm-image: gcr.io/distroless/java25-debian13
+
+  datasource:
+      db-kind: postgresql
+      #username: <your username>
+      #password: <your password>
+      #jdbc:
+        #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
+        #max-size: 16
+
+log:
+  source: "Default config file."
+
+"%prod":
+  kafka:
+    bootstrap:
+      servers: kafka-main-kafka-bootstrap:9092
+
+"%test":
+  quarkus:
+    devservices:
+      enabled: true
