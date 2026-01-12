@@ -1,0 +1,15 @@
+name: package-f1-api
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "f1-api/**"
+      
+jobs:
+  package-signalr-to-kafka:
+    uses: "kjetilh33/utilities/.github/workflows/java-maven-skaffold-build-push-ghcr.yml@main"
+    with:
+      repositoryFolder: "./f1-api/"
+    secrets: inherit
