@@ -11,6 +11,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.jboss.resteasy.reactive.NoCache;
+import org.jboss.resteasy.reactive.ResponseHeader;
 
 import java.time.Duration;
 
@@ -37,6 +39,8 @@ public class Status {
     /// @return A `Multi` stream of `OutboundSseEvent` objects.
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
+    @NoCache
+    @ResponseHeader(name = "X-Accel-Buffering", value = "no")
     @RunOnVirtualThread
     public Multi<OutboundSseEvent> getStatus() {
         return Multi.createBy().merging()
