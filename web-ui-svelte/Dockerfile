@@ -6,7 +6,7 @@ COPY . .
 RUN npm run build
 RUN npm prune --production
 
-FROM gcr.io/distroless/nodejs24-debian12
+FROM gcr.io/distroless/nodejs24-debian13:latest
 WORKDIR /app
 COPY --from=builder /app/build build/
 COPY --from=builder /app/node_modules node_modules/
