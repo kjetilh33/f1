@@ -13,8 +13,10 @@ on:
     paths:
       - "web-ui-svelte/**"
 
+env:
+  REGISTRY: ghcr.io
 jobs:
-  build:
+  build-push-docker:
     runs-on: ubuntu-latest
 
     steps:
@@ -34,7 +36,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: "{{defaultContext}}:web-ui-svelte"
           push: true
           tags: ${{ env.REGISTRY }}/kjetilh33/f1-web-ui-svelte:latest
           cache-from: type=gha, scope=build-push-cache
