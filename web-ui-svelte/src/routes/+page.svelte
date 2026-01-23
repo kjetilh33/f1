@@ -8,7 +8,7 @@
 <p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
 
 <div class="p-8">
-  <Alert color=">
+  <Alert color="blue" dismissable>
     {#snippet icon()}<InfoCircleSolid class="h-5 w-5" />{/snippet}
     <span class="font-medium">Info alert!</span>
     Change a few things up and try submitting again.
