@@ -1,5 +1,6 @@
 <script>
   import { Alert } from "flowbite-svelte";
+  import { InfoCircleSolid } from "flowbite-svelte-icons";
 </script>
 
 
@@ -8,6 +9,7 @@
 
 <div class="p-8">
   <Alert>
+    {#snippet icon()}<InfoCircleSolid class="h-5 w-5" />{/snippet}
     <span class="font-medium">Info alert!</span>
     Change a few things up and try submitting again.
   </Alert>
