@@ -4,7 +4,7 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
-RUN npm prune --production
+RUN npm prune --omit=dev
 
 FROM gcr.io/distroless/nodejs24-debian13
 #FROM node:24-bookworm-slim

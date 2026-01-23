@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-ui-svelte
+  labels:
+    app: web-ui-svelte
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-ui-svelte
+  template:
+    metadata:
+      labels:
+        app: web-ui-svelte
+    spec:
+      containers:
+        - name: web-ui-svelte
+          image: web-ui-svelte
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+      
