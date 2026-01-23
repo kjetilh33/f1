@@ -7,11 +7,6 @@ on:
       - "main"
     paths:
       - "web-ui-svelte/**"
-  pull_request:
-    branches:
-      - "main"
-    paths:
-      - "web-ui-svelte/**"
 
 env:
   REGISTRY: ghcr.io
