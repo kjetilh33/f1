@@ -4,11 +4,11 @@
 </script>
 
 
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<h1>Welcome!</h1>
+<p>...</p>
 
 <div class="p-8">
-  <Alert color="blue" dismissable>
+  <Alert dismissable>
     {#snippet icon()}<InfoCircleSolid class="h-5 w-5" />{/snippet}
     <span class="font-medium">Info alert!</span>
     Change a few things up and try submitting again.
