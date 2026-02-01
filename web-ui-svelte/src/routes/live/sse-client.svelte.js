@@ -5,25 +5,34 @@
 const eventListeners = [];
 
 /**
- * @type {{ status: string, messages: { date: Date, message: any, messageShort: any }[] }}
+ * @type {EventSource}
  */
-export const sseStore = {
+let eventSource;
+
+/**
+ * @type {{ status: string, messages: {id: number, date: Date, message: any, messageShort: any }[] }}
+ */
+export const sseStore = $state({
     status: 'disconnected',
     messages: []
-};
+});
 
 /**
  * @param {any} message
  */
 function addMessage(message) {
     const maxLenght = 20;
+    let index = 0;
 
     const record = {
+        id: index,
         date: new Date(),
         message: message,
         messageShort: message
     }
+
     sseStore.messages.push(record);
+    index++;
 
     if (sseStore.messages.length >= maxLenght) {
         sseStore.messages.shift();
@@ -43,7 +52,11 @@ export function subscribeSSE(listener) {
  * @param {string | URL} url
  */
 export function connectSSE(url) {
-    const eventSource = new EventSource(url);
+    if (eventSource != null) {
+        eventSource.close();
+    }
+
+    eventSource = new EventSource(url);
 
     sseStore.status = 'connecting';
 
@@ -64,4 +77,14 @@ export function connectSSE(url) {
     };
 
     return sseStore;
+}
+
+/**
+ * 
+ */
+export function disconnectSSE() {
+    if (eventSource != null) {
+        eventSource.close();
+    }
+    sseStore.status = 'disconnected';
 }
