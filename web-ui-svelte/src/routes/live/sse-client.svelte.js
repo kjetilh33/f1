@@ -9,6 +9,8 @@ const eventListeners = [];
  */
 let eventSource;
 
+let messageIndex = 0;
+
 /**
  * @type {{ status: string, messages: {id: number, date: Date, message: any, messageShort: any }[] }}
  */
@@ -22,17 +24,17 @@ export const sseStore = $state({
  */
 function addMessage(message) {
     const maxLenght = 20;
-    let index = 0;
 
     const record = {
-        id: index,
+        id: messageIndex,
         date: new Date(),
         message: message,
         messageShort: message
     }
 
     sseStore.messages.push(record);
-    index++;
+    messageIndex++;
+
 
     if (sseStore.messages.length >= maxLenght) {
         sseStore.messages.shift();
@@ -56,6 +58,7 @@ export function connectSSE(url) {
         eventSource.close();
     }
 
+    messageIndex = 0;    
     eventSource = new EventSource(url);
 
     sseStore.status = 'connecting';
