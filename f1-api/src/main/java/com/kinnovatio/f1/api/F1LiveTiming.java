@@ -73,7 +73,9 @@ public class F1LiveTiming {
     @NoCache
     @ResponseHeader(name = "X-Accel-Buffering", value = "no")
     @RunOnVirtualThread
-    public Multi<OutboundSseEvent> getStatus() {
+    public Multi<OutboundSseEvent> getLiveTimingStream() {
+        //TODO: add filter for messages (i.e. team radio which needs to be transcribed first).
+        
         return Multi.createBy().merging()
                 .streams(LiveTimingMessage, emitAPeriodicPing())
                 .map(message -> sse.newEventBuilder()
