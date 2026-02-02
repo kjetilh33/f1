@@ -12,7 +12,7 @@ let eventSource;
 let messageIndex = 0;
 
 /**
- * @type {{ status: string, messages: {id: number, date: Date, message: any, messageShort: any }[] }}
+ * @type {{ status: string, messages: {id: number, date: Date, category: string, message: any }[] }}
  */
 export const sseStore = $state({
     status: 'disconnected',
@@ -23,13 +23,25 @@ export const sseStore = $state({
  * @param {any} message
  */
 function addMessage(message) {
+    console.log(message);
     const maxLenght = 20;
+
+    //let messageObject = JSON.parse(message);
+    if (Object.keys(message).length === 0 ) {
+        // It is a keep alive message. Create a substitute record
+        message = {
+            category: "keep-alive",
+            message: "Keep alive message: {}",
+            timestamp: Math.floor(Date.now() / 1000)
+        }
+    }
+
 
     const record = {
         id: messageIndex,
-        date: new Date(),
-        message: message,
-        messageShort: message
+        date: new Date(Math.floor(message.timestamp * 1000)),
+        category: message.category,
+        message: message.message
     }
 
     sseStore.messages.push(record);
