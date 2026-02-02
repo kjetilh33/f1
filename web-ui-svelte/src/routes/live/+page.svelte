@@ -2,6 +2,7 @@
 import { Table } from "flowbite-svelte";
 import { subscribeSSE, sseStore, connectSSE, disconnectSSE } from "./sse-client.svelte";
 import { onMount } from 'svelte';
+import SseStatus from "./sse-status.svelte";
 
 let { data } = $props();
 
@@ -26,7 +27,7 @@ let items = [
 
 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 
-    <h3>SSE connection status: {sseStore.status}</h3>
+    <SseStatus />
 
     <Table items={sseStore.messages} hoverable={true}></Table>
 
