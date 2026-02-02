@@ -1,3 +1,4 @@
+import { parseNanoTimestamp } from "./utils";
 
 /**
  * @type {((arg0: JSON) => void)[]}
@@ -23,23 +24,12 @@ export const sseStore = $state({
  * @param {any} message
  */
 function addMessage(message) {
-    console.log(message);
+    //console.log(message);
     const maxLenght = 20;
-
-    //let messageObject = JSON.parse(message);
-    if (Object.keys(message).length === 0 ) {
-        // It is a keep alive message. Create a substitute record
-        message = {
-            category: "keep-alive",
-            message: "Keep alive message: {}",
-            timestamp: Math.floor(Date.now() / 1000)
-        }
-    }
-
 
     const record = {
         id: messageIndex,
-        date: new Date(Math.floor(message.timestamp * 1000)),
+        date: parseNanoTimestamp(message.timestamp),
         category: message.category,
         message: message.message
     }
@@ -51,6 +41,23 @@ function addMessage(message) {
     if (sseStore.messages.length >= maxLenght) {
         sseStore.messages.shift();
     }
+}
+
+/**
+ * @param {MessageEvent<any>} event
+ */
+function parseEvent(event) {
+    let message = JSON.parse(event.data);
+    if (Object.keys(message).length === 0 ) {
+        // It is a keep alive message. Create a substitute record
+        message = {
+            category: "keep-alive",
+            message: "Keep alive message: {}",
+            timestamp: Math.floor(Date.now() / 1000)
+        }
+    }
+    
+    return message;
 }
 
 /**
@@ -81,7 +88,7 @@ export function connectSSE(url) {
     };
 
     eventSource.onmessage = (event) => {
-        const data = JSON.parse(event.data);
+        const data = parseEvent(event);
         addMessage(data);
         eventListeners.forEach(listener => listener(data));
     };
