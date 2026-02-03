@@ -1,52 +1,73 @@
 <script>
-import { subscribeSSE, sseStore } from "./sse-client.svelte";
+    import { subscribeSSE, sseStore } from "./sse-client.svelte";
+    import { Badge } from "flowbite-svelte";
+    import { DownloadSolid } from "flowbite-svelte-icons";
 
-	/**
-	 * @type {number[]}
-	 */
-let messagesPerSecond = $state([]);
+    /** @import { BadgeProps  } from "flowbite-svelte" */
 
-let messagesPerSecondAverage = $derived.by(() => {
-    let sum = 0;
-    for (let i = 0; i < messagesPerSecond.length; i++) {
-        sum += messagesPerSecond[i];
+
+    /**
+     * @type {BadgeProps["color"]}
+     */
+    let connectionBadgeColor = $derived.by(() => {
+        if (sseStore.status === "connected") {
+            return "green";
+        } else if (sseStore.status === "connecting") {
+            return "yellow";
+        } else {
+            return "gray";
+        }
+    });
+
+
+    /**
+     * @type {number[]}
+     */
+    let messagesPerSecond = $state([]);
+
+    let messagesPerSecondAverage = $derived.by(() => {
+        let sum = 0;
+        for (let i = 0; i < messagesPerSecond.length; i++) {
+            sum += messagesPerSecond[i];
+        }
+        return sum / messagesPerSecond.length;    
+    });
+
+    let messageCounter = 0;
+
+    /**
+     * @param {number} count
+     */
+    function logMessagesPerSecond(count) {
+        messagesPerSecond.push(count);
+
+        if (messagesPerSecond.length >= 20) {
+            messagesPerSecond.shift();
+        }
     }
-    return sum / messagesPerSecond.length;    
-});
 
-let messageCounter = 0;
+    /*
+    * Subscribe to SSE messages
+    */
+    subscribeSSE((message) => {
+        messageCounter++;
+    });
 
-/**
- * @param {number} count
- */
-function logMessagesPerSecond(count) {
-    messagesPerSecond.push(count);
-
-    if (messagesPerSecond.length >= 20) {
-        messagesPerSecond.shift();
-    }
-}
-
-/*
-* Subscribe to SSE messages
-*/
-subscribeSSE((message) => {
-    messageCounter++;
-});
-
-/*
-* Log number of messages per second
-*/
-setInterval(() => {
-    logMessagesPerSecond(messageCounter);
-    messageCounter = 0; // Reset for the next second
-}, 1000);
-
-
+    /*
+    * Log number of messages per second
+    */
+    setInterval(() => {
+        logMessagesPerSecond(messageCounter);
+        messageCounter = 0; // Reset for the next second
+    }, 1000);
 
 </script>
 
 <div >
+    <Badge color={connectionBadgeColor} border>
+        <DownloadSolid class="me-1.5 h-2.5 w-2.5" />
+        {sseStore.status}
+    </Badge>
     <h3>SSE connection status: {sseStore.status}</h3>
     <h3>Messages per second: {messagesPerSecondAverage.toFixed(2)}</h3>
 
