@@ -37,10 +37,13 @@ function addMessage(message) {
     sseStore.messages.push(record);
     messageIndex++;
 
-
     if (sseStore.messages.length >= maxLenght) {
-        sseStore.messages.shift();
+        //console.log("Message buffer growing too large. Will shift it. Buffer size: ", sseStore.messages.length);
+        sseStore.messages.shift();        
     }
+
+    //console.log("Number of SSE messages: ", sseStore.messages.length);
+    //console.log($state.snapshot(sseStore.messages));
 }
 
 /**
@@ -77,7 +80,7 @@ export function connectSSE(url) {
         eventSource.close();
     }
 
-    messageIndex = 0;    
+    //messageIndex = 0;    
     eventSource = new EventSource(url);
 
     sseStore.status = 'connecting';

@@ -22,8 +22,8 @@ let messageCounter = 0;
 function logMessagesPerSecond(count) {
     messagesPerSecond.push(count);
 
-    if (sseStore.messages.length >= 10) {
-        sseStore.messages.shift();
+    if (messagesPerSecond.length >= 20) {
+        messagesPerSecond.shift();
     }
 }
 
@@ -48,6 +48,6 @@ setInterval(() => {
 
 <div >
     <h3>SSE connection status: {sseStore.status}</h3>
-    <h3>Messages per second: {messagesPerSecondAverage}</h3>
+    <h3>Messages per second: {messagesPerSecondAverage.toFixed(2)}</h3>
 
 </div>
