@@ -2,8 +2,11 @@
     import { subscribeSSE, sseStore } from "./sse-client.svelte";
     import { Badge, Popover } from "flowbite-svelte";
     import { DownloadSolid } from "flowbite-svelte-icons";
+    import { Chart } from "@flowbite-svelte-plugins/chart";
+
 
     /** @import { BadgeProps  } from "flowbite-svelte" */
+    /** @import { ApexOptions  } from "apexcharts" */
 
     /**
      * @type {BadgeProps["color"]}
