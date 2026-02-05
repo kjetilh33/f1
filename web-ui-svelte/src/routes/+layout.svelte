@@ -2,8 +2,11 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 
+  import { page } from "$app/state";
 	import { Navbar, NavBrand, NavLi, NavUl, NavHamburger } from "flowbite-svelte";
   import { Footer, FooterLinkGroup, FooterLink, ImagePlaceholder, TextPlaceholder, Skeleton, FooterCopyright } from "flowbite-svelte";
+
+  let activeUrl = $derived(page.url.pathname);
 
 	let { children } = $props();
 </script>
@@ -12,10 +15,10 @@
 <Navbar>
   <NavBrand href="/">
     <!-- <img src="/images/flowbite-svelte-icon-logo.svg" class="me-3 h-6 sm:h-9" alt="Flowbite Logo" /> -->
-    <span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white">Data application</span>
+    <span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white">Formula 1</span>
   </NavBrand>
   <NavHamburger />
-  <NavUl>
+  <NavUl {activeUrl}>
     <NavLi href="/">Home</NavLi>
     <NavLi href="/live">Live</NavLi>
   </NavUl>

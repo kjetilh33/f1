@@ -1,10 +1,9 @@
 <script>
     import { subscribeSSE, sseStore } from "./sse-client.svelte";
-    import { Badge } from "flowbite-svelte";
+    import { Badge, Popover } from "flowbite-svelte";
     import { DownloadSolid } from "flowbite-svelte-icons";
 
     /** @import { BadgeProps  } from "flowbite-svelte" */
-
 
     /**
      * @type {BadgeProps["color"]}
@@ -68,7 +67,13 @@
         <DownloadSolid class="me-1.5 h-2.5 w-2.5" />
         {sseStore.status}
     </Badge>
-    <h3>SSE connection status: {sseStore.status}</h3>
-    <h3>Messages per second: {messagesPerSecondAverage.toFixed(2)}</h3>
+    <Popover class="w-64 text-sm font-light" >
+        <div class="space-y-2">
+            <h3 class="font-semibold text-gray-900 dark:text-white">Messages /s: {messagesPerSecondAverage.toFixed(2)}</h3>
+            <p class="text-gray-500 dark:text-gray-400">
+                Some text
+            </p>
+        </div>
+    </Popover >
 
 </div>
