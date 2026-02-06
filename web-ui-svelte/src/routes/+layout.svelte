@@ -4,7 +4,7 @@
 
   import { page } from "$app/state";
 	import { Navbar, NavBrand, NavLi, NavUl, NavHamburger } from "flowbite-svelte";
-  import { Footer, FooterLinkGroup, FooterLink, ImagePlaceholder, TextPlaceholder, Skeleton, FooterCopyright } from "flowbite-svelte";
+  import { Footer, FooterLinkGroup, FooterLink, FooterCopyright } from "flowbite-svelte";
 
   let activeUrl = $derived(page.url.pathname);
 
@@ -12,7 +12,7 @@
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
-<Navbar>
+<Navbar class="border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
   <NavBrand href="/">
     <!-- <img src="/images/flowbite-svelte-icon-logo.svg" class="me-3 h-6 sm:h-9" alt="Flowbite Logo" /> -->
     <span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white">Formula 1</span>
@@ -26,7 +26,7 @@
 
 {@render children()}
 
-<Footer class="mt-3 flex flex-wrap items-center text-sm text-gray-500 sm:mt-0 dark:text-gray-400">
+<Footer class="mt-3 flex flex-wrap items-center border-t border-gray-200 text-sm text-gray-500 sm:mt-0 dark:border-gray-700 dark:text-gray-400">
   <FooterCopyright href="/" by="Kinnovatio" year={2026} />
   <FooterLinkGroup class="mt-3 flex flex-wrap items-center text-sm text-gray-500 sm:mt-0 dark:text-gray-400">
     <FooterLink href="/">About</FooterLink>
