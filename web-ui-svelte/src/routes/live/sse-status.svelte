@@ -20,11 +20,7 @@
                 data: [
                     { x: "0", y: 0 },
                     { x: "1", y: 0 },
-                    { x: "2", y: 0 },
-                    { x: "3", y: 0 },
-                    { x: "4", y: 0 },
-                    { x: "5", y: 0 },
-                    { x: "6", y: 0 }
+                    { x: "2", y: 0 }
                 ]
             }
         ],
@@ -33,6 +29,9 @@
             //height: "100px",
             //width: "150px",
             fontFamily: "Inter, sans-serif",
+            sparkline: {
+                enabled: true
+            },
             toolbar: {
                 show: false
             }
