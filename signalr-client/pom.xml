@@ -19,7 +19,7 @@
         <slf4j-api.version>2.0.17</slf4j-api.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
         <kafka-clients.version>4.1.1</kafka-clients.version>
-        <logback-classic.version>1.5.28</logback-classic.version>
+        <logback-classic.version>1.5.29</logback-classic.version>
         <smallrye.config.version>3.16.0</smallrye.config.version>
         <io.prometheus.version>1.4.3</io.prometheus.version>
         <maven-compiler.version>3.15.0</maven-compiler.version>
