@@ -11,7 +11,7 @@
     /**
      * @type {ApexOptions}
      */
-    let chartOptions = {
+    let chartOptions = $state({
         colors: ["#1A56DB", "#FDBA8C"],
         series: [
             {
@@ -98,7 +98,7 @@
         fill: {
             opacity: 1
         }
-    };
+    });
 
     /**
      * @type {BadgeProps["color"]}
