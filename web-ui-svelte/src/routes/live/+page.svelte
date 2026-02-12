@@ -17,7 +17,7 @@
   });
     
 </script>
-<div class="flex justify-end mx-auto px-4 py-4 sm:px-4 lg:px-4 bg-gray-200">
+<div class="flex justify-end mx-auto px-4 py-2 sm:px-4 lg:px-4 bg-gray-200">
   <SseStatus />
 </div>
 
@@ -43,10 +43,8 @@
           </div>
           <div class="row-span-2 bg-gray-400">
             <p>"Weather"</p>
-          </div>
-          
+          </div>          
         </div>
-
       </div>
     </TabItem>
     <TabItem title="Livetiming messages">
