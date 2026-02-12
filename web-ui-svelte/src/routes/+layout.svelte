@@ -23,7 +23,7 @@
     <NavLi href="/live">Live</NavLi>
   </NavUl>
 </Navbar>
-<div class="flex mx-auto px-4 py-4 sm:px-4 lg:px-4 border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
+<div class="flex mx-auto px-4 py-2 border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
     <h3>Next Race</h3>
 </div>
 
