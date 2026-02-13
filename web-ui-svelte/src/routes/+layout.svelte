@@ -29,7 +29,7 @@
 
 {@render children()}
 
-<Footer class="mt-3 flex flex-wrap items-center border-t border-gray-200 text-sm text-gray-500 sm:mt-0 dark:border-gray-700 dark:text-gray-400">
+<Footer class="mt-3 flex flex-wrap items-center gap-y-4 border-t border-gray-200 text-sm text-gray-500 sm:mt-0 dark:border-gray-700 dark:text-gray-400">
   <FooterCopyright href="/" by="Kinnovatio" year={2026} />
   <FooterLinkGroup class="mt-3 flex flex-wrap items-center text-sm text-gray-500 sm:mt-0 dark:text-gray-400">
     <FooterLink href="/">About</FooterLink>
@@ -37,4 +37,7 @@
     <FooterLink href="/">Licensing</FooterLink>
     <FooterLink href="/">Contact</FooterLink>
   </FooterLinkGroup>
+  <p class="text-xs text-gray-500 dark:text-gray-400">This project is unofficial and are not associated in any way with the Formula 1 companies. 
+    F1, FORMULA ONE, FORMULA 1, FIA FORMULA ONE WORLD CHAMPIONSHIP, 
+    GRAND PRIX and related marks are trade marks of Formula One Licensing B.V.</p>
 </Footer>
