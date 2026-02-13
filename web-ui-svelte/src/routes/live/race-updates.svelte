@@ -1,7 +1,7 @@
 <script>
-    import { subscribeSSE, sseStore } from "./sse-client.svelte";
+    import { subscribeSSE } from "./sse-client.svelte";
     import { parseNanoTimestamp } from "./utils";
-    import { Badge, Popover } from "flowbite-svelte";
+    import { Badge } from "flowbite-svelte";
     import { DownloadSolid } from "flowbite-svelte-icons";
 
     /*
@@ -18,16 +18,32 @@
     * "timestamp":1765479570.948033200,
     * "isStreaming":false
     * }
+    * 
+    * {
+        "Messages": {
+            "17": {
+            "Utc": "2026-02-13T08:11:28",
+            "Message": "YELLOW IN PIT LANE",
+            "Category": "Other"
+            }
+        }
+        }
     */
 
+    /**
+	 * @type {{ date: Date; category: any; message: any; }[]}
+	 */
     const messageStore = $state([]);
     
-
     /*
     * Subscribe to SSE messages
     */
     subscribeSSE((message) => {
-        addMessage(message);
+        if (message.category === "RaceControlMessages"
+            && message.isStreaming
+        ) {
+            addMessage(message);
+        }        
     });
 
     /**
@@ -40,37 +56,12 @@
         const record = {        
             date: parseNanoTimestamp(message.timestamp),
             category: message.category,
-            message: message.message
+            message: JSON.parse(message.message)
         }
 
-    messageStore.push(record);
-    
-
-    if (sseStore.messages.length >= maxLenght) {
-        //console.log("Message buffer growing too large. Will shift it. Buffer size: ", sseStore.messages.length);
-        sseStore.messages.shift();        
+        messageStore.push(record);    
     }
-}
-
-/**
- * @param {MessageEvent<any>} event
- */
-function parseEvent(event) {
-    let message = JSON.parse(event.data);
-    if (Object.keys(message).length === 0 ) {
-        // It is a keep alive message. Create a substitute record
-        message = {
-            category: "keep-alive",
-            message: "Keep alive message: {}",
-            timestamp: Math.floor(Date.now() / 1000)
-        }
-    }
-    
-    return message;
-}
-
-    
-
+  
 </script>
 
 <div >

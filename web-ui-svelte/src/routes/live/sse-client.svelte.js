@@ -64,7 +64,7 @@ function parseEvent(event) {
 }
 
 /**
- * @param {function (JSON) : void } listener
+ * @param {function (any) : void } listener
  */
 export function subscribeSSE(listener) {
     eventListeners.push(listener);
