@@ -1,4 +1,5 @@
 <script>
+	import { isArray } from "util";
     import { subscribeSSE } from "./sse-client.svelte";
     import { parseNanoTimestamp } from "./utils";
     import { Badge } from "flowbite-svelte";
@@ -42,24 +43,44 @@
         if (message.category === "RaceControlMessages"
             && message.isStreaming
         ) {
-            addMessage(message);
+            processMessage(message);
         }        
     });
 
     /**
      * @param {any} message
     */
-    function addMessage(message) {
-        //console.log(message);
-        const maxLenght = 20;
+    function processMessage(message) {
+        const RaceControlMessages = [];
 
-        const record = {        
+        const mainRecord = {        
             date: parseNanoTimestamp(message.timestamp),
             category: message.category,
             message: JSON.parse(message.message)
         }
 
-        messageStore.push(record);    
+        // Check if there are more than one race control message in the event record
+        if (Array.isArray(mainRecord.message.Messages)) {
+            mainRecord.message.Messages.forEach((element) => {
+                RaceControlMessages.push({
+                    date: mainRecord.date,
+                    category: mainRecord.category,
+                    message: element
+                });
+            });
+
+        } else {
+            Object.values(mainRecord.message.Messages).forEach((element) => {
+                RaceControlMessages.push({
+                    date: mainRecord.date,
+                    category: mainRecord.category,
+                    message: element
+                });
+            });
+            
+        }
+
+ 
     }
   
 </script>
