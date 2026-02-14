@@ -1,21 +1,19 @@
 <script>
-	import { isArray } from "util";
     import { subscribeSSE } from "./sse-client.svelte";
     import { parseNanoTimestamp } from "./utils";
-    import { Badge } from "flowbite-svelte";
-    import { DownloadSolid } from "flowbite-svelte-icons";
+    import { Toast, ToastContainer } from "flowbite-svelte";
+    import { BellRingOutline } from "flowbite-svelte-icons";
+    import { fly } from "svelte/transition";
+    import { onDestroy } from "svelte";
+
 
     /*
     * Race control messages
     * {"category":"RaceControlMessages",
     * "message":"{\"Messages\":[
     *   {\"Utc\":\"2025-12-07T12:20:00\",\"Lap\":1,\"Category\":\"Flag\",\"Flag\":\"GREEN\",\"Scope\":\"Track\",\"Message\":\"GREEN LIGHT - PIT EXIT OPEN\"},
-    *   {\"Utc\":\"2025-12-07T12:30:00\",\"Lap\":1,\"Category\":\"Other\",\"Message\":\"PIT EXIT CLOSED\"},
-    *   {\"Utc\":\"2025-12-07T12:45:02\",\"Lap\":1,\"Category\":\"Other\",\"Message\":\"RISK OF RAIN FOR F1 RACE IS 0%\"},
-    *   {\"Utc\":\"2025-12-07T12:51:46\",\"Lap\":1,\"Category\":\"Flag\",\"Flag\":\"DOUBLE YELLOW\",\"Scope\":\"Sector\",\"Sector\":14,\"Message\":\"DOUBLE YELLOW IN TRACK SECTOR 14\"},
-    *   {\"Utc\":\"2025-12-07T12:51:47\",\"Lap\":1,\"Category\":\"Other\",\"Message\":\"DRS DISABLED IN ZONE 1\"},
-    *   {\"Utc\":\"2025-12-07T12:51:59\",\"Lap\":1,\"Category\":\"Other\",\"Message\":\"DRS ENABLED IN ZONE 1\"}
-    *       ]}",
+    *   {\"Utc\":\"2025-12-07T12:30:00\",\"Lap\":1,\"Category\":\"Other\",\"Message\":\"PIT EXIT CLOSED\"}
+    *  ]}",
     * "timestamp":1765479570.948033200,
     * "isStreaming":false
     * }
@@ -28,13 +26,36 @@
             "Category": "Other"
             }
         }
-        }
+      }
     */
 
     /**
-	 * @type {{ date: Date; category: any; message: any; }[]}
+     * @typedef {Object} Record
+     * @property {Date} date - The timestamp of the record
+     * @property {string} category - Record category
+     * @property {object} message - Record message
+     */
+
+     /**
+     * @typedef {Object} ToastItem
+     * @property {Date} date - The timestamp of the record
+     * @property {string} category - toast category
+     * @property {object} message - toast message
+     * @property {number} id - toast id
+     * @property {boolean} visible - toast visible
+     * @property {ReturnType<typeof setTimeout>} [timeoutId] - toast timeout id
+     */
+
+
+    /**
+	 * @type {Record[]}
 	 */
     const messageStore = $state([]);
+    /**
+	 * @type {ToastItem[]}
+	 */
+    let toasts = $state([]);
+    let nextId = $state(1);
     
     /*
     * Subscribe to SSE messages
@@ -51,6 +72,9 @@
      * @param {any} message
     */
     function processMessage(message) {
+        /**
+		 * @type {Record[]}
+		 */
         const RaceControlMessages = [];
 
         const mainRecord = {        
@@ -61,7 +85,7 @@
 
         // Check if there are more than one race control message in the event record
         if (Array.isArray(mainRecord.message.Messages)) {
-            mainRecord.message.Messages.forEach((element) => {
+            mainRecord.message.Messages.forEach((/** @type {any} */ element) => {
                 RaceControlMessages.push({
                     date: mainRecord.date,
                     category: mainRecord.category,
@@ -76,19 +100,78 @@
                     category: mainRecord.category,
                     message: element
                 });
-            });
-            
+            });   
         }
 
- 
+        RaceControlMessages.forEach(element => {
+            messageStore.push(element);
+            addToast(element);
+        });
     }
+
+    /**
+	 * @param {Record} record
+	 */
+    function addToast(record) {
+        /** @type {ToastItem} */
+        const newToast = {...record, id: nextId, visible: true};
+
+        // Auto-dismiss after 5 seconds
+        const timeoutId = setTimeout(() => {
+            dismissToast(newToast.id);
+            }, 5000);
+        newToast.timeoutId = timeoutId;
+
+        toasts = [...toasts, newToast];
+        nextId++;
+    }
+
+    /**
+	 * @param {number} id
+	 */
+    function dismissToast(id) {
+        // Clear timeout if it exists
+        const toast = toasts.find((t) => t.id === id);
+        if (toast?.timeoutId) {
+            clearTimeout(toast.timeoutId);
+        }
+
+        // Set visible to false to trigger outro transition
+        toasts = toasts.map((t) => (t.id === id ? { ...t, visible: false } : t));
+
+        setTimeout(() => {
+            toasts = toasts.filter((t) => t.id !== id);
+        }, 300); // Slightly longer than transition duration
+    }
+
+    /**
+	 * @param {number} id
+	 */
+    function handleClose(id) {
+        return () => {
+            dismissToast(id);
+        };
+    }
+
+    onDestroy(() => {
+        // Clear all pending timeouts on unmount
+        toasts.forEach((toast) => {
+            if (toast.timeoutId) {
+                clearTimeout(toast.timeoutId);
+            }
+        });
+    });
   
 </script>
 
-<div >
-    <Badge color={connectionBadgeColor} border>
-        <DownloadSolid class="me-1.5 h-2.5 w-2.5" />
-        {sseStore.status}
-    </Badge>
+<ToastContainer position="top-right">
+  {#each toasts as toast (toast.id)}
+    <Toast align={false} dismissable={true} transition={fly} params={{ x: 200, duration: 800 }} onclose={handleClose(toast.id)} bind:toastStatus={toast.visible}>
+        {#snippet icon()}
+            <BellRingOutline class="h-6 w-6" />
+        {/snippet}
 
-</div>
+        {toast.message}
+    </Toast>
+  {/each}
+</ToastContainer>

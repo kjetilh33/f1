@@ -1,8 +1,9 @@
 <script>
   import { Tabs, TabItem, Table } from "flowbite-svelte";
-  import { subscribeSSE, sseStore, connectSSE, disconnectSSE } from "./sse-client.svelte";
+  import { sseStore, connectSSE, disconnectSSE } from "./sse-client.svelte";
   import { onMount } from 'svelte';
   import SseStatus from "./sse-status.svelte";
+  import RaceMessageUpdates from "./race-message-updates.svelte";
 
   let { data } = $props();
 
@@ -17,9 +18,11 @@
   });
     
 </script>
+
 <div class="flex justify-end mx-auto px-4 py-2 sm:px-4 lg:px-4 bg-gray-200">
   <SseStatus />
 </div>
+<RaceMessageUpdates />
 
 <div class="mx-auto max-w-7xl px-4 py-4 sm:px-4 lg:px-4 bg-gray-300">
   <Tabs tabStyle="underline">
