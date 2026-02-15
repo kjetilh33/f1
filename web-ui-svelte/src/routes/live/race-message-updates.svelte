@@ -1,11 +1,9 @@
 <script>
     import { subscribeSSE } from "./sse-client.svelte";
-    import { parseNanoTimestamp } from "./utils";
     import { Toast, ToastContainer } from "flowbite-svelte";
     import { BellRingOutline } from "flowbite-svelte-icons";
     import { fly } from "svelte/transition";
     import { onDestroy } from "svelte";
-
 
     /*
     * Race control messages
@@ -31,14 +29,14 @@
 
     /**
      * @typedef {Object} Record
-     * @property {Date} date - The timestamp of the record
+     * @property {Date} timestamp - The timestamp of the record
      * @property {string} category - Record category
      * @property {object} message - Record message
      */
 
      /**
      * @typedef {Object} ToastItem
-     * @property {Date} date - The timestamp of the record
+     * @property {Date} timestamp - The timestamp of the record
      * @property {string} category - toast category
      * @property {object} message - toast message
      * @property {number} id - toast id
@@ -69,7 +67,7 @@
     });
 
     /**
-     * @param {any} message
+     * @param {LiveTimingRecord} message
     */
     function processMessage(message) {
         /**
@@ -81,7 +79,7 @@
         if (Array.isArray(message.message.Messages)) {
             message.message.Messages.forEach((/** @type {any} */ element) => {
                 RaceControlMessages.push({
-                    date: message.date,
+                    timestamp: message.timestamp,
                     category: message.category,
                     message: element
                 });
@@ -90,7 +88,7 @@
         } else {
             Object.values(message.message.Messages).forEach((element) => {
                 RaceControlMessages.push({
-                    date: message.date,
+                    timestamp: message.timestamp,
                     category: message.category,
                     message: element
                 });

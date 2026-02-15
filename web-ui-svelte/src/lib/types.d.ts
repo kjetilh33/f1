@@ -1,6 +1,6 @@
 interface LiveTimingRecord {
     category: string;
-    message: Object;
+    message: Record<string, any>;
     timestamp: Date;
     isStreaming: boolean;
 }
