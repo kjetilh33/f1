@@ -2,7 +2,6 @@
     import { sseStore } from "./sse-client.svelte";
     import { Table } from "flowbite-svelte";  
 
-    let messageIndex = 0;
     // Formatter defined outside the map for performance
     const formatter = new Intl.DateTimeFormat('en-US', {
         month: 'short',
@@ -24,8 +23,6 @@
         isStreaming: element.isStreaming
     }))
     );
-
-    
 
 </script>
 

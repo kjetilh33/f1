@@ -1,6 +1,6 @@
 <script>
   import { Tabs, TabItem, Table } from "flowbite-svelte";
-  import { sseStore, connectSSE, disconnectSSE } from "./sse-client.svelte";
+  import { connectSSE, disconnectSSE } from "./sse-client.svelte";
   import { onMount } from 'svelte';
   import SseStatus from "./sse-status.svelte";
   import LivetimingMessages from "./livetiming-messages.svelte";
