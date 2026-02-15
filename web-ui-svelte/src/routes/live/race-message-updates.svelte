@@ -77,27 +77,21 @@
 		 */
         const RaceControlMessages = [];
 
-        const mainRecord = {        
-            date: parseNanoTimestamp(message.timestamp),
-            category: message.category,
-            message: JSON.parse(message.message)
-        }
-
         // Check if there are more than one race control message in the event record
-        if (Array.isArray(mainRecord.message.Messages)) {
-            mainRecord.message.Messages.forEach((/** @type {any} */ element) => {
+        if (Array.isArray(message.message.Messages)) {
+            message.message.Messages.forEach((/** @type {any} */ element) => {
                 RaceControlMessages.push({
-                    date: mainRecord.date,
-                    category: mainRecord.category,
+                    date: message.date,
+                    category: message.category,
                     message: element
                 });
             });
 
         } else {
-            Object.values(mainRecord.message.Messages).forEach((element) => {
+            Object.values(message.message.Messages).forEach((element) => {
                 RaceControlMessages.push({
-                    date: mainRecord.date,
-                    category: mainRecord.category,
+                    date: message.date,
+                    category: message.category,
                     message: element
                 });
             });   
