@@ -1,7 +1,7 @@
 import { parseNanoTimestamp } from "./utils";
 
 /**
- * @type {((arg0: JSON) => void)[]}
+ * @type {((arg0: LiveTimingRecord) => void)[]}
  */
 const eventListeners = [];
 
@@ -13,7 +13,7 @@ let eventSource;
 let messageIndex = 0;
 
 /**
- * @type {{ status: string, messages: {id: number, date: Date, category: string, message: any }[] }}
+ * @type {{ status: string, messages: {id: number, timestamp: Date, category: string, message: any, isStreaming: boolean }[] }}
  */
 export const sseStore = $state({
     status: 'disconnected',
@@ -21,19 +21,13 @@ export const sseStore = $state({
 });
 
 /**
- * @param {any} message
+ * @param {LiveTimingRecord} message
  */
 function addMessage(message) {
     //console.log(message);
     const maxLenght = 20;
 
-    const record = {
-        id: messageIndex,
-        date: parseNanoTimestamp(message.timestamp),
-        category: message.category,
-        message: message.message
-    }
-
+    const record = {...message, id: messageIndex};
     sseStore.messages.push(record);
     messageIndex++;
 
@@ -48,6 +42,7 @@ function addMessage(message) {
 
 /**
  * @param {MessageEvent<any>} event
+ * @returns {LiveTimingRecord}
  */
 function parseEvent(event) {
     let message = JSON.parse(event.data);
@@ -55,16 +50,19 @@ function parseEvent(event) {
         // It is a keep alive message. Create a substitute record
         message = {
             category: "keep-alive",
-            message: "Keep alive message: {}",
-            timestamp: Math.floor(Date.now() / 1000)
+            message: JSON.stringify({message: "Keep alive message"}),
+            timestamp: Math.floor(Date.now() / 1000),
+            isStreaming: false
         }
     }
+
+    message = {...message, message: JSON.parse(message.message), timestamp: parseNanoTimestamp(message.timestamp)};
     
     return message;
 }
 
 /**
- * @param {function (any) : void } listener
+ * @param {function (LiveTimingRecord) : void } listener
  */
 export function subscribeSSE(listener) {
     eventListeners.push(listener);
