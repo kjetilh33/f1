@@ -10,10 +10,10 @@ const eventListeners = [];
  */
 let eventSource;
 
-let messageIndex = 0;
+const maxLenghtMessageArray = 20;
 
 /**
- * @type {{ status: string, messages: {id: number, timestamp: Date, category: string, message: any, isStreaming: boolean }[] }}
+ * @type {{ status: string, messages: LiveTimingRecord[] }}
  */
 export const sseStore = $state({
     status: 'disconnected',
@@ -25,14 +25,9 @@ export const sseStore = $state({
  */
 function addMessage(message) {
     //console.log(message);
-    const maxLenght = 20;
+    sseStore.messages.push(message);
 
-    const record = {...message, id: messageIndex};
-    sseStore.messages.push(record);
-    messageIndex++;
-
-    if (sseStore.messages.length >= maxLenght) {
-        //console.log("Message buffer growing too large. Will shift it. Buffer size: ", sseStore.messages.length);
+    if (sseStore.messages.length >= maxLenghtMessageArray) {
         sseStore.messages.shift();        
     }
 

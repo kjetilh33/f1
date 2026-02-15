@@ -3,6 +3,7 @@
   import { sseStore, connectSSE, disconnectSSE } from "./sse-client.svelte";
   import { onMount } from 'svelte';
   import SseStatus from "./sse-status.svelte";
+  import LivetimingMessages from "./livetiming-messages.svelte";
   import RaceMessageUpdates from "./race-message-updates.svelte";
 
   let { data } = $props();
@@ -51,7 +52,7 @@
       </div>
     </TabItem>
     <TabItem title="Livetiming messages">
-      <Table items={sseStore.messages} hoverable={true}></Table>
+      <LivetimingMessages />
     </TabItem>
   </Tabs>
 
