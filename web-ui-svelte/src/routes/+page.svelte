@@ -28,6 +28,6 @@
     </Card>
   </div>
   <div class="flex justify-end">
-  <span class="text-xs text-gray-700 dark:text-gray-400"> <a href="https://www.vecteezy.com/free-photos/formula-1-racing">Formula 1 Racing Stock photos by Vecteezy</a></span>
+  <a href="https://www.vecteezy.com/free-photos/formula-1-racing" class="text-xs text-gray-700 dark:text-gray-400">Formula 1 Racing Stock photos by Vecteezy</a>
 </div>
 </div>
