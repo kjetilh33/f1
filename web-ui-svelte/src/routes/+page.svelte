@@ -9,18 +9,18 @@
       <div class="m-6">
         <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Follow live race data</h5>
         <p class="mb-3 leading-tight font-normal text-gray-700 dark:text-gray-400">
-          Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.</p>
+          Live race data including timing data, track status, race messages and more.</p>
       </div>
     </Card>
 
-    <Card img="/images/2026-02_pre-season-1-720.jpg">
+    <Card img="/images/2026-02_pre-season-2-720.jpg">
       <div class="m-6">
         <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Noteworthy technology acquisitions 2021</h5>
         <p class="mb-3 leading-tight font-normal text-gray-700 dark:text-gray-400">Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.</p>
       </div>
     </Card>
 
-    <Card img="/images/2026-02_pre-season-1-720.jpg">
+    <Card img="/images/2026-02_pre-season-3-720.jpg">
       <div class="m-6">
         <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Noteworthy technology acquisitions 2021</h5>
         <p class="mb-3 leading-tight font-normal text-gray-700 dark:text-gray-400">Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.</p>
