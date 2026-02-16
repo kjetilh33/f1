@@ -6,13 +6,29 @@
 <div class="mx-auto max-w-7xl px-4 py-4 sm:px-4 lg:px-4 bg-gray-300">
   <h1>Welcome!</h1>
   <p>...</p>
+  <div class="grid grid-cols-3 gap-6">
+    <Card img="/static/2026-02_pre-season-1.jpg">
+      <div class="m-6">
+        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Noteworthy technology acquisitions 2021</h5>
+        <p class="mb-3 leading-tight font-normal text-gray-700 dark:text-gray-400">Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.</p>
+      </div>
+    </Card>
 
-  <div class="p-8">
-    <Alert dismissable>
-      {#snippet icon()}<InfoCircleSolid class="h-5 w-5" />{/snippet}
-      <span class="font-medium">Info alert!</span>
-      Hi there! This is an info alert.
-    </Alert>
+    <Card img="/static/2026-02_pre-season-1.jpg">
+      <div class="m-6">
+        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Noteworthy technology acquisitions 2021</h5>
+        <p class="mb-3 leading-tight font-normal text-gray-700 dark:text-gray-400">Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.</p>
+      </div>
+    </Card>
+
+    <Card img="/static/2026-02_pre-season-1.jpg">
+      <div class="m-6">
+        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Noteworthy technology acquisitions 2021</h5>
+        <p class="mb-3 leading-tight font-normal text-gray-700 dark:text-gray-400">Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.</p>
+      </div>
+    </Card>
+
   </div>
+  
 </div>
 
