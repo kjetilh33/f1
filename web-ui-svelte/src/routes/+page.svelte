@@ -29,6 +29,6 @@
     </Card>
 
   </div>
-  
+  <a href="https://www.vecteezy.com/free-photos/formula-1-racing">Formula 1 Racing Stock photos by Vecteezy</a>
 </div>
 
