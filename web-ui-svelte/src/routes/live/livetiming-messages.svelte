@@ -9,6 +9,7 @@
         hour: 'numeric',
         minute: 'numeric',
         second: 'numeric',
+        fractionalSecondDigits: 2,
         hour12: false,
         timeZoneName: 'short',
         timeZone: 'UTC'
