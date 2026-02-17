@@ -1,9 +1,9 @@
 <script>
     import { subscribeSSE } from "./sse-client.svelte";
-    import { parseNanoTimestamp } from "./utils";
-    import { Toast, ToastContainer } from "flowbite-svelte";
-    import { BellRingOutline } from "flowbite-svelte-icons";
+    import { Badge } from "flowbite-svelte";
+    import { FlagOutline, TruckOutline } from "flowbite-svelte-icons";
     
+    /** @import { BadgeProps  } from "flowbite-svelte" */
 
 
     /*
@@ -28,28 +28,58 @@
     */
 
     /**
-     * @typedef {Object} Record
-     * @property {Date} date - The timestamp of the record
+     * @typedef {Object} TrackStatusItem
+     * @property {Date} timestamp - The timestamp of the record
      * @property {string} category - Record category
-     * @property {object} message - Record message
+     * @property {string} message - track status message
+     * @property {string} status - track status 
      */
 
+     // Formatter defined outside the map for performance
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false,
+        timeZoneName: 'short',
+        timeZone: 'UTC'
+    });
+
 
     /**
-	 * @type {Record[]}
+	 * @type {TrackStatusItem}
 	 */
-    const messageStore = $state([]);
+    let trackStatus = $state(
+        {
+            timestamp: new Date(),
+            category: "TrackStatus",
+            message: "Unknown",
+            status: "-1"            
+        }
+    );
+
     /**
-	 * @type {ToastItem[]}
-	 */
-    let toasts = $state([]);
-    let nextId = $state(1);
+     * @type {BadgeProps["color"]}
+     */
+    let trackStatusBadgeColor = $derived.by(() => {
+        if (trackStatus.status === "1") {
+            return "green";
+        } else if (trackStatus.status === "5") {
+            return "red";
+        } else if (trackStatus.status === "-1") {
+            return "gray";
+        }else {
+            return "yellow";
+        }
+    });
     
     /*
     * Subscribe to SSE messages
     */
     subscribeSSE((message) => {
-        if (message.category === "RaceControlMessages"
+        if (message.category === "TrackStatus"
             && message.isStreaming
         ) {
             processMessage(message);
@@ -57,47 +87,25 @@
     });
 
     /**
-     * @param {any} message
+     * @param {LiveTimingRecord} message
     */
     function processMessage(message) {
-        /**
-		 * @type {Record[]}
-		 */
-        const RaceControlMessages = [];
-
-        const mainRecord = {        
-            date: parseNanoTimestamp(message.timestamp),
+        trackStatus = {
+            timestamp: message.timestamp,
             category: message.category,
-            message: JSON.parse(message.message)
-        }
-
-        // Check if there are more than one race control message in the event record
-        if (Array.isArray(mainRecord.message.Messages)) {
-            mainRecord.message.Messages.forEach((/** @type {any} */ element) => {
-                RaceControlMessages.push({
-                    date: mainRecord.date,
-                    category: mainRecord.category,
-                    message: element
-                });
-            });
-
-        } else {
-            Object.values(mainRecord.message.Messages).forEach((element) => {
-                RaceControlMessages.push({
-                    date: mainRecord.date,
-                    category: mainRecord.category,
-                    message: element
-                });
-            });   
-        }
-
-        RaceControlMessages.forEach(element => {
-            messageStore.push(element);
-        });
+            message: message.message.Message,
+            status: message.message.Status
+        };
     }
 
 </script>
 
-<ToastContainer position="top-right">
-  
-</ToastContainer>
+<div class="mb-4 flex justify-between w-sm">
+    <Badge color={trackStatusBadgeColor} large border>
+        <FlagOutline class="me-1.5 h-2.5 w-2.5" />
+        {trackStatus.message}
+    </Badge>
+    <div class="self-start inline-flex items-center text-sm font-light text-gray-500 dark:text-gray-400">
+        {formatter.format(trackStatus.timestamp)}
+    </div>
+</div>
