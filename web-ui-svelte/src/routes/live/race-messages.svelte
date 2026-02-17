@@ -1,8 +1,7 @@
 <script>
     import { subscribeSSE } from "./sse-client.svelte";
     import { Card, Listgroup } from "flowbite-svelte";
-    import { FlagOutline } from "flowbite-svelte-icons";
-    import { onDestroy } from "svelte";
+    import { FlagOutline, TruckOutline } from "flowbite-svelte-icons";
 
      /**
      * @typedef {Object} RaceMessageItem
@@ -17,7 +16,6 @@
      * @property {string} [status] - Status of the safety car (deployed, ect.)
      * 
      */
-
 
     /**
 	  * @type {RaceMessageItem[]}
@@ -102,32 +100,12 @@
         // Check if there are more than one race control message in the event record
         if (Array.isArray(message.message.Messages)) {
             message.message.Messages.forEach((/** @type {any} */ element) => {
-                RaceControlMessages.push({
-                    timestamp: message.timestamp,
-                    category: element.category,
-                    message: element,
-                    id: nextId++,
-                    flag: element.flag,
-                    scope: element.scope,
-                    sector: element.sector,
-                    mode: element.mode,
-                    status: element.status
-                });
+                RaceControlMessages.push(parseRaceMessageItem(message, element, nextId++));
             });
 
         } else {
             Object.values(message.message.Messages).forEach((element) => {
-                RaceControlMessages.push({
-                    timestamp: message.timestamp,
-                    category: element.category,
-                    message: element,
-                    id: nextId++,
-                    flag: element.flag,
-                    scope: element.scope,
-                    sector: element.sector,
-                    mode: element.mode,
-                    status: element.status
-                });
+                RaceControlMessages.push(parseRaceMessageItem(message, element, nextId++));
             });   
         }
 
@@ -135,6 +113,27 @@
             messageStore.push(element);
         });
     }
+
+    /**
+    * @param {LiveTimingRecord} messageContainer
+    * @param {any} element
+    * @param {number} index
+    * @returns {RaceMessageItem}
+    */
+    function parseRaceMessageItem(messageContainer, element, index) {
+      return {
+                timestamp: messageContainer.timestamp,
+                category: element.category,
+                message: element,
+                id: index,
+                flag: element.flag,
+                scope: element.scope,
+                sector: element.sector,
+                mode: element.mode,
+                status: element.status
+              };
+    }
+
   
 </script>
 
@@ -147,7 +146,11 @@
     {#snippet children(item)}
       <div class="flex items-center space-x-4 py-2 rtl:space-x-reverse">
         {#if typeof item === "object" }
-          <FlagOutline />
+          {#if item.category === "SafetyCar"}
+            <TruckOutline />
+          {:else}
+            <FlagOutline />
+          {/if}
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-medium text-gray-900 dark:text-white">
               {item.category}
