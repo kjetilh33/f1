@@ -20,11 +20,14 @@
 
 
     /**
-	 * @type {RaceMessageItem[]}
-	 */
+	  * @type {RaceMessageItem[]}
+	  */
     const messageStore = $state([]);
 
-    let reversedMessageStore = $derived(messageStore.toReversed);
+    /**
+	  * @type {RaceMessageItem[]}
+	  */
+    let reversedMessageStore = $derived(messageStore.toReversed());
     
     let nextId = $state(1);
 
@@ -132,11 +135,6 @@
             messageStore.push(element);
         });
     }
-
-    onDestroy(() => {
-        // Clear all pending timeouts on unmount
-        
-    });
   
 </script>
 
@@ -145,7 +143,7 @@
     <h5 class="text-xl leading-none font-bold text-gray-900 dark:text-white">Race control messages</h5>
     
   </div>
-  <Listgroup items={messageStore} class="border-0 dark:bg-transparent!">
+  <Listgroup items={reversedMessageStore} class="border-0 dark:bg-transparent!">
     {#snippet children(item)}
       <div class="flex items-center space-x-4 py-2 rtl:space-x-reverse">
         {#if typeof item === "object" }
