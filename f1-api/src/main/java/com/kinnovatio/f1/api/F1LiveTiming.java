@@ -2,8 +2,6 @@ package com.kinnovatio.f1.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.kinnovatio.signalr.messages.LiveTimingMessage;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Multi;
@@ -25,7 +23,6 @@ import org.jboss.resteasy.reactive.ResponseHeader;
 import org.jboss.resteasy.reactive.NoCache;
 
 import java.time.Duration;
-import java.time.ZonedDateTime;
 import java.util.Set;
 
 @ApplicationScoped
