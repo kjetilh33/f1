@@ -4,28 +4,6 @@
     import { FlagOutline } from "flowbite-svelte-icons";
     import { onDestroy } from "svelte";
 
-    /*
-    * Race control messages
-    * {"category":"RaceControlMessages",
-    * "message":"{\"Messages\":[
-    *   {\"Utc\":\"2025-12-07T12:20:00\",\"Lap\":1,\"Category\":\"Flag\",\"Flag\":\"GREEN\",\"Scope\":\"Track\",\"Message\":\"GREEN LIGHT - PIT EXIT OPEN\"},
-    *   {\"Utc\":\"2025-12-07T12:30:00\",\"Lap\":1,\"Category\":\"Other\",\"Message\":\"PIT EXIT CLOSED\"}
-    *  ]}",
-    * "timestamp":1765479570.948033200,
-    * "isStreaming":false
-    * }
-    * 
-    * {
-        "Messages": {
-            "17": {
-            "Utc": "2026-02-13T08:11:28",
-            "Message": "YELLOW IN PIT LANE",
-            "Category": "Other"
-            }
-        }
-      }
-    */
-
      /**
      * @typedef {Object} RaceMessageItem
      * @property {number} id - message id
@@ -34,6 +12,7 @@
      * @property {string} message - message
      * @property {string} [flag] - Flag color
      * @property {string} [scope] - Scope of the message
+     * @property {number} [sector] - Sector of the message
      * @property {string} [mode] - Mode of safety car (VSC, etc.)
      * @property {string} [status] - Status of the safety car (deployed, ect.)
      * 
@@ -44,8 +23,58 @@
 	 * @type {RaceMessageItem[]}
 	 */
     const messageStore = $state([]);
+
+    let reversedMessageStore = $derived(messageStore.toReversed);
     
     let nextId = $state(1);
+
+    // Formatter defined outside the map for performance
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false,
+        timeZoneName: 'short',
+        timeZone: 'UTC'
+    });
+
+    /*
+    * Add some test data
+    */
+    const testData = [
+      {
+        timestamp: new Date("2026-02-13T16:56:58Z"),
+        category: "Flag",
+        message: "YELLOW IN TRACK SECTOR 15",
+        id: 9999,
+        flag: "YELLOW",
+        scope: "Sector",
+        sector: 15
+      },
+      {
+        timestamp: new Date("2026-02-13T16:57:00Z"),
+        category: "Flag",
+        message: "DOUBLE YELLOW IN TRACK SECTOR 16",
+        id: 9999,
+        flag: "DOUBLE YELLOW",
+        scope: "Sector",
+        sector: 16
+      },
+      {
+        timestamp: new Date("2026-02-13T16:57:39Z"),
+        category: "Flag",
+        message: "CLEAR IN TRACK SECTOR 15",
+        id: 9999,
+        flag: "CLEAR",
+        scope: "Sector",
+        sector: 15
+      }
+
+    ]
+    
+    messageStore.push(...testData);
     
     /*
     * Subscribe to SSE messages
@@ -77,6 +106,7 @@
                     id: nextId++,
                     flag: element.flag,
                     scope: element.scope,
+                    sector: element.sector,
                     mode: element.mode,
                     status: element.status
                 });
@@ -91,6 +121,7 @@
                     id: nextId++,
                     flag: element.flag,
                     scope: element.scope,
+                    sector: element.sector,
                     mode: element.mode,
                     status: element.status
                 });
@@ -109,7 +140,7 @@
   
 </script>
 
-<Card >
+<Card class="p-4 sm:p-8 md:p-10" size="md">
   <div class="mb-4 flex items-center justify-between">
     <h5 class="text-xl leading-none font-bold text-gray-900 dark:text-white">Race control messages</h5>
     
@@ -127,8 +158,8 @@
               {item.message}
             </p>
           </div>
-          <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
-            {item.value}
+          <div class="self-start inline-flex items-center text-sm font-light text-gray-500 dark:text-gray-400">
+            {formatter.format(item.timestamp)}
           </div>
         {/if}
       </div>

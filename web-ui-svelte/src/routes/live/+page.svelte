@@ -5,6 +5,7 @@
   import SseStatus from "./sse-status.svelte";
   import LivetimingMessages from "./livetiming-messages.svelte";
   import RaceMessageUpdates from "./race-message-updates.svelte";
+  import RaceMessages from "./race-messages.svelte";
 
   let { data } = $props();
 
@@ -36,7 +37,7 @@
     <TabItem title="Race control">
       <div class="grid grid-cols-4 gap-2">
         <div class="col-span-3 bg-gray-400">
-          <p>"Race messages"</p>
+          <RaceMessages />
         </div>
         <div class="grid grid-flow-col grid-rows-4 gap-4">
           <div class="bg-gray-400">
