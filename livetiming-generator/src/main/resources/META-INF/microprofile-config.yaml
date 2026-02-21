@@ -1,0 +1,23 @@
+# Add support for reading an external config file. This enables using the following options for
+# configuring the module:
+# - environment variables
+# - YAML config file located at the absolute path "/config/config.yaml"
+smallrye:
+  config:
+    locations: "/config/config.yaml"
+
+# Default config settings for your module
+source:
+  baseUrl: "http://livetiming.kinnovatio.local/signalr/"
+  #baseUrl: "https://livetiming.formula1.com/signalr/"
+
+target:
+  kafka:
+    enable: false
+    clientId: "f1-livetiming-test-source"
+    bootstrapHost: "kafka-main-kafka-bootstrap.kafka:9092"
+    topic: "test-f1-live-raw"
+
+# Default configuration for metrics.
+metrics:
+  enable: false

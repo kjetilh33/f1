@@ -1,0 +1,18 @@
+# Custom configuration options should be added to this file. It will be mapped into the
+# application pod and made available to the container as /config/config.yaml
+
+# Default config settings for your module
+source:
+#  baseUrl: "https://livetiming.formula1.com/signalr/"
+  baseUrl: "http://livetiming.kinnovatio.local/signalr/"
+
+target:
+  kafka:
+    enable: false
+    clientId: ""f1-livetiming-test-source""
+    bootstrapHost: "kafka-main-kafka-bootstrap.kafka:9092"
+    topic: "test-f1-live-raw"
+
+# Configuration for metrics.
+metrics:
+  enable: false
