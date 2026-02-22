@@ -9,7 +9,7 @@ source:
 target:
   kafka:
     enable: false
-    clientId: ""f1-livetiming-test-source""
+    clientId: "f1-livetiming-test-source"
     bootstrapHost: "kafka-main-kafka-bootstrap.kafka:9092"
     topic: "test-f1-live-raw"
 
