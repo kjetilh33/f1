@@ -1,0 +1,12 @@
+name: ci-livetiming-generator
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "livetiming-generator/**"
+      
+jobs:
+  build-livetiming-generator:
+    uses: "kjetilh33/utilities/.github/workflows/java-maven-skaffold-build.yml@main"
+    with:
+      repositoryFolder: "./livetiming-generator/" 
