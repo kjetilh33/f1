@@ -22,6 +22,8 @@ public class FileDataFeed implements Runnable {
     private static final Path racePath = Path.of("/data/received-messages-race.log");
     private static final Path raceImolaPath = Path.of("/data/2025-050-18-italy-imola-race-received-messages.log");
 
+    private static final String resourceLogFile = "/received-messages-race-short.log";
+
     private final AtomicBoolean run = new AtomicBoolean(false);
     private final Consumer<LiveTimingRecord> consumer;
 
@@ -59,7 +61,8 @@ public class FileDataFeed implements Runnable {
         List<Path> pathList = List.of(practicePath, racePath, racePath, raceImolaPath);
         Path filePath = pathList.get(ThreadLocalRandom.current().nextInt(0, 4));
         if (!Files.exists(filePath)) {
-            throw new IOException(String.format("Unable to read file %s.", filePath));
+            LOG.warn("Unable to read file %s. Will use bundled file instead.", filePath);
+            filePath = Path.of(this.getClass().getResource(resourceLogFile).toURI());
         }
 
         return filePath;

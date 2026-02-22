@@ -1,6 +1,7 @@
 package com.kinnovatio.f1.livetiming;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kinnovatio.f1.livetiming.source.FileDataFeed;
 import com.kinnovatio.signalr.messages.LiveTimingHubResponseMessage;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
@@ -9,6 +10,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -24,8 +26,11 @@ public class Generator {
 
     /// Flag to control whether the Prometheus metrics server is started.
     /// Loaded from the "metrics.enable" configuration property.
-    private static final boolean enableMetrics =
-            ConfigProvider.getConfig().getValue("metrics.enable", Boolean.class);
+    private static final boolean printMessages =
+            ConfigProvider.getConfig().getOptionalValue("printMessages", Boolean.class).orElse(false);
+
+    private static final int jobDurationSeconds =
+            ConfigProvider.getConfig().getOptionalValue("jobDurationSeconds", Integer.class).orElse(7200);
 
     /// The main entry point for the application.
     /// It initializes and runs the client, catching any unrecoverable exceptions.
@@ -34,11 +39,15 @@ public class Generator {
     public static void main(String[] args) {
         try {
             // Execute the main logic
-            run();
+            Duration runDuration = Duration.ofSeconds(jobDurationSeconds);
+            if (args.length == 1) {
+                runDuration = Duration.ofSeconds(Integer.parseInt(args[0]));
+            }
+            run(runDuration);
 
         } catch (Exception e) {
             LOG.error("Unrecoverable error. Will exit. {}", e.toString());
-            //errorGauge.inc();
+            System.exit(1);
         }
     }
 
@@ -46,10 +55,17 @@ public class Generator {
     /// This includes the SignalR connection, the status HTTP server, the metrics server,
     /// and the background task for connection management.
     /// @throws Exception if initialization of the SignalR client fails.
-    private static void run() throws Exception {
+    private static void run(Duration runDuration) throws Exception {
         LOG.info("Starting container...");
+        LOG.info("Will generate data for {} before shutting down.");
+        if (enableKafka) {
+            LOG.info("The data will be published to Kafka");
+        }
 
-
+        FileDataFeed fileDataFeed = new FileDataFeed(Generator::processMessage);
+        fileDataFeed.start();
+        Thread.sleep(runDuration);
+        LOG.info("Finished job...");
     }
 
     /// The primary callback method for processing all data received from the [FileDataFeed].
@@ -75,6 +91,9 @@ public class Generator {
     ///
     /// @param message The live timing message to process.
     private static void processLiveTimingMessage(LiveTimingMessage message) {
+        if (printMessages) {
+            IO.println("Generated message: " + message);
+        }
         if (enableKafka) {
             KafkaProducer.getInstance().publish(message);
         }

@@ -8,8 +8,8 @@ smallrye:
 
 # Default config settings for your module
 source:
-  baseUrl: "http://livetiming.kinnovatio.local/signalr/"
-  #baseUrl: "https://livetiming.formula1.com/signalr/"
+  file: 1
+#  db:
 
 target:
   kafka:
@@ -21,3 +21,6 @@ target:
 # Default configuration for metrics.
 metrics:
   enable: false
+
+printMessages: true
+jobDurationSeconds: 10 # 2 hours

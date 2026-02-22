@@ -3,8 +3,8 @@
 
 # Default config settings for your module
 source:
-#  baseUrl: "https://livetiming.formula1.com/signalr/"
-  baseUrl: "http://livetiming.kinnovatio.local/signalr/"
+    file: 1
+#    db:
 
 target:
   kafka:
@@ -16,3 +16,6 @@ target:
 # Configuration for metrics.
 metrics:
   enable: false
+
+printMessages: true
+jobDurationSeconds: 7200 # 2 hours
