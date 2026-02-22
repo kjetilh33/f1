@@ -1,0 +1,20 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: livetiming-generator
+build:
+  local:
+    push: false                                            # When building locally, do not push the image to a repository
+  artifacts:
+  - image: livetiming-generator                                         # Image name
+    context: .
+    jib:                                                   # Use Jib as the container builder
+      fromImage: "gcr.io/distroless/java25-debian13"       # Use a "distroless" base image
+  tagPolicy:
+    dateTime:                                              # The image will be tagged with the build timestamp
+      format: "20060102T150405"
+      timezone: "UTC"
+manifests:
+  kustomize:
+    paths:
+      - ./kubernetes-manifests/

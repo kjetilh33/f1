@@ -1,11 +1,16 @@
 package com.kinnovatio.f1.livetiming;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kinnovatio.signalr.messages.LiveTimingHubResponseMessage;
+import com.kinnovatio.signalr.messages.LiveTimingMessage;
+import com.kinnovatio.signalr.messages.LiveTimingRecord;
 import io.prometheus.metrics.instrumentation.jvm.JvmMetrics;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Generator {
@@ -45,5 +50,33 @@ public class Generator {
         LOG.info("Starting container...");
 
 
+    }
+
+    /// The primary callback method for processing all data received from the [FileDataFeed].
+    ///
+    /// @param message The [LiveTimingRecord] received from the hub, which can be a single message
+    ///                or a container for multiple messages.
+    private static void processMessage(LiveTimingRecord message) {
+        LOG.debug("Received live timing record: {}", message);
+
+        switch (message) {
+            case LiveTimingHubResponseMessage hubResponse -> {
+                List<LiveTimingMessage> messages = hubResponse.messages();
+                messages.forEach(Generator::processLiveTimingMessage);
+            }
+            case LiveTimingMessage timingMessage -> {
+                processLiveTimingMessage(timingMessage);
+            }
+        }
+    }
+
+    /// Processes an individual [LiveTimingMessage].
+    /// This method forwards the message to Kafka (if enabled)
+    ///
+    /// @param message The live timing message to process.
+    private static void processLiveTimingMessage(LiveTimingMessage message) {
+        if (enableKafka) {
+            KafkaProducer.getInstance().publish(message);
+        }
     }
 }
