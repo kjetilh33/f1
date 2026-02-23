@@ -57,12 +57,16 @@ public class Generator {
     /// @throws Exception if initialization of the SignalR client fails.
     private static void run(Duration runDuration) throws Exception {
         LOG.info("Starting container...");
-        LOG.info("Will generate data for {} before shutting down.");
+        LOG.info("Will generate data for {} before shutting down.", runDuration);
+        LOG.info("Print messages to system out: {}", printMessages);
+        LOG.info("Enable Kafka: {}", enableKafka);
         if (enableKafka) {
             LOG.info("The data will be published to Kafka");
         }
 
+        LOG.info("Setting up data feed from file...");
         FileDataFeed fileDataFeed = new FileDataFeed(Generator::processMessage);
+        LOG.info("Start data feed...");
         fileDataFeed.start();
         Thread.sleep(runDuration);
         LOG.info("Finished job...");
