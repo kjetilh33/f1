@@ -1,4 +1,4 @@
-package com.kinnovatio;
+package com.kinnovatio.livetiming;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agroal.api.AgroalDataSource;
@@ -33,8 +33,8 @@ import java.util.Set;
 /// - Emitting status updates to the `status-out` channel.
 /// It uses `AgroalDataSource` for database interactions and `Micrometer` for metrics.
 @ApplicationScoped
-public class F1KafkaProcessor {
-    private static final Logger LOG = Logger.getLogger(F1KafkaProcessor.class);
+public class F1KafkaStorageProcessor {
+    private static final Logger LOG = Logger.getLogger(F1KafkaStorageProcessor.class);
     private static final String dbTableName = "live_timing_messages";
 
     private static final Set<String> excludeCategories = Set.of("Heartbeat");
@@ -67,7 +67,7 @@ public class F1KafkaProcessor {
 
         createDbTableIfNotExists();
 
-        LOG.infof("The processor is ready. Waiting for live timing messages...");
+        LOG.infof("The storage processor is ready. Waiting for live timing messages...");
     }
 
     /// Creates the database table and indexes if they do not already exist.

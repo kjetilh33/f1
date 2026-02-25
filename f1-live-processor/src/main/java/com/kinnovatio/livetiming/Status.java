@@ -1,4 +1,4 @@
-package com.kinnovatio;
+package com.kinnovatio.livetiming;
 
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Multi;

@@ -8,7 +8,7 @@ mp:
         #"auto.offset.reset": earliest
         value:
           deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      in-f1-live-raw:
+      f1-live-raw-in:
         topic: test-f1-live-raw   #test specific
         "group.id": f1-livetiming-processor
         connector: smallrye-kafka
