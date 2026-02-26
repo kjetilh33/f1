@@ -21,10 +21,12 @@ smallrye:
 quarkus:
   #rest:
     #path: "f1/api/v1"
-
   log:
     level: INFO
-
+  package:
+    jar:
+      aot:
+        enabled: true
   datasource:
     db-kind: postgresql
       #username: <your username>
@@ -32,11 +34,8 @@ quarkus:
       #jdbc:
     #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
     #max-size: 16
-
   jib:
     base-jvm-image: gcr.io/distroless/java25-debian13
-
-
 
 log:
   source: "Default config file."

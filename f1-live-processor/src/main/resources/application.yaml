@@ -30,10 +30,12 @@ smallrye:
 quarkus:
   log:
     level: INFO
-
+  package:
+    jar:
+      aot:
+        enabled: true
   jib:
     base-jvm-image: gcr.io/distroless/java25-debian13
-
   datasource:
       db-kind: postgresql
       #username: <your username>

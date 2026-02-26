@@ -1,6 +1,9 @@
 quarkus:
   log:
     level: INFO
-
+  package:
+    jar:
+      aot:
+        enabled: true
   jib:
-    base-jvm-image: eclipse-temurin:25-jre-noble
+    base-jvm-image: gcr.io/distroless/java25-debian13
