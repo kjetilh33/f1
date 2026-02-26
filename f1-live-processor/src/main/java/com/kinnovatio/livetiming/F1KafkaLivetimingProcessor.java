@@ -1,5 +1,6 @@
 package com.kinnovatio.livetiming;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.micrometer.core.instrument.Counter;
@@ -71,19 +72,24 @@ public class F1KafkaLivetimingProcessor {
     @Retry(delay = 100, maxRetries = 5)
     @RunOnVirtualThread
     public void process(Record<String, String> record) throws Exception {
-        LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
+        try {
+            LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
 
-        if (message.message().isEmpty() || excludeCategories.contains(message.category())) {
-            Counter.builder("livetiming_router_processor_record_discarded_total")
-                    .description("Total number of live timing records discarded by the router.")
-                    .tag("category" , message.category())
-                    .register(registry)
-                    .increment();
+            if (message.message().isEmpty() || excludeCategories.contains(message.category())) {
+                Counter.builder("livetiming_router_processor_record_discarded_total")
+                        .description("Total number of live timing records discarded by the router.")
+                        .tag("category" , message.category())
+                        .register(registry)
+                        .increment();
 
-            LOG.debugf("Discarded record >> offset = %d, key = %s, value = %s%n", record.key(), record.value());
-        } else {
-            // The message is ok to distribute
-            livetimingOutEmitter.send(record);
+                LOG.debugf("Discarded record >> offset = %d, key = %s, value = %s%n", record.key(), record.value());
+            } else {
+                // The message is ok to distribute
+                livetimingOutEmitter.send(record);
+            }
+
+        } catch (JsonParseException e) {
+            LOG.warnf("Failed parsing livetiming record: %s. Record content: %s", e, record.value());
         }
     }
 }
