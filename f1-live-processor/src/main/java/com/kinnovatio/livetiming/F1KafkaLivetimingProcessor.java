@@ -2,7 +2,6 @@ package com.kinnovatio.livetiming;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
-import io.agroal.api.AgroalDataSource;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.runtime.StartupEvent;
@@ -10,20 +9,13 @@ import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import io.smallrye.reactive.messaging.kafka.Record;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.util.Set;
 
 /// Processor for F1 live timing messages from Kafka.
@@ -47,9 +39,8 @@ public class F1KafkaLivetimingProcessor {
 
 
     @Inject
-    //@OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("livetiming-out")
-    Emitter<String> statusEmitter;
+    Emitter<Record<String, String>> livetimingOutEmitter;
 
     /// Initializes the processor on startup.
     /// This method is triggered by the `StartupEvent`. It logs the startup configuration
@@ -74,13 +65,25 @@ public class F1KafkaLivetimingProcessor {
     /// 5. Emits the message to the `status-out` channel.
     /// If an error occurs during processing, the method retries up to 5 times with a delay.
     ///
-    /// @param records The batch of Kafka consumer records.
+    /// @param record The Kafka consumer record.
     /// @throws Exception If an error occurs during database insertion or processing.
     @Incoming("f1-live-raw-in")
     @Retry(delay = 100, maxRetries = 5)
     @RunOnVirtualThread
-    public void process(ConsumerRecord<String, String> record) throws Exception {
+    public void process(Record<String, String> record) throws Exception {
+        LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
 
+        if (message.message().isEmpty() || excludeCategories.contains(message.category())) {
+            Counter.builder("livetiming_router_processor_record_discarded_total")
+                    .description("Total number of live timing records discarded by the router.")
+                    .tag("category" , message.category())
+                    .register(registry)
+                    .increment();
 
+            LOG.debugf("Discarded record >> offset = %d, key = %s, value = %s%n", record.key(), record.value());
+        } else {
+            // The message is ok to distribute
+            livetimingOutEmitter.send(record);
+        }
     }
 }
