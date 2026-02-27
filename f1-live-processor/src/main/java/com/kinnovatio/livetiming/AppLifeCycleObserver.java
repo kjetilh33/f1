@@ -30,7 +30,7 @@ public class AppLifeCycleObserver {
         LOG.infof("Starting the live timing message storage processor...");
         LOG.infof("Config picked up from %s", logSurce);
 
-        createDbTableIfNotExists();
+        createLiveTimingDbTableIfNotExists();
 
         LOG.infof("The storage processor is ready. Waiting for live timing messages...");
     }
@@ -42,7 +42,7 @@ public class AppLifeCycleObserver {
     /// Creates the database table and indexes if they do not already exist.
     /// The table `live_timing_messages` stores the raw JSON message, timestamp, category,
     /// and a hash of the message content.
-    private void createDbTableIfNotExists() {
+    private void createLiveTimingDbTableIfNotExists() {
         String createTableSql = """
                 CREATE TABLE IF NOT EXISTS %s (
                     message_id SERIAL PRIMARY KEY,
@@ -62,12 +62,9 @@ public class AppLifeCycleObserver {
 
         try (Connection connection = storageDataSource.getConnection(); Statement statement = connection.createStatement()) {
             LOG.infof("Successfully connected to the storage DB...");
-
             statement.execute(createTableSql);
-            LOG.infof("Successfully created (if not already exists) the DB table...");
-
             statement.execute(createIndexStatement);
-            LOG.infof("Successfully created (if not already exists) the DB index...");
+            LOG.infof("Successfully created (if not already exists) the livetiming DB table...");
         } catch (Exception e) {
             LOG.errorf("An error happened when creating the DB table: %s", e.getMessage());
         }
