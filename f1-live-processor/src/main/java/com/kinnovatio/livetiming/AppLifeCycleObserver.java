@@ -15,13 +15,15 @@ import java.sql.Statement;
 @ApplicationScoped
 public class AppLifeCycleObserver {
     private static final Logger LOG = Logger.getLogger(AppLifeCycleObserver.class);
-    private static final String dbTableName = "live_timing_messages";
 
     @Inject
     AgroalDataSource storageDataSource;
 
-    @ConfigProperty(name = "log.source")
+    @ConfigProperty(name = "app.log.source")
     String logSurce;
+
+    @ConfigProperty(name = "app.livetiming.table")
+    String livetimingTable;
 
 
     void onStart(@Observes StartupEvent ev) {
@@ -53,12 +55,12 @@ public class AppLifeCycleObserver {
                     message_hash TEXT,
                     created_timestamp TIMESTAMPTZ DEFAULT NOW()
                 );
-                """.formatted(dbTableName);
+                """.formatted(livetimingTable);
 
         String createIndexStatement = """
                 CREATE INDEX IF NOT EXISTS idx_category_timestamp ON %s (category, message_timestamp);
                 CREATE INDEX IF NOT EXISTS idx_hash ON %s (message_hash);
-                """.formatted(dbTableName, dbTableName);
+                """.formatted(livetimingTable, livetimingTable);
 
         try (Connection connection = storageDataSource.getConnection(); Statement statement = connection.createStatement()) {
             LOG.infof("Successfully connected to the storage DB...");

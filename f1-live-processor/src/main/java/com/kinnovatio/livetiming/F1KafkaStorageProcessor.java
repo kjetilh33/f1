@@ -32,7 +32,9 @@ import java.util.Set;
 @ApplicationScoped
 public class F1KafkaStorageProcessor {
     private static final Logger LOG = Logger.getLogger(F1KafkaStorageProcessor.class);
-    private static final String dbTableName = "live_timing_messages";
+
+    @ConfigProperty(name = "app.livetiming.table")
+    String livetimingTable;
 
     private static final Set<String> excludeCategories = Set.of("Heartbeat");
 
@@ -73,7 +75,7 @@ public class F1KafkaStorageProcessor {
 
         String sql = """
                 INSERT INTO %s(category, is_streaming, message, message_timestamp, message_hash) VALUES(?, ?, ?::jsonb, ?::timestamptz, MD5(?));
-                """.formatted(dbTableName);
+                """.formatted(livetimingTable);
 
         try (Connection connection = storageDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {

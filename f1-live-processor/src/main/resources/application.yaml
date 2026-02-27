@@ -44,8 +44,14 @@ quarkus:
         #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
         #max-size: 16
 
-log:
-  source: "Default config file."
+app:
+  database: app
+  livetiming:
+    table: live_timing_messages
+
+
+  log:
+    source: "Default config file."
 
 "%prod":
   kafka:

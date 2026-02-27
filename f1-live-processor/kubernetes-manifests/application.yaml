@@ -46,5 +46,9 @@ kafka:
   bootstrap:
     servers: kafka-main-kafka-bootstrap:9092
 
-log:
-  source: "External config file."
+app:
+  database: app
+  livetiming:
+    table: live_timing_messages
+  log:
+    source: "External config file."
