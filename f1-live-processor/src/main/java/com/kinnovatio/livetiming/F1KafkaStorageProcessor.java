@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agroal.api.AgroalDataSource;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.transaction.Transactional;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -14,7 +13,6 @@ import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.*;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
@@ -22,7 +20,6 @@ import com.kinnovatio.signalr.messages.LiveTimingMessage;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.util.Set;
 
 /// Processor for F1 live timing messages from Kafka.
@@ -48,61 +45,11 @@ public class F1KafkaStorageProcessor {
     @Inject
     MeterRegistry registry;
 
-    @ConfigProperty(name = "log.source")
-    String logSurce;
 
     @Inject
     @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("status-out")
     Emitter<String> statusEmitter;
-
-    /// Initializes the processor on startup.
-    /// This method is triggered by the `StartupEvent`. It logs the startup configuration
-    /// and ensures that the necessary database table exists.
-    ///
-    /// @param ev The startup event.
-    public void onStartup(@Observes StartupEvent ev) {
-        LOG.infof("Starting the live timing message storage processor...");
-        LOG.infof("Config picked up from %s", logSurce);
-
-        createDbTableIfNotExists();
-
-        LOG.infof("The storage processor is ready. Waiting for live timing messages...");
-    }
-
-    /// Creates the database table and indexes if they do not already exist.
-    /// The table `live_timing_messages` stores the raw JSON message, timestamp, category,
-    /// and a hash of the message content.
-    private void createDbTableIfNotExists() {
-        String createTableSql = """
-                CREATE TABLE IF NOT EXISTS %s (
-                    message_id SERIAL PRIMARY KEY,
-                    category VARCHAR(100) DEFAULT 'N/A',
-                    is_streaming BOOLEAN DEFAULT FALSE,
-                    message JSONB,
-                    message_timestamp TIMESTAMPTZ,
-                    message_hash TEXT,
-                    created_timestamp TIMESTAMPTZ DEFAULT NOW()
-                );
-                """.formatted(dbTableName);
-
-        String createIndexStatement = """
-                CREATE INDEX IF NOT EXISTS idx_category_timestamp ON %s (category, message_timestamp);
-                CREATE INDEX IF NOT EXISTS idx_hash ON %s (message_hash);
-                """.formatted(dbTableName, dbTableName);
-
-        try (Connection connection = storageDataSource.getConnection(); Statement statement = connection.createStatement()) {
-            LOG.infof("Successfully connected to the storage DB...");
-
-            statement.execute(createTableSql);
-            LOG.infof("Successfully created (if not already exists) the DB table...");
-
-            statement.execute(createIndexStatement);
-            LOG.infof("Successfully created (if not already exists) the DB index...");
-        } catch (Exception e) {
-            LOG.errorf("An error happened when creating the DB table: %s", e.getMessage());
-        }
-    }
 
     /// Processes a batch of Kafka records and stores them in the database.
     /// This method is annotated with `@Incoming("f1-live-raw")` to consume messages from Kafka.

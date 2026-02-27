@@ -15,17 +15,12 @@ import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 
 import java.util.Set;
 
 /// Processor for F1 live timing messages from Kafka.
-/// This class is responsible for:
-/// - Consuming messages from the `f1-live-raw` Kafka topic.
-/// - Filtering out unwanted message categories (e.g., "Heartbeat").
-/// - Storing valid messages into a PostgreSQL database.
-/// - Emitting status updates to the `status-out` channel.
-/// It uses `AgroalDataSource` for database interactions and `Micrometer` for metrics.
 @ApplicationScoped
 public class F1KafkaLivetimingProcessor {
     private static final Logger LOG = Logger.getLogger(F1KafkaLivetimingProcessor.class);
@@ -43,9 +38,13 @@ public class F1KafkaLivetimingProcessor {
     @Channel("livetiming-out")
     Emitter<Record<String, String>> livetimingOutEmitter;
 
+    @Inject
+    @OnOverflow(value = OnOverflow.Strategy.DROP)
+    @Channel("track-status")
+    Emitter<String> trackStatusEmitter;
+
     /// Initializes the processor on startup.
-    /// This method is triggered by the `StartupEvent`. It logs the startup configuration
-    /// and ensures that the necessary database table exists.
+    /// This method is triggered by the `StartupEvent`. It logs the startup configuration.
     ///
     /// @param ev The startup event.
     public void onStartup(@Observes StartupEvent ev) {
@@ -56,15 +55,7 @@ public class F1KafkaLivetimingProcessor {
 
 
 
-    /// Processes a batch of Kafka records and stores them in the database.
-    /// This method is annotated with `@Incoming("f1-live-raw")` to consume messages from Kafka.
-    /// It performs the following steps:
-    /// 1. Deserializes the JSON message.
-    /// 2. Filters out empty messages or excluded categories.
-    /// 3. Inserts valid messages into the database using JDBC batch processing.
-    /// 4. Updates metrics for discarded and stored records.
-    /// 5. Emits the message to the `status-out` channel.
-    /// If an error occurs during processing, the method retries up to 5 times with a delay.
+    /// Processes a batch of Kafka records.
     ///
     /// @param record The Kafka consumer record.
     /// @throws Exception If an error occurs during database insertion or processing.
