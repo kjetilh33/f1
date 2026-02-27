@@ -1,8 +1,22 @@
 # f1-live-processor
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+##
+Livetiming message categories:
+- `LapCount`.
+- `TeamRadio`.
+- `SessionInfo`.
+- `ExtrapolatedClock`.
+- `TrackStatus`.
+- `SessionData`.
+- `RaceControlMessages`.
+- `DriverList`.
+- `TopThree`.
+- `PitLaneTimeCollection`.
+- `WeatherData`.
+- `TimingStats`.
+- `TimingAppData`.
+- `TimingData`.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
 
 ## Testing the application with local K8s
 This application depends on interacting with other components, both upstream and downstream to do its job:
@@ -77,35 +91,3 @@ If you want to build an _über-jar_, execute the following command:
 ```
 
 The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
-
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/f1-live-processor-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
-
-## Related Guides
-
-- Messaging - Kafka Connector ([guide](https://quarkus.io/guides/kafka-getting-started)): Connect to Kafka with Reactive Messaging
-- JDBC Driver - PostgreSQL ([guide](https://quarkus.io/guides/datasource)): Connect to the PostgreSQL database via JDBC
-
-## Provided Code
-
-### Messaging codestart
-
-Use Quarkus Messaging
-
-[Related Apache Kafka guide section...](https://quarkus.io/guides/kafka-reactive-getting-started)
-
