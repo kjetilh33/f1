@@ -2,6 +2,7 @@ package com.kinnovatio;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.UUID;
@@ -64,7 +65,7 @@ public class F1KafkaProcessorWithBrokerTest {
         // Expect that the tested application processes orders from 'orders' topic and write to 'orders-processed' topic
 
         ConsumerTask<String, String> processed = companion.consumeStrings().fromTopics("test-f1-live-processed", 3);
-        processed.awaitCompletion();
+        processed.awaitCompletion(Duration.ofSeconds(15));
         IO.println(String.format("Received %d messages.", processed.count()));
         assertEquals(3, processed.count());
     }

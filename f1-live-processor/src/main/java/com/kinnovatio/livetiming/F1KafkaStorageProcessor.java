@@ -65,11 +65,12 @@ public class F1KafkaStorageProcessor {
     ///
     /// @param records The batch of Kafka consumer records.
     /// @throws Exception If an error occurs during database insertion or processing.
-    @Incoming("f1-live-raw")
+    @Incoming("f1-live-raw-storage")
     @Retry(delay = 100, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
     public void toStorage(ConsumerRecords<String, String> records) throws Exception {
+        LOG.infof("Livetiming messages received on f1-live-raw-storage channel. Number of records: %d", records.count());
         final int batchSize = 1000;
         int recordCount = 0;
 

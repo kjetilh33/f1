@@ -1,16 +1,18 @@
 mp:
   messaging:
     incoming:
-      f1-live-raw:
+      f1-live-raw-storage:
         topic: test-f1-live-raw   #test specific
-        "group.id": f1-livetiming-processor-storage
+        group:
+          id: f1-livetiming-processor-storage
         connector: smallrye-kafka
         #"auto.offset.reset": earliest
         value:
           deserializer: org.apache.kafka.common.serialization.StringDeserializer
       f1-live-raw-in:
         topic: test-f1-live-raw   #test specific
-        "group.id": f1-livetiming-processor
+        group:
+          id: f1-livetiming-processor-router
         connector: smallrye-kafka
         #"auto.offset.reset": earliest
         value:
@@ -21,6 +23,8 @@ mp:
         connector: smallrye-kafka
         value:
           serializer: org.apache.kafka.common.serialization.StringSerializer
+#      session-status-update: #This is an internal in-memory channel
+#        broadcast: true
 
 smallrye:
   messaging:
@@ -48,7 +52,8 @@ app:
   database: app
   livetiming:
     table: live_timing_messages
-
+  session-status:
+    table: live_session_status
 
   log:
     source: "Default config file."

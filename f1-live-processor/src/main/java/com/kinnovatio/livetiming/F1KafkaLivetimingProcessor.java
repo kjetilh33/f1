@@ -43,6 +43,11 @@ public class F1KafkaLivetimingProcessor {
     @Channel("track-status")
     Emitter<String> trackStatusEmitter;
 
+    @Inject
+    @OnOverflow(value = OnOverflow.Strategy.DROP)
+    @Channel("session-status")
+    Emitter<String> sessionStatusEmitter;
+
     /// Initializes the processor on startup.
     /// This method is triggered by the `StartupEvent`. It logs the startup configuration.
     ///
@@ -63,10 +68,12 @@ public class F1KafkaLivetimingProcessor {
     @Retry(delay = 100, maxRetries = 5)
     @RunOnVirtualThread
     public void process(Record<String, String> record) throws Exception {
+        LOG.infof("Livetiming message received on f1-live-raw-in channel. Message key: %s", record.key());
         try {
             LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
 
             if (message.message().isEmpty() || excludeCategories.contains(message.category())) {
+                // The message should be discarded and not processed further.
                 Counter.builder("livetiming_router_processor_record_discarded_total")
                         .description("Total number of live timing records discarded by the router.")
                         .tag("category" , message.category())
@@ -75,8 +82,18 @@ public class F1KafkaLivetimingProcessor {
 
                 LOG.debugf("Discarded record >> offset = %d, key = %s, value = %s%n", record.key(), record.value());
             } else {
-                // The message is ok to distribute
+                // The message is ok to distribute to the generic downstream.
                 livetimingOutEmitter.send(record);
+                LOG.infof("Livetiming message publisched to livetiming-out channel. Message category: %s", message.category());
+                // Route the message to appropriate per-category handlers
+                switch (message.category()) {
+                    case "TrackStatus" -> trackStatusEmitter.send(record.value());
+                    case "SessionInfo" -> sessionStatusEmitter.send(record.value());
+                    default -> {
+                        LOG.debugf("Message router: unknown message category: %s", message.category());
+                    }
+
+                }
             }
 
         } catch (JsonParseException e) {

@@ -5,14 +5,12 @@ import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
+import io.smallrye.reactive.messaging.kafka.Record;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import io.smallrye.reactive.messaging.kafka.Record;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
@@ -22,14 +20,12 @@ import org.jboss.logging.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
-import java.util.Set;
 
 /// Processor for F1 track status messages.
 
 @ApplicationScoped
-public class F1TrackStatusProcessor {
-    private static final Logger LOG = Logger.getLogger(F1TrackStatusProcessor.class);
+public class F1SessionStatusProcessor {
+    private static final Logger LOG = Logger.getLogger(F1SessionStatusProcessor.class);
     private static final String dbTableName = "live_timing_messages";
 
 
@@ -41,6 +37,12 @@ public class F1TrackStatusProcessor {
 
     @Inject
     MeterRegistry registry;
+
+    @Inject
+    @Broadcast
+    @OnOverflow(value = OnOverflow.Strategy.DROP)
+    @Channel("session-status-update")
+    Emitter<String> sessionStatusUpdateEmitter;
 
 
     /// Processes a batch of Kafka records and stores them in the database.
@@ -55,11 +57,11 @@ public class F1TrackStatusProcessor {
     ///
     /// @param record The record.
     /// @throws Exception If an error occurs during database insertion or processing.
-    @Incoming("track-status")
+    @Incoming("session-status")
     @Retry(delay = 100, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
-    public void processTrackStatus(Record<String, String> record) throws Exception {
+    public void processSessionStatus(String recordValue) throws Exception {
         String sql = """
                 INSERT INTO %s(category, is_streaming, message, message_timestamp, message_hash) VALUES(?, ?, ?::jsonb, ?::timestamptz, MD5(?));
                 """.formatted(dbTableName);
@@ -67,7 +69,7 @@ public class F1TrackStatusProcessor {
         try (Connection connection = storageDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
+            LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
 
             statement.setString(1, message.category());
             statement.setBoolean(2, message.isStreaming());
@@ -82,9 +84,9 @@ public class F1TrackStatusProcessor {
                     .register(registry)
                     .increment();
 
-            LOG.debugf("Track status to Storage >> key = %s, value = %s%n",  record.key(), record.value());
+            //LOG.debugf("Track status to Storage >> key = %s, value = %s%n",  record.key(), record.value());
 
-            statement.executeBatch();
+            //statement.executeBatch();
 
         } catch (Exception e) {
             LOG.warnf("Error when trying to store message. Will retry shortly. Error: %s", e.getMessage());
