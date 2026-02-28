@@ -52,8 +52,8 @@ app:
   database: app
   livetiming:
     table: live_timing_messages
-  session-status:
-    table: live_session_status
+  session-info:
+    table: live_session_info
 
   log:
     source: "Default config file."

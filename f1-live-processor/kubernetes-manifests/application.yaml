@@ -52,5 +52,7 @@ app:
   database: app
   livetiming:
     table: live_timing_messages
+  session-info:
+    table: live_session_info
   log:
     source: "External config file."

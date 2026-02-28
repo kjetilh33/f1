@@ -45,8 +45,8 @@ public class F1KafkaLivetimingProcessor {
 
     @Inject
     @OnOverflow(value = OnOverflow.Strategy.DROP)
-    @Channel("session-status")
-    Emitter<String> sessionStatusEmitter;
+    @Channel("session-info")
+    Emitter<String> sessionInfoEmitter;
 
     /// Initializes the processor on startup.
     /// This method is triggered by the `StartupEvent`. It logs the startup configuration.
@@ -88,7 +88,7 @@ public class F1KafkaLivetimingProcessor {
                 // Route the message to appropriate per-category handlers
                 switch (message.category()) {
                     case "TrackStatus" -> trackStatusEmitter.send(record.value());
-                    case "SessionInfo" -> sessionStatusEmitter.send(record.value());
+                    case "SessionInfo" -> sessionInfoEmitter.send(record.value());
                     default -> {
                         LOG.debugf("Message router: unknown message category: %s", message.category());
                     }
