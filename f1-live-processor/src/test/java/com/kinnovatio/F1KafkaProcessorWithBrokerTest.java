@@ -62,8 +62,7 @@ public class F1KafkaProcessorWithBrokerTest {
         Assertions.assertEquals(3, msgCount);
 
 
-        // Expect that the tested application processes orders from 'orders' topic and write to 'orders-processed' topic
-
+        // Expect that the tested application processes orders from 'test-f1-live-raw' topic and write to 'test-f1-live-processed' topic
         ConsumerTask<String, String> processed = companion.consumeStrings().fromTopics("test-f1-live-processed", 3);
         processed.awaitCompletion(Duration.ofSeconds(15));
         IO.println(String.format("Received %d messages.", processed.count()));

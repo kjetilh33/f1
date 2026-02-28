@@ -39,6 +39,9 @@ public class F1SessionStatusProcessor {
     MeterRegistry registry;
 
     @Inject
+    GlobalStateManager stateManager;
+
+    @Inject
     @Broadcast
     @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("session-status-update")
