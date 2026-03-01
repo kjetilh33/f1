@@ -75,7 +75,8 @@ public class F1KafkaStorageProcessor {
         int recordCount = 0;
 
         String sql = """
-                INSERT INTO %s(category, is_streaming, message, message_timestamp, message_hash) VALUES(?, ?, ?::jsonb, ?::timestamptz, MD5(?));
+                INSERT INTO %s (category, is_streaming, message, message_timestamp, message_hash) 
+                VALUES (?, ?, ?::jsonb, ?::timestamptz, MD5(?));
                 """.formatted(livetimingTable);
 
         try (Connection connection = storageDataSource.getConnection();

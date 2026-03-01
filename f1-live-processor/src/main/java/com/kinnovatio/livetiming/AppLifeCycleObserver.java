@@ -78,7 +78,8 @@ public class AppLifeCycleObserver {
         String createTableSql = """
                 CREATE TABLE IF NOT EXISTS %s (
                     key VARCHAR(100) PRIMARY KEY,
-                    message JSONB
+                    message JSONB,
+                    updated_timestamp TIMESTAMPTZ DEFAULT NOW()
                 );
                 """.formatted(tableName);
 

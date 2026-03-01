@@ -1,5 +1,6 @@
 package com.kinnovatio.livetiming;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
@@ -24,6 +25,7 @@ import java.sql.PreparedStatement;
 @ApplicationScoped
 public class F1SessionInfoProcessor {
     private static final Logger LOG = Logger.getLogger(F1SessionInfoProcessor.class);
+    private static final String defaultStatus = "unknown";
 
     @Inject
     ObjectMapper objectMapper;
@@ -44,15 +46,15 @@ public class F1SessionInfoProcessor {
     @Broadcast
     @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("session-status-update")
-    Emitter<String> sessionStatusUpdateEmitter;
+    Emitter<GlobalStateManager.SessionState> sessionStatusUpdateEmitter;
 
 
     @Incoming("session-info")
     @Retry(delay = 100, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
-    public void processSessionStatus(String recordValue) throws Exception {
-        String sessionStatusKey = "sessionStatus";
+    public void processSessionInfo(String recordValue) throws Exception {
+        String sessionStatusKey = "sessionInfo";
 
         String sql = """
                 INSERT INTO %s (key, message) 
@@ -62,10 +64,10 @@ public class F1SessionInfoProcessor {
                     message = EXCLUDED.message;
                 """.formatted(sessionInfoTable);
 
+        LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
+
         try (Connection connection = storageDataSource.getConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
-            LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
-
             statement.setString(1, sessionStatusKey);
             statement.setString(2, message.message());
             statement.executeUpdate();
@@ -75,6 +77,35 @@ public class F1SessionInfoProcessor {
         }
 
         // Check for updated session status
+        JsonNode root = objectMapper.readTree(message.message());
+        String sessionStatus = root.path("SessionStatus").asText(defaultStatus);
+        String archiveStatus = root.path("ArchiveStatus").path("Status").asText(defaultStatus);
+        LOG.infof("We have an update session status. New session status: %s. Archive status: %s",
+                sessionStatus, archiveStatus);
 
+        if (sessionStatus.equalsIgnoreCase("Started")) {
+            stateManager.setSessionState(GlobalStateManager.SessionState.LIVE_SESSION);
+            sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.LIVE_SESSION);
+        } else if (sessionStatus.equalsIgnoreCase("Finalised")) {
+            stateManager.setSessionState(GlobalStateManager.SessionState.NO_SESSION);
+            sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.NO_SESSION);
+        } else {
+            stateManager.setSessionState(GlobalStateManager.SessionState.UNKNOWN);
+            sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.UNKNOWN);
+        }
     }
+
+    /*
+    @Incoming("session-data")
+    @RunOnVirtualThread
+    public void processSessionData(String recordValue) throws Exception {
+        LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
+
+        // Check for updated session status
+        JsonNode root = objectMapper.readTree(message.message());
+        String sessionStatus = root.path("SessionStatus").asText(defaultStatus);
+        String archiveStatus = root.path("ArchiveStatus").path("Status").asText(defaultStatus);
+    }
+
+     */
 }

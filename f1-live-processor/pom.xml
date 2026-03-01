@@ -87,7 +87,6 @@
                 <version>${quarkus.platform.version}</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <jvmArgs></jvmArgs>
                 </configuration>
                 <executions>
                     <execution>

@@ -30,7 +30,6 @@ import java.util.Set;
 @ApplicationScoped
 public class F1TrackStatusProcessor {
     private static final Logger LOG = Logger.getLogger(F1TrackStatusProcessor.class);
-    private static final String dbTableName = "live_timing_messages";
 
 
     @Inject
@@ -44,51 +43,65 @@ public class F1TrackStatusProcessor {
 
 
     /// Processes a batch of Kafka records and stores them in the database.
-    /// This method is annotated with `@Incoming("f1-live-raw")` to consume messages from Kafka.
-    /// It performs the following steps:
-    /// 1. Deserializes the JSON message.
-    /// 2. Filters out empty messages or excluded categories.
-    /// 3. Inserts valid messages into the database using JDBC batch processing.
-    /// 4. Updates metrics for discarded and stored records.
-    /// 5. Emits the message to the `status-out` channel.
-    /// If an error occurs during processing, the method retries up to 5 times with a delay.
-    ///
     /// @param record The record.
     /// @throws Exception If an error occurs during database insertion or processing.
     @Incoming("track-status")
     @Retry(delay = 100, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
-    public void processTrackStatus(Record<String, String> record) throws Exception {
+    public void processTrackStatus(String recordValue) throws Exception {
+        String sessionStatusKey = "trackStatus";
+/*
         String sql = """
-                INSERT INTO %s(category, is_streaming, message, message_timestamp, message_hash) VALUES(?, ?, ?::jsonb, ?::timestamptz, MD5(?));
-                """.formatted(dbTableName);
+                INSERT INTO %s (key, message)
+                VALUES (?, ?::jsonb)
+                ON CONFLICT (key)
+                DO UPDATE SET
+                    message = EXCLUDED.message;
+                """.formatted(sessionInfoTable);
+
+        LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
 
         try (Connection connection = storageDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
-
-            statement.setString(1, message.category());
-            statement.setBoolean(2, message.isStreaming());
-            statement.setString(3, message.message());
-            statement.setString(4, message.timestamp().toString());
-            statement.setString(5, message.message() + message.timestamp().toString());
-            statement.addBatch();
-
-            Counter.builder("livetiming_storage_processor_record_stored_total")
-                    .description("Total number of live timing records written to storage.")
-                    .tag("category" , message.category())
-                    .register(registry)
-                    .increment();
-
-            LOG.debugf("Track status to Storage >> key = %s, value = %s%n",  record.key(), record.value());
-
-            statement.executeBatch();
-
+            statement.setString(1, sessionStatusKey);
+            statement.setString(2, message.message());
+            statement.executeUpdate();
         } catch (Exception e) {
-            LOG.warnf("Error when trying to store message. Will retry shortly. Error: %s", e.getMessage());
+            LOG.warnf("Error when trying to store session status. Will retry shortly. Error: %s", e.getMessage());
             throw e;
         }
+
+ */
+    }
+
+    @Incoming("session-status-update")
+    @Retry(delay = 100, maxRetries = 5)
+    @RunOnVirtualThread
+    @Transactional
+    public void processSessionStatusChange(GlobalStateManager.SessionState sessionState) throws Exception {
+        String sessionStatusKey = "trackStatus";
+/*
+        String sql = """
+                INSERT INTO %s (key, message)
+                VALUES (?, ?::jsonb)
+                ON CONFLICT (key)
+                DO UPDATE SET
+                    message = EXCLUDED.message;
+                """.formatted(sessionInfoTable);
+
+        LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
+
+        try (Connection connection = storageDataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, sessionStatusKey);
+            statement.setString(2, message.message());
+            statement.executeUpdate();
+        } catch (Exception e) {
+            LOG.warnf("Error when trying to store session status. Will retry shortly. Error: %s", e.getMessage());
+            throw e;
+        }
+
+ */
     }
 }

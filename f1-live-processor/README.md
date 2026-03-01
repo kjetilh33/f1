@@ -3,20 +3,19 @@
 ##
 Livetiming message categories:
 - `LapCount`.
+- `DriverList`.
 - `TeamRadio`.
 - `SessionInfo`.
-- `ExtrapolatedClock`.
-- `TrackStatus`.
 - `SessionData`.
+- `TrackStatus`.
 - `RaceControlMessages`.
-- `DriverList`.
+- `TimingData`.
+- `TimingAppData`.
+- `TimingStats`.
 - `TopThree`.
 - `PitLaneTimeCollection`.
 - `WeatherData`.
-- `TimingStats`.
-- `TimingAppData`.
-- `TimingData`.
-
+- `ExtrapolatedClock`.
 
 ## Testing the application with local K8s
 This application depends on interacting with other components, both upstream and downstream to do its job:

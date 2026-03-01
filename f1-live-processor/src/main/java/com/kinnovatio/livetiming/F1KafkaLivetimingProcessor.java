@@ -48,6 +48,29 @@ public class F1KafkaLivetimingProcessor {
     @Channel("session-info")
     Emitter<String> sessionInfoEmitter;
 
+    /*
+    @Inject
+    @OnOverflow(value = OnOverflow.Strategy.DROP)
+    @Channel("session-data")
+    Emitter<String> sessionDataEmitter;
+
+    @Inject
+    @OnOverflow(value = OnOverflow.Strategy.DROP)
+    @Channel("timing-data")
+    Emitter<String> timingDataEmitter;
+
+    @Inject
+    @OnOverflow(value = OnOverflow.Strategy.DROP)
+    @Channel("timing-app-data")
+    Emitter<String> timingAppDataEmitter;
+
+    @Inject
+    @OnOverflow(value = OnOverflow.Strategy.DROP)
+    @Channel("timing-stats")
+    Emitter<String> timingStatsEmitter;
+
+     */
+
     /// Initializes the processor on startup.
     /// This method is triggered by the `StartupEvent`. It logs the startup configuration.
     ///
@@ -59,7 +82,6 @@ public class F1KafkaLivetimingProcessor {
     }
 
 
-
     /// Processes a batch of Kafka records.
     ///
     /// @param record The Kafka consumer record.
@@ -68,11 +90,13 @@ public class F1KafkaLivetimingProcessor {
     @Retry(delay = 100, maxRetries = 5)
     @RunOnVirtualThread
     public void process(Record<String, String> record) throws Exception {
-        LOG.infof("Livetiming message received on f1-live-raw-in channel. Message key: %s", record.key());
+        LOG.debugf("Livetiming message received on f1-live-raw-in channel. Message key: %s", record.key());
         try {
             LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
 
-            if (message.message().isEmpty() || excludeCategories.contains(message.category())) {
+            if (message.message().isEmpty()
+                    || excludeCategories.contains(message.category())
+                    || !message.isStreaming()) {
                 // The message should be discarded and not processed further.
                 Counter.builder("livetiming_router_processor_record_discarded_total")
                         .description("Total number of live timing records discarded by the router.")
@@ -89,8 +113,12 @@ public class F1KafkaLivetimingProcessor {
                 switch (message.category()) {
                     case "TrackStatus" -> trackStatusEmitter.send(record.value());
                     case "SessionInfo" -> sessionInfoEmitter.send(record.value());
+                    //case "SessionData" -> sessionDataEmitter.send(record.value());
+                    //case "TimingData" -> timingDataEmitter.send(record.value());
+                    //case "TimingAppData" -> timingAppDataEmitter.send(record.value());
+                    //case "TimingStats" -> timingStatsEmitter.send(record.value());
                     default -> {
-                        LOG.debugf("Message router: unknown message category: %s", message.category());
+                        LOG.debugf("Message router: unknown message category received: %s", message.category());
                     }
 
                 }

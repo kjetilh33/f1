@@ -37,9 +37,9 @@ public class F1KafkaProcessorWithBrokerTest {
     void testProcessor() throws Exception {
 
         ProducerTask producerTask =companion.produceStrings().fromRecords(
-                new ProducerRecord<>("test-f1-live-raw", "SessionInfo",
+                new ProducerRecord<>("test-f1-live-raw", "LapCount",
                         objectMapper.writeValueAsString(
-                                new LiveTimingMessage("SessionInfo", "{\"CurrentLap\":58,\"TotalLaps\":58}",
+                                new LiveTimingMessage("LapCount", "{\"CurrentLap\":58,\"TotalLaps\":58}",
                                         Instant.now().atZone(ZoneId.of("UTC")), true)
                         )
                 ),

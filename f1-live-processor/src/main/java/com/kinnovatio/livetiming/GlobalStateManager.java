@@ -17,9 +17,9 @@ public class GlobalStateManager {
     }
 
     public enum SessionState {
-        UNKNOWN (0, "Unknown state."),
-        NO_SESSION (1,"Waiting for next session to start."),
-        LIVE_SESSION (2,"Streaming live timing data.");
+        UNKNOWN (0, "Unknown."),
+        NO_SESSION (1,"No session."),
+        LIVE_SESSION (2,"Session ongoing.");
 
         private final int statusValue;
         private final String status;
