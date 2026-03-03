@@ -54,5 +54,7 @@ app:
     table: live_timing_messages
   session-info:
     table: live_session_info
+  track-status:
+    table: live_track_status
   log:
     source: "External config file."

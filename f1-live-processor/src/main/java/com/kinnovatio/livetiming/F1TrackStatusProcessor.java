@@ -13,6 +13,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import io.smallrye.reactive.messaging.kafka.Record;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
@@ -31,7 +32,6 @@ import java.util.Set;
 public class F1TrackStatusProcessor {
     private static final Logger LOG = Logger.getLogger(F1TrackStatusProcessor.class);
 
-
     @Inject
     ObjectMapper objectMapper;
 
@@ -41,6 +41,11 @@ public class F1TrackStatusProcessor {
     @Inject
     MeterRegistry registry;
 
+    @ConfigProperty(name = "app.track-status.table")
+    String trackStatusTable;
+
+    @Inject
+    GlobalStateManager stateManager;
 
     /// Processes a batch of Kafka records and stores them in the database.
     /// @param record The record.
@@ -50,29 +55,24 @@ public class F1TrackStatusProcessor {
     @RunOnVirtualThread
     @Transactional
     public void processTrackStatus(String recordValue) throws Exception {
-        String sessionStatusKey = "trackStatus";
-/*
         String sql = """
-                INSERT INTO %s (key, message)
-                VALUES (?, ?::jsonb)
-                ON CONFLICT (key)
-                DO UPDATE SET
-                    message = EXCLUDED.message;
-                """.formatted(sessionInfoTable);
+                INSERT INTO %s (session_key, message, message_timestamp)
+                VALUES (?, ?::jsonb, ?::timestamptz)
+                ;
+                """.formatted(trackStatusTable);
 
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
 
         try (Connection connection = storageDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, sessionStatusKey);
+            statement.setInt(1, stateManager.getSessionKey());
             statement.setString(2, message.message());
+            statement.setString(3, message.timestamp().toString());
             statement.executeUpdate();
         } catch (Exception e) {
-            LOG.warnf("Error when trying to store session status. Will retry shortly. Error: %s", e.getMessage());
+            LOG.warnf("Error when trying to store track status. Will retry shortly. Error: %s", e.getMessage());
             throw e;
         }
-
- */
     }
 
     @Incoming("session-status-update")
@@ -80,28 +80,19 @@ public class F1TrackStatusProcessor {
     @RunOnVirtualThread
     @Transactional
     public void processSessionStatusChange(GlobalStateManager.SessionState sessionState) throws Exception {
-        String sessionStatusKey = "trackStatus";
-/*
+        LOG.infof("Session status changed. Will clear the %s table.", trackStatusTable);
         String sql = """
-                INSERT INTO %s (key, message)
-                VALUES (?, ?::jsonb)
-                ON CONFLICT (key)
-                DO UPDATE SET
-                    message = EXCLUDED.message;
-                """.formatted(sessionInfoTable);
-
-        LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
+                DELETE FROM %s;
+                """.formatted(trackStatusTable);
 
         try (Connection connection = storageDataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, sessionStatusKey);
-            statement.setString(2, message.message());
-            statement.executeUpdate();
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
         } catch (Exception e) {
-            LOG.warnf("Error when trying to store session status. Will retry shortly. Error: %s", e.getMessage());
+            LOG.warnf("Error when trying to clear the %s table. Will retry shortly. Error: %s",
+                    trackStatusTable,
+                    e.getMessage());
             throw e;
         }
-
- */
     }
 }

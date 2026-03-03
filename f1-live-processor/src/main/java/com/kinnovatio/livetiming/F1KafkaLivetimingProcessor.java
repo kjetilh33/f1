@@ -108,7 +108,7 @@ public class F1KafkaLivetimingProcessor {
             } else {
                 // The message is ok to distribute to the generic downstream.
                 livetimingOutEmitter.send(record);
-                LOG.infof("Livetiming message publisched to livetiming-out channel. Message category: %s", message.category());
+                LOG.tracef("Livetiming message publisched to livetiming-out channel. Message category: %s", message.category());
                 // Route the message to appropriate per-category handlers
                 switch (message.category()) {
                     case "TrackStatus" -> trackStatusEmitter.send(record.value());

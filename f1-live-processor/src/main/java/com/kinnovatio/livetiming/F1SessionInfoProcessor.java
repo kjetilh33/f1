@@ -57,11 +57,12 @@ public class F1SessionInfoProcessor {
         String sessionStatusKey = "sessionInfo";
 
         String sql = """
-                INSERT INTO %s (key, message) 
-                VALUES (?, ?::jsonb)
+                INSERT INTO %s (key, message, message_timestamp) 
+                VALUES (?, ?::jsonb, ?::timestamptz)
                 ON CONFLICT (key)
                 DO UPDATE SET
                     message = EXCLUDED.message;
+                    message_timestamp = EXCLUDED.message_timestamp;
                 """.formatted(sessionInfoTable);
 
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
@@ -70,9 +71,10 @@ public class F1SessionInfoProcessor {
                 PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, sessionStatusKey);
             statement.setString(2, message.message());
+            statement.setString(3, message.timestamp().toString());
             statement.executeUpdate();
         } catch (Exception e) {
-            LOG.warnf("Error when trying to store session status. Will retry shortly. Error: %s", e.getMessage());
+            LOG.warnf("Error when trying to store session info. Will retry shortly. Error: %s", e.getMessage());
             throw e;
         }
 
@@ -80,8 +82,11 @@ public class F1SessionInfoProcessor {
         JsonNode root = objectMapper.readTree(message.message());
         String sessionStatus = root.path("SessionStatus").asText(defaultStatus);
         String archiveStatus = root.path("ArchiveStatus").path("Status").asText(defaultStatus);
+        int sessionKey = root.path("Key").asInt(-1);
         LOG.infof("We have an update session status. New session status: %s. Archive status: %s",
                 sessionStatus, archiveStatus);
+
+        stateManager.setSessionKey(sessionKey);
 
         if (sessionStatus.equalsIgnoreCase("Started")) {
             stateManager.setSessionState(GlobalStateManager.SessionState.LIVE_SESSION);
@@ -94,18 +99,4 @@ public class F1SessionInfoProcessor {
             sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.UNKNOWN);
         }
     }
-
-    /*
-    @Incoming("session-data")
-    @RunOnVirtualThread
-    public void processSessionData(String recordValue) throws Exception {
-        LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
-
-        // Check for updated session status
-        JsonNode root = objectMapper.readTree(message.message());
-        String sessionStatus = root.path("SessionStatus").asText(defaultStatus);
-        String archiveStatus = root.path("ArchiveStatus").path("Status").asText(defaultStatus);
-    }
-
-     */
 }

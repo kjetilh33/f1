@@ -28,6 +28,9 @@ public class AppLifeCycleObserver {
     @ConfigProperty(name = "app.session-info.table")
     String sessionInfoTable;
 
+    @ConfigProperty(name = "app.track-status.table")
+    String trackStatusTable;
+
 
     void onStart(@Observes StartupEvent ev) {
         // This runs when the application is starting.
@@ -36,6 +39,7 @@ public class AppLifeCycleObserver {
 
         createLiveTimingDbTableIfNotExists(livetimingTable);
         createSessionInfoDbTableIfNotExists(sessionInfoTable);
+        createTrackStatusDbTableIfNotExists(trackStatusTable);
 
         LOG.infof("The processor is ready. Waiting for live timing messages...");
     }
@@ -79,6 +83,7 @@ public class AppLifeCycleObserver {
                 CREATE TABLE IF NOT EXISTS %s (
                     key VARCHAR(100) PRIMARY KEY,
                     message JSONB,
+                    message_timestamp TIMESTAMPTZ,
                     updated_timestamp TIMESTAMPTZ DEFAULT NOW()
                 );
                 """.formatted(tableName);
@@ -86,6 +91,25 @@ public class AppLifeCycleObserver {
         try (Connection connection = storageDataSource.getConnection(); Statement statement = connection.createStatement()) {
             statement.execute(createTableSql);
             LOG.infof("Successfully created (if not already exists) the session info DB table...");
+        } catch (Exception e) {
+            LOG.errorf("An error happened when creating the DB table: %s", e.getMessage());
+        }
+    }
+
+    private void createTrackStatusDbTableIfNotExists(String tableName) {
+        String createTableSql = """
+                CREATE TABLE IF NOT EXISTS %s (
+                    message_id SERIAL PRIMARY KEY,
+                    session_key INT,
+                    message JSONB,
+                    message_timestamp TIMESTAMPTZ,
+                    updated_timestamp TIMESTAMPTZ DEFAULT NOW()
+                );
+                """.formatted(tableName);
+
+        try (Connection connection = storageDataSource.getConnection(); Statement statement = connection.createStatement()) {
+            statement.execute(createTableSql);
+            LOG.infof("Successfully created (if not already exists) the track status DB table...");
         } catch (Exception e) {
             LOG.errorf("An error happened when creating the DB table: %s", e.getMessage());
         }
