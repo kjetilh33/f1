@@ -61,7 +61,7 @@ public class F1SessionInfoProcessor {
                 VALUES (?, ?::jsonb, ?::timestamptz)
                 ON CONFLICT (key)
                 DO UPDATE SET
-                    message = EXCLUDED.message;
+                    message = EXCLUDED.message,
                     message_timestamp = EXCLUDED.message_timestamp;
                 """.formatted(sessionInfoTable);
 
