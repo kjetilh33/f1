@@ -66,7 +66,7 @@ public class F1KafkaStorageProcessor {
     /// @param records The batch of Kafka consumer records.
     /// @throws Exception If an error occurs during database insertion or processing.
     @Incoming("f1-live-raw-storage")
-    @Retry(delay = 100, maxRetries = 5)
+    @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
     public void toStorage(ConsumerRecords<String, String> records) throws Exception {

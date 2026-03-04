@@ -42,7 +42,7 @@ public class F1TrackStatusProcessor {
     /// @param record The record.
     /// @throws Exception If an error occurs during database insertion or processing.
     @Incoming("track-status")
-    @Retry(delay = 100, maxRetries = 5)
+    @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
     public void processTrackStatus(String recordValue) throws Exception {
@@ -67,7 +67,7 @@ public class F1TrackStatusProcessor {
     }
 
     @Incoming("session-status-update")
-    @Retry(delay = 100, maxRetries = 5)
+    @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
     public void processSessionStatusChange(GlobalStateManager.SessionState sessionState) throws Exception {

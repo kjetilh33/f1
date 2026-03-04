@@ -50,7 +50,7 @@ public class F1SessionInfoProcessor {
 
 
     @Incoming("session-info")
-    @Retry(delay = 100, maxRetries = 5)
+    @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
     public void processSessionInfo(String recordValue) throws Exception {
