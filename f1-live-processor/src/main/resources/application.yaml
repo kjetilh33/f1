@@ -44,9 +44,12 @@ quarkus:
       db-kind: postgresql
       #username: <your username>
       #password: <your password>
-      #jdbc:
+      jdbc:
         #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
-        #max-size: 16
+        # Connection Pool Tuning for Virtual Threads
+        max-size: 50
+        min-size: 10
+        acquisition-timeout: 5s
 
 app:
   database: app
