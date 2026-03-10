@@ -94,7 +94,10 @@ public class F1SessionInfoProcessor {
         } else if (sessionStatus.equalsIgnoreCase("Finalised")) {
             stateManager.setSessionState(GlobalStateManager.SessionState.NO_SESSION);
             sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.NO_SESSION);
-        } else {
+        } else if (sessionStatus.equalsIgnoreCase("Inactive")) {
+            stateManager.setSessionState(GlobalStateManager.SessionState.INACTIVE);
+            sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.INACTIVE);
+        }else {
             stateManager.setSessionState(GlobalStateManager.SessionState.UNKNOWN);
             sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.UNKNOWN);
         }
