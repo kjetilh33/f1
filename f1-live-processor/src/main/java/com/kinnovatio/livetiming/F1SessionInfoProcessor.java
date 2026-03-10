@@ -82,9 +82,11 @@ public class F1SessionInfoProcessor {
         JsonNode root = objectMapper.readTree(message.message());
         String sessionStatus = root.path("SessionStatus").asText(defaultStatus);
         String archiveStatus = root.path("ArchiveStatus").path("Status").asText(defaultStatus);
+        String meetingName = root.path("Meeting").path("Name").asText(defaultStatus);
+        String sessionName = root.path("Name").asText(defaultStatus);
         int sessionKey = root.path("Key").asInt(-1);
-        LOG.infof("We have an update session status. New session status: %s. Archive status: %s",
-                sessionStatus, archiveStatus);
+        LOG.infof("We have an update session status for meeting: %s. Session: %s. New session status: %s. Archive status: %s",
+                meetingName, sessionName, sessionStatus, archiveStatus);
 
         stateManager.setSessionKey(sessionKey);
 
@@ -97,7 +99,7 @@ public class F1SessionInfoProcessor {
         } else if (sessionStatus.equalsIgnoreCase("Inactive")) {
             stateManager.setSessionState(GlobalStateManager.SessionState.INACTIVE);
             sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.INACTIVE);
-        }else {
+        } else {
             stateManager.setSessionState(GlobalStateManager.SessionState.UNKNOWN);
             sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.UNKNOWN);
         }
