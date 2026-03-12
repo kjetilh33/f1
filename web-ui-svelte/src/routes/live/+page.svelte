@@ -11,7 +11,7 @@
 
   onMount(() => {
     // EventSource is a browser API and runs only on the client
-    connectSSE("/../api/v1/live"); 
+    connectSSE("/../api/v1/live/livetiming"); 
     
     // Cleanup function for when the component is destroyed
     return () => {
