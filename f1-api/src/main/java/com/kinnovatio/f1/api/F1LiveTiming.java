@@ -26,7 +26,7 @@ import java.time.Duration;
 import java.util.Set;
 
 @ApplicationScoped
-@Path("/live")
+@Path("/live/livetiming")
 public class F1LiveTiming {
     private static final Logger LOG = Logger.getLogger(F1LiveTiming.class);
 
@@ -42,7 +42,7 @@ public class F1LiveTiming {
     @Inject
     ObjectMapper objectMapper;
 
-    @ConfigProperty(name = "log.source")
+    @ConfigProperty(name = "app.log.source")
     String logSurce;
 
 

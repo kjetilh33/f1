@@ -31,14 +31,20 @@ quarkus:
     db-kind: postgresql
       #username: <your username>
       #password: <your password>
-      #jdbc:
+    jdbc:
     #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
-    #max-size: 16
+      max-size: 50
+      min-size: 10
+      acquisition-timeout: 5s
   jib:
     base-jvm-image: gcr.io/distroless/java25-debian13
-
-log:
-  source: "Default config file."
+app:
+  database: app
+  livetiming:
+    session-info:
+      table: live_session_info
+  log:
+    source: "Default config file."
 
 "%prod":
   kafka:
