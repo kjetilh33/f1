@@ -4,7 +4,8 @@
 mp:
   messaging:
     incoming:
-      f1-live-raw:
+      f1-live-processed:
+        topic: test-f1-live-processed
         connector: smallrye-kafka
         "auto.offset.reset": earliest
         value:
@@ -28,11 +29,18 @@ quarkus:
     #password: <your password>
     jdbc:
       url: jdbc:postgresql://f1-db-rw:5432/app
+      max-size: 50
+      min-size: 10
       acquisition-timeout: 5s
 
 kafka:
   bootstrap:
     servers: kafka-main-kafka-bootstrap:9092
 
-log:
-  source: "External config file."
+app:
+  database: app
+  livetiming:
+    session-info:
+      table: live_session_info
+  log:
+    source: "Default config file."

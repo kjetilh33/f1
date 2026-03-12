@@ -1,7 +1,8 @@
 mp:
   messaging:
     incoming:
-      f1-live-raw:
+      f1-live-processed:
+        topic: test-f1-live-processed
         connector: smallrye-kafka
         "auto.offset.reset": earliest
         value:

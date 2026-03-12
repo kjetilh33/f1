@@ -33,7 +33,7 @@ public class F1LiveTiming {
     private static final Set<String> excludeCategories = Set.of("Heartbeat");
 
     @Inject
-    @Channel("f1-live-raw")
+    @Channel("f1-live-processed")
     Multi<String> LiveTimingMessage;
 
     @Inject
