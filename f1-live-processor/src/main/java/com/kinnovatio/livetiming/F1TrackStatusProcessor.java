@@ -71,19 +71,26 @@ public class F1TrackStatusProcessor {
     @RunOnVirtualThread
     @Transactional
     public void processSessionStatusChange(GlobalStateManager.SessionState sessionState) throws Exception {
-        LOG.infof("Session status changed. Will clear the %s table.", trackStatusTable);
-        String sql = """
-                DELETE FROM %s;
-                """.formatted(trackStatusTable);
+        if (sessionState == GlobalStateManager.SessionState.NO_SESSION
+                || sessionState == GlobalStateManager.SessionState.LIVE_SESSION) {
+            LOG.infof("Session status changed to %s. Will clear the %s table.",
+                    sessionState.getStatus(), trackStatusTable);
+            String sql = """
+                    DELETE FROM %s;
+                    """.formatted(trackStatusTable);
 
-        try (Connection connection = storageDataSource.getConnection();
-             Statement statement = connection.createStatement()) {
-            statement.executeUpdate(sql);
-        } catch (Exception e) {
-            LOG.warnf("Error when trying to clear the %s table. Will retry shortly. Error: %s",
-                    trackStatusTable,
-                    e.getMessage());
-            throw e;
+            try (Connection connection = storageDataSource.getConnection();
+                 Statement statement = connection.createStatement()) {
+                statement.executeUpdate(sql);
+            } catch (Exception e) {
+                LOG.warnf("Error when trying to clear the %s table. Will retry shortly. Error: %s",
+                        trackStatusTable,
+                        e.getMessage());
+                throw e;
+            }
+        } else {
+            LOG.infof("Session status changed to %s. Will not clear the %s table.",
+                    sessionState.getStatus(), trackStatusTable);
         }
     }
 }
