@@ -70,7 +70,7 @@ public class F1KafkaStorageProcessor {
     @RunOnVirtualThread
     @Transactional
     public void toStorage(ConsumerRecords<String, String> records) throws Exception {
-        LOG.infof("Livetiming messages received on f1-live-raw-storage channel. Number of records: %d", records.count());
+        LOG.debugf("Livetiming messages received on f1-live-raw-storage channel. Number of records: %d", records.count());
         final int batchSize = 1000;
         int recordCount = 0;
 
