@@ -82,24 +82,26 @@ public class F1SessionInfoProcessor {
         JsonNode root = objectMapper.readTree(message.message());
         String sessionStatus = root.path("SessionStatus").asText(defaultStatus);
         String archiveStatus = root.path("ArchiveStatus").path("Status").asText(defaultStatus);
+        String meetingName = root.path("Meeting").path("Name").asText(defaultStatus);
+        String sessionName = root.path("Name").asText(defaultStatus);
         int sessionKey = root.path("Key").asInt(-1);
-        LOG.infof("We have an update session status. New session status: %s. Archive status: %s",
-                sessionStatus, archiveStatus);
 
         stateManager.setSessionKey(sessionKey);
+        LOG.infof("Received session information about %s, %s, with status %s.",
+                meetingName, sessionName, sessionStatus);
 
-        if (sessionStatus.equalsIgnoreCase("Started")) {
-            stateManager.setSessionState(GlobalStateManager.SessionState.LIVE_SESSION);
-            sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.LIVE_SESSION);
-        } else if (sessionStatus.equalsIgnoreCase("Finalised")) {
-            stateManager.setSessionState(GlobalStateManager.SessionState.NO_SESSION);
-            sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.NO_SESSION);
-        } else if (sessionStatus.equalsIgnoreCase("Inactive")) {
-            stateManager.setSessionState(GlobalStateManager.SessionState.INACTIVE);
-            sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.INACTIVE);
-        }else {
-            stateManager.setSessionState(GlobalStateManager.SessionState.UNKNOWN);
-            sessionStatusUpdateEmitter.send(GlobalStateManager.SessionState.UNKNOWN);
+        GlobalStateManager.SessionState newSessionState = switch (sessionStatus) {
+            case "Started" -> GlobalStateManager.SessionState.LIVE_SESSION;
+            case "Finalised" -> GlobalStateManager.SessionState.NO_SESSION;
+            case "Inactive" -> GlobalStateManager.SessionState.INACTIVE;
+            default -> GlobalStateManager.SessionState.UNKNOWN;
+        };
+
+        if (stateManager.getSessionState() != newSessionState) {
+            stateManager.setSessionState(newSessionState);
+            sessionStatusUpdateEmitter.send(newSessionState);
+            LOG.infof("We have an update session status. New session status: %s. Archive status: %s",
+                    sessionStatus, archiveStatus);
         }
     }
 }

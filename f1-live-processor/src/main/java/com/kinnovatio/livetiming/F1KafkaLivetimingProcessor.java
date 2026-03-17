@@ -26,6 +26,7 @@ public class F1KafkaLivetimingProcessor {
     private static final Logger LOG = Logger.getLogger(F1KafkaLivetimingProcessor.class);
 
     private static final Set<String> excludeCategories = Set.of("Heartbeat");
+    private static final Set<String> nonStreamingCategories = Set.of("SessionInfo");
 
     @Inject
     ObjectMapper objectMapper;
@@ -96,7 +97,7 @@ public class F1KafkaLivetimingProcessor {
 
             if (message.message().isEmpty()
                     || excludeCategories.contains(message.category())
-                    || !message.isStreaming()) {
+                    || (!message.isStreaming() && !nonStreamingCategories.contains(message.category()))) {
                 // The message should be discarded and not processed further.
                 Counter.builder("livetiming_router_processor_record_discarded_total")
                         .description("Total number of live timing records discarded by the router.")
