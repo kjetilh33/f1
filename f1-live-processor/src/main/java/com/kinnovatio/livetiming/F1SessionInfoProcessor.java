@@ -90,6 +90,19 @@ public class F1SessionInfoProcessor {
         LOG.infof("Received session information about %s, %s, with status %s.",
                 meetingName, sessionName, sessionStatus);
 
+        // If `SessionStatus` is not populated, fall back on `ArchiveStatus` as the signal
+        if (sessionStatus.equals(defaultStatus)) {
+            sessionStatus = switch (archiveStatus) {
+                case "Generating" -> "Started";
+                case "Complete" -> "Finalised";
+                default -> defaultStatus;
+            };
+            LOG.infof("No session status in the SessionInfo payload. Using ArchiveStatus to determine session status. "
+                    + "Archive status: %s. Estimated session status: %s",
+                    archiveStatus, sessionStatus);
+        }
+
+
         GlobalStateManager.SessionState newSessionState = switch (sessionStatus) {
             case "Started" -> GlobalStateManager.SessionState.LIVE_SESSION;
             case "Finalised" -> GlobalStateManager.SessionState.NO_SESSION;
