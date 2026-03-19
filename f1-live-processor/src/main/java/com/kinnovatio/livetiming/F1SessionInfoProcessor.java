@@ -57,12 +57,13 @@ public class F1SessionInfoProcessor {
         String sessionStatusKey = "sessionInfo";
 
         String sql = """
-                INSERT INTO %s (key, message, message_timestamp) 
-                VALUES (?, ?::jsonb, ?::timestamptz)
+                INSERT INTO %s (key, message, message_timestamp, updated_timestamp) 
+                VALUES (?, ?::jsonb, ?::timestamptz, NOW())
                 ON CONFLICT (key)
                 DO UPDATE SET
                     message = EXCLUDED.message,
-                    message_timestamp = EXCLUDED.message_timestamp;
+                    message_timestamp = EXCLUDED.message_timestamp,
+                    updated_timestamp = EXCLUDED.updated_timestamp;
                 """.formatted(sessionInfoTable);
 
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
