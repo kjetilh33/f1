@@ -18,7 +18,10 @@ import java.sql.PreparedStatement;
 import java.sql.Statement;
 
 /// Processor for F1 track status messages.
-
+///
+/// This processor handles track status updates (e.g., Yellow Flag, Safety Car, Green Flag)
+/// by persisting them to a database. It also manages the lifecycle of the track status table
+/// by clearing data when a session starts or ends.
 @ApplicationScoped
 public class F1TrackStatusProcessor {
     private static final Logger LOG = Logger.getLogger(F1TrackStatusProcessor.class);
@@ -38,9 +41,10 @@ public class F1TrackStatusProcessor {
     @Inject
     GlobalStateManager stateManager;
 
-    /// Processes a batch of Kafka records and stores them in the database.
-    /// @param record The record.
-    /// @throws Exception If an error occurs during database insertion or processing.
+    /// Processes an incoming track status message and stores it in the database.
+    ///
+    /// @param recordValue The raw JSON string received from the "track-status" channel.
+    /// @throws Exception If database connectivity fails or JSON parsing errors occur.
     @Incoming("track-status")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
@@ -66,6 +70,13 @@ public class F1TrackStatusProcessor {
         }
     }
 
+    /// Listens for global session state changes and performs cleanup operations.
+    ///
+    /// If the session transitions to `NO_SESSION` or `LIVE_SESSION`, the track status table
+    /// is cleared to prepare for a new session or clean up after one.
+    ///
+    /// @param sessionState The new state of the session.
+    /// @throws Exception If the database delete operation fails.
     @Incoming("session-status-update")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread

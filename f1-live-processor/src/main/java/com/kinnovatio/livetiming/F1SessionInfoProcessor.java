@@ -22,9 +22,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 
 /// Processor for F1 session status messages.
+///
+/// This processor listens to the "session-info" channel, persists the latest state to a Postgres database,
+/// parses the payload to determine the current session lifecycle state (Live, Inactive, etc.),
+/// and broadcasts updates to the rest of the application.
 @ApplicationScoped
 public class F1SessionInfoProcessor {
     private static final Logger LOG = Logger.getLogger(F1SessionInfoProcessor.class);
+    /// Default fallback value used when specific JSON fields are missing or null.
     private static final String defaultStatus = "unknown";
 
     @Inject
@@ -42,6 +47,8 @@ public class F1SessionInfoProcessor {
     @Inject
     GlobalStateManager stateManager;
 
+    /// Emitter for broadcasting significant changes in session state (e.g., from LIVE_SESSION to NO_SESSION).
+    /// Uses DROP strategy to handle backpressure if downstream consumers are slow.
     @Inject
     @Broadcast
     @OnOverflow(value = OnOverflow.Strategy.DROP)
@@ -49,11 +56,23 @@ public class F1SessionInfoProcessor {
     Emitter<GlobalStateManager.SessionState> sessionStatusUpdateEmitter;
 
 
+    /// Processes an incoming raw JSON record containing session information.
+    ///
+    /// This method performs the following steps:
+    /// 1. Persists the raw message to the database (Upsert).
+    /// 2. Parses the internal JSON message to extract session details.
+    /// 3. Determines the high-level state (Live, Finalised, etc.), utilizing a fallback mechanism via 'ArchiveStatus'.
+    /// 4. Updates the global state manager.
+    /// 5. Emits a notification if the state has changed.
+    ///
+    /// @param recordValue The raw JSON string received from the message broker.
+    /// @throws Exception If database connectivity fails or JSON parsing errors occur.
     @Incoming("session-info")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
     public void processSessionInfo(String recordValue) throws Exception {
+        // Constant key used for the singleton row in the database table
         String sessionStatusKey = "sessionInfo";
 
         String sql = """
@@ -103,7 +122,7 @@ public class F1SessionInfoProcessor {
                     archiveStatus, sessionStatus);
         }
 
-
+        // Map the string status to the internal enum representation
         GlobalStateManager.SessionState newSessionState = switch (sessionStatus) {
             case "Started" -> GlobalStateManager.SessionState.LIVE_SESSION;
             case "Finalised" -> GlobalStateManager.SessionState.NO_SESSION;
@@ -111,6 +130,7 @@ public class F1SessionInfoProcessor {
             default -> GlobalStateManager.SessionState.UNKNOWN;
         };
 
+        // Detect state transitions and notify subscribers
         if (stateManager.getSessionState() != newSessionState) {
             stateManager.setSessionState(newSessionState);
             sessionStatusUpdateEmitter.send(newSessionState);
