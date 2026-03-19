@@ -119,7 +119,7 @@ public class F1KafkaLivetimingProcessor {
                 switch (message.category()) {
                     case "TrackStatus" -> trackStatusEmitter.send(record.value());
                     case "SessionInfo" -> sessionInfoEmitter.send(record.value());
-                    case "RaceControlMessage" -> raceControlMessageEmitter.send(record.value());
+                    case "RaceControlMessages" -> raceControlMessageEmitter.send(record.value());
                     //case "SessionData" -> sessionDataEmitter.send(record.value());
                     //case "TimingData" -> timingDataEmitter.send(record.value());
                     //case "TimingAppData" -> timingAppDataEmitter.send(record.value());
