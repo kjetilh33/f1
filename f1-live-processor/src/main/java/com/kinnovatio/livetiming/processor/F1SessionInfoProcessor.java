@@ -1,7 +1,8 @@
-package com.kinnovatio.livetiming;
+package com.kinnovatio.livetiming.processor;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
 import io.micrometer.core.instrument.MeterRegistry;

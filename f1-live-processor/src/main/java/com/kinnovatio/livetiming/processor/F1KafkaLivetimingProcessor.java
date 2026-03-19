@@ -1,4 +1,4 @@
-package com.kinnovatio.livetiming;
+package com.kinnovatio.livetiming.processor;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;

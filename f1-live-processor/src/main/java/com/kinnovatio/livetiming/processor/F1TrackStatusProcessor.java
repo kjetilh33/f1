@@ -1,10 +1,12 @@
-package com.kinnovatio.livetiming;
+package com.kinnovatio.livetiming.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.common.annotation.RunOnVirtualThread;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -16,8 +18,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 
-public class RaceControlMessageProcessor {
-    private static final Logger LOG = Logger.getLogger(RaceControlMessageProcessor.class);
+/// Processor for F1 track status messages.
+///
+/// This processor handles track status updates (e.g., Yellow Flag, Safety Car, Green Flag)
+/// by persisting them to a database. It also manages the lifecycle of the track status table
+/// by clearing data when a session starts or ends.
+@ApplicationScoped
+public class F1TrackStatusProcessor {
+    private static final Logger LOG = Logger.getLogger(F1TrackStatusProcessor.class);
 
     @Inject
     ObjectMapper objectMapper;
@@ -28,8 +36,8 @@ public class RaceControlMessageProcessor {
     @Inject
     MeterRegistry registry;
 
-    @ConfigProperty(name = "app.race-control-message.table")
-    String raceControlMessageTable;
+    @ConfigProperty(name = "app.track-status.table")
+    String trackStatusTable;
 
     @Inject
     GlobalStateManager stateManager;
@@ -38,7 +46,7 @@ public class RaceControlMessageProcessor {
     ///
     /// @param recordValue The raw JSON string received from the "track-status" channel.
     /// @throws Exception If database connectivity fails or JSON parsing errors occur.
-    @Incoming("race-control-message")
+    @Incoming("track-status")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
@@ -47,7 +55,7 @@ public class RaceControlMessageProcessor {
                 INSERT INTO %s (session_key, message, message_timestamp)
                 VALUES (?, ?::jsonb, ?::timestamptz)
                 ;
-                """.formatted(raceControlMessageTable);
+                """.formatted(trackStatusTable);
 
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
 
@@ -78,25 +86,23 @@ public class RaceControlMessageProcessor {
         if (sessionState == GlobalStateManager.SessionState.NO_SESSION
                 || sessionState == GlobalStateManager.SessionState.LIVE_SESSION) {
             LOG.infof("Session status changed to %s. Will clear the %s table.",
-                    sessionState.getStatus(), raceControlMessageTable);
+                    sessionState.getStatus(), trackStatusTable);
             String sql = """
                     DELETE FROM %s;
-                    """.formatted(raceControlMessageTable);
+                    """.formatted(trackStatusTable);
 
             try (Connection connection = storageDataSource.getConnection();
                  Statement statement = connection.createStatement()) {
                 statement.executeUpdate(sql);
             } catch (Exception e) {
                 LOG.warnf("Error when trying to clear the %s table. Will retry shortly. Error: %s",
-                        raceControlMessageTable,
+                        trackStatusTable,
                         e.getMessage());
                 throw e;
             }
         } else {
             LOG.infof("Session status changed to %s. Will not clear the %s table.",
-                    sessionState.getStatus(), raceControlMessageTable);
+                    sessionState.getStatus(), trackStatusTable);
         }
     }
-
-
 }
