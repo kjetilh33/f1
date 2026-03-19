@@ -49,6 +49,11 @@ public class F1KafkaLivetimingProcessor {
     @Channel("session-info")
     Emitter<String> sessionInfoEmitter;
 
+    @Inject
+    @OnOverflow(value = OnOverflow.Strategy.DROP)
+    @Channel("race-control-message")
+    Emitter<String> raceControlMessageEmitter;
+
     /*
     @Inject
     @OnOverflow(value = OnOverflow.Strategy.DROP)
@@ -114,6 +119,7 @@ public class F1KafkaLivetimingProcessor {
                 switch (message.category()) {
                     case "TrackStatus" -> trackStatusEmitter.send(record.value());
                     case "SessionInfo" -> sessionInfoEmitter.send(record.value());
+                    case "RaceControlMessage" -> raceControlMessageEmitter.send(record.value());
                     //case "SessionData" -> sessionDataEmitter.send(record.value());
                     //case "TimingData" -> timingDataEmitter.send(record.value());
                     //case "TimingAppData" -> timingAppDataEmitter.send(record.value());

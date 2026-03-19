@@ -58,5 +58,7 @@ app:
     table: live_session_info
   track-status:
     table: live_track_status
+  race-control-message:
+    table: live_race_control_messages
   log:
     source: "External config file."
