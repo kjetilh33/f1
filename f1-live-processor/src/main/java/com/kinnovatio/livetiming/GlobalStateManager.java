@@ -2,6 +2,7 @@ package com.kinnovatio.livetiming;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -9,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class GlobalStateManager {
     private final AtomicReference<SessionState> sessionState = new AtomicReference<>(SessionState.UNKNOWN);
     private final AtomicInteger sessionKey = new AtomicInteger(-1);
+    private final AtomicReference<Instant> lastMessageReceived = new AtomicReference<>(Instant.now());
 
     public SessionState getSessionState() {
         return sessionState.get();
@@ -24,6 +26,18 @@ public class GlobalStateManager {
 
     public void setSessionKey(int key) {
         sessionKey.set(key);
+    }
+
+    public Instant getLastMessageReceived() {
+        return lastMessageReceived.get();
+    }
+
+    private void setLastMessageReceived(Instant instant) {
+        lastMessageReceived.set(instant);
+    }
+
+    public void registerMessageReceived() {
+        lastMessageReceived.set(Instant.now());
     }
 
     public enum SessionState {

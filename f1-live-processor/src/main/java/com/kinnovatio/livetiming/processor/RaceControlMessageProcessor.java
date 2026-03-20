@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -32,9 +31,6 @@ public class RaceControlMessageProcessor {
 
     @Inject
     AgroalDataSource storageDataSource;
-
-    @Inject
-    MeterRegistry registry;
 
     @ConfigProperty(name = "app.race-control-message.table")
     String raceControlMessageTable;

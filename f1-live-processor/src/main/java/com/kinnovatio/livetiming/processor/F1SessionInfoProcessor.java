@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
+import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -20,6 +21,8 @@ import org.jboss.logging.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.time.Duration;
+import java.time.Instant;
 
 /// Processor for F1 session status messages.
 ///
@@ -127,12 +130,27 @@ public class F1SessionInfoProcessor {
             default -> GlobalStateManager.SessionState.UNKNOWN;
         };
 
+        processSessionStateChange(newSessionState);
+    }
+
+    @Scheduled(every = "2m")
+    private void isInputDataStreamAlive() {
+        Duration limit = Duration.ofMinutes(30);
+        Duration elapsed = Duration.between(stateManager.getLastMessageReceived(), Instant.now());
+        if (stateManager.getSessionState() == GlobalStateManager.SessionState.LIVE_SESSION && elapsed.compareTo(limit) > 0) {
+            LOG.warnf("We are in a live session, but have not received any messages for 30 minutes. "
+                    + "Will set the session state to UNKNOWN.");
+            processSessionStateChange(GlobalStateManager.SessionState.UNKNOWN);
+        }
+    }
+
+    private void processSessionStateChange(GlobalStateManager.SessionState newSessionState) {
         // Detect state transitions and notify subscribers
         if (stateManager.getSessionState() != newSessionState) {
             stateManager.setSessionState(newSessionState);
             sessionStatusUpdateEmitter.send(newSessionState);
-            LOG.infof("We have an update session status. New session status: %s. Archive status: %s",
-                    sessionStatus, archiveStatus);
+            LOG.infof("We have an update session status. New session status: %s.",
+                    newSessionState);
         }
     }
 }

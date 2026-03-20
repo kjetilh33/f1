@@ -2,6 +2,7 @@ package com.kinnovatio.livetiming.processor;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -18,6 +19,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 
+import java.time.Instant;
 import java.util.Set;
 
 /// Processor for F1 live timing messages from Kafka.
@@ -34,6 +36,8 @@ public class F1KafkaLivetimingProcessor {
     @Inject
     MeterRegistry registry;
 
+    @Inject
+    GlobalStateManager stateManager;
 
     @Inject
     @Channel("livetiming-out")
@@ -77,17 +81,6 @@ public class F1KafkaLivetimingProcessor {
 
      */
 
-    /// Initializes the processor on startup.
-    /// This method is triggered by the `StartupEvent`. It logs the startup configuration.
-    ///
-    /// @param ev The startup event.
-    public void onStartup(@Observes StartupEvent ev) {
-        LOG.infof("Starting the live timing message processor...");
-
-        LOG.infof("The message processor is ready. Waiting for live timing messages...");
-    }
-
-
     /// Processes a batch of Kafka records.
     ///
     /// @param record The Kafka consumer record.
@@ -97,6 +90,8 @@ public class F1KafkaLivetimingProcessor {
     @RunOnVirtualThread
     public void process(Record<String, String> record) throws Exception {
         LOG.debugf("Livetiming message received on f1-live-raw-in channel. Message key: %s", record.key());
+        stateManager.registerMessageReceived();
+
         try {
             LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
 
