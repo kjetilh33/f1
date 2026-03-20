@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -41,9 +40,6 @@ public class F1SessionInfoProcessor {
 
     @ConfigProperty(name = "app.session-info.table")
     String sessionInfoTable;
-
-    @Inject
-    MeterRegistry registry;
 
     @Inject
     GlobalStateManager stateManager;
@@ -108,8 +104,8 @@ public class F1SessionInfoProcessor {
         int sessionKey = root.path("Key").asInt(-1);
 
         stateManager.setSessionKey(sessionKey);
-        LOG.infof("Received session information about %s, %s, with status %s.",
-                meetingName, sessionName, sessionStatus);
+        LOG.infof("Received session information about %s, %s, with session id %d, status %s.",
+                meetingName, sessionKey, sessionName, sessionStatus);
 
         // If `SessionStatus` is not populated, fall back on `ArchiveStatus` as the signal
         if (sessionStatus.equals(defaultStatus)) {

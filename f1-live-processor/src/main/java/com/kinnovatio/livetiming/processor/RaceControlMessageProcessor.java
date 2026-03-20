@@ -123,6 +123,4 @@ public class RaceControlMessageProcessor {
                     sessionState.getStatus(), raceControlMessageTable);
         }
     }
-
-
 }
