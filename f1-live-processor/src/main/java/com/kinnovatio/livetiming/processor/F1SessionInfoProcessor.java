@@ -133,6 +133,12 @@ public class F1SessionInfoProcessor {
         processSessionStateChange(newSessionState);
     }
 
+    /// Periodically checks if the input data stream is still active during a live session.
+    ///
+    /// This scheduled task runs every 2 minutes. It verifies the time elapsed since the last
+    /// received message. If the session is currently marked as {@code LIVE_SESSION} but no
+    /// messages have been received for over 30 minutes, the session state is forcibly transitioned
+    /// to {@code UNKNOWN} to reflect the potential loss of connectivity or stream termination.
     @Scheduled(every = "2m")
     public void checkInputDataStreamAlive() {
         Duration limit = Duration.ofMinutes(30);
@@ -144,6 +150,13 @@ public class F1SessionInfoProcessor {
         }
     }
 
+    /// Updates the global session state and broadcasts changes if a transition occurs.
+    ///
+    /// This method compares the proposed new state against the current state in {@link GlobalStateManager}.
+    /// If they differ, it updates the manager, emits the new state to the "session-status-update" channel,
+    /// and logs the event.
+    ///
+    /// @param newSessionState The new session state to apply.
     private void processSessionStateChange(GlobalStateManager.SessionState newSessionState) {
         // Detect state transitions and notify subscribers
         if (stateManager.getSessionState() != newSessionState) {
