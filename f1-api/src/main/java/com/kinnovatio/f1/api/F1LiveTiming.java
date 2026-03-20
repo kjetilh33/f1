@@ -1,7 +1,5 @@
 package com.kinnovatio.f1.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Multi;
@@ -23,14 +21,11 @@ import org.jboss.resteasy.reactive.ResponseHeader;
 import org.jboss.resteasy.reactive.NoCache;
 
 import java.time.Duration;
-import java.util.Set;
 
 @ApplicationScoped
 @Path("/live/livetiming")
 public class F1LiveTiming {
     private static final Logger LOG = Logger.getLogger(F1LiveTiming.class);
-
-    private static final Set<String> excludeCategories = Set.of("Heartbeat");
 
     @Inject
     @Channel("f1-live-processed")
@@ -39,12 +34,8 @@ public class F1LiveTiming {
     @Inject
     Sse sse;
 
-    @Inject
-    ObjectMapper objectMapper;
-
     @ConfigProperty(name = "app.log.source")
-    String logSurce;
-
+    String logSource;
 
     /// Initializes the processor on startup.
     /// This method is triggered by the `StartupEvent`. It logs the startup configuration
@@ -53,12 +44,10 @@ public class F1LiveTiming {
     /// @param ev The startup event.
     public void onStartup(@Observes StartupEvent ev) {
         LOG.infof("Starting the live timing api...");
-        LOG.infof("Config picked up from %s", logSurce);
+        LOG.infof("Config picked up from %s", logSource);
 
         LOG.infof("The api is ready. Waiting for live timing messages...");
     }
-
-
 
     /// Streams status updates to clients using Server-Sent Events (SSE).
     /// This method merges the `statusMessages` stream with a periodic ping stream.
