@@ -20,7 +20,7 @@ public class AppLifeCycleObserver {
     AgroalDataSource storageDataSource;
 
     @ConfigProperty(name = "app.log.source")
-    String logSurce;
+    String logSource;
 
     @ConfigProperty(name = "app.livetiming.table")
     String livetimingTable;
@@ -38,7 +38,7 @@ public class AppLifeCycleObserver {
     void onStart(@Observes StartupEvent ev) {
         // This runs when the application is starting.
         LOG.infof("Starting the live timing processor...");
-        LOG.infof("Config picked up from %s", logSurce);
+        LOG.infof("Config picked up from %s", logSource);
 
         createLiveTimingDbTableIfNotExists(livetimingTable);
         createSessionInfoDbTableIfNotExists(sessionInfoTable);
