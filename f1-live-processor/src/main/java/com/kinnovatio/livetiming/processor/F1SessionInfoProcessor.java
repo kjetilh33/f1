@@ -134,7 +134,7 @@ public class F1SessionInfoProcessor {
     }
 
     @Scheduled(every = "2m")
-    private void isInputDataStreamAlive() {
+    public void checkInputDataStreamAlive() {
         Duration limit = Duration.ofMinutes(30);
         Duration elapsed = Duration.between(stateManager.getLastMessageReceived(), Instant.now());
         if (stateManager.getSessionState() == GlobalStateManager.SessionState.LIVE_SESSION && elapsed.compareTo(limit) > 0) {
