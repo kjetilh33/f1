@@ -50,7 +50,7 @@ public class RaceControlMessageProcessor {
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
-    public void processTrackStatus(String recordValue) throws Exception {
+    public void processRaceControlMessage(String recordValue) throws Exception {
         String sql = """
                 INSERT INTO %s (session_key, message, message_timestamp)
                 VALUES (?, ?::jsonb, ?::timestamptz)
