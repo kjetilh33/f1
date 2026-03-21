@@ -33,7 +33,7 @@ public class SessionInfoRepository {
                 Select (key, message, message_timestamp)
                 FROM %s
                 WHERE key = ?;
-                """.formatted(sessionStatusKey);
+                """.formatted(sessionInfoTable);
 
         try (Connection connection = storageDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
