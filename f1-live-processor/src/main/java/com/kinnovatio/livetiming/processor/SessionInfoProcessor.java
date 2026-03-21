@@ -108,7 +108,7 @@ public class SessionInfoProcessor {
 
         stateManager.setSessionKey(sessionKey);
         LOG.infof("Received session information about %s, %s, with session id %d, status %s.",
-                meetingName, sessionKey, sessionName, sessionStatus);
+                meetingName, sessionName, sessionKey, sessionStatus);
 
         // If `SessionStatus` is not populated, fall back on `ArchiveStatus` as the signal
         if (sessionStatus.equals(defaultStatus)) {
