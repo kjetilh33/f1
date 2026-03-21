@@ -60,5 +60,7 @@ app:
     table: live_track_status
   race-control-message:
     table: live_race_control_messages
+  weather-data:
+    table: live_weather_data
   log:
     source: "External config file."

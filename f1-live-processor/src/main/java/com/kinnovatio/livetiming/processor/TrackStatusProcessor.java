@@ -5,7 +5,6 @@ import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.livetiming.repository.RepositoryUtilities;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -17,7 +16,6 @@ import org.jboss.logging.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 
 /// Processor for F1 track status messages.
 ///
@@ -25,8 +23,8 @@ import java.sql.Statement;
 /// by persisting them to a database. It also manages the lifecycle of the track status table
 /// by clearing data when a session starts or ends.
 @ApplicationScoped
-public class F1TrackStatusProcessor {
-    private static final Logger LOG = Logger.getLogger(F1TrackStatusProcessor.class);
+public class TrackStatusProcessor {
+    private static final Logger LOG = Logger.getLogger(TrackStatusProcessor.class);
 
     @Inject
     ObjectMapper objectMapper;

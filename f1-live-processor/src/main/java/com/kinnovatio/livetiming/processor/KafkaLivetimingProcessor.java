@@ -6,10 +6,8 @@ import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import io.smallrye.reactive.messaging.kafka.Record;
 import org.eclipse.microprofile.faulttolerance.Retry;
@@ -19,13 +17,12 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 
-import java.time.Instant;
 import java.util.Set;
 
 /// Processor for F1 live timing messages from Kafka.
 @ApplicationScoped
-public class F1KafkaLivetimingProcessor {
-    private static final Logger LOG = Logger.getLogger(F1KafkaLivetimingProcessor.class);
+public class KafkaLivetimingProcessor {
+    private static final Logger LOG = Logger.getLogger(KafkaLivetimingProcessor.class);
 
     private static final Set<String> excludeCategories = Set.of("Heartbeat");
     private static final Set<String> nonStreamingCategories = Set.of("SessionInfo");
@@ -57,6 +54,11 @@ public class F1KafkaLivetimingProcessor {
     @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("race-control-message")
     Emitter<String> raceControlMessageEmitter;
+
+    @Inject
+    @OnOverflow(value = OnOverflow.Strategy.DROP)
+    @Channel("weather-data")
+    Emitter<String> weatherDataEmitter;
 
     /*
     @Inject
@@ -115,6 +117,7 @@ public class F1KafkaLivetimingProcessor {
                     case "TrackStatus" -> trackStatusEmitter.send(record.value());
                     case "SessionInfo" -> sessionInfoEmitter.send(record.value());
                     case "RaceControlMessages" -> raceControlMessageEmitter.send(record.value());
+                    case "WeatherData" -> weatherDataEmitter.send(record.value());
                     //case "SessionData" -> sessionDataEmitter.send(record.value());
                     //case "TimingData" -> timingDataEmitter.send(record.value());
                     //case "TimingAppData" -> timingAppDataEmitter.send(record.value());
@@ -122,7 +125,6 @@ public class F1KafkaLivetimingProcessor {
                     default -> {
                         LOG.debugf("Message router: unknown message category received: %s", message.category());
                     }
-
                 }
             }
 

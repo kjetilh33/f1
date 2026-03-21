@@ -42,9 +42,9 @@ public class RaceControlMessageProcessor {
     @Inject
     GlobalStateManager stateManager;
 
-    /// Processes an incoming track status message and stores it in the database.
+    /// Processes an incoming race control message and stores it in the database.
     ///
-    /// @param recordValue The raw JSON string received from the "track-status" channel.
+    /// @param recordValue The raw JSON string received from the "race-control-message" channel.
     /// @throws Exception If database connectivity fails or JSON parsing errors occur.
     @Incoming("race-control-message")
     @Retry(delay = 500, maxRetries = 5)
@@ -93,7 +93,7 @@ public class RaceControlMessageProcessor {
 
     /// Listens for global session state changes and performs cleanup operations.
     ///
-    /// If the session transitions to `NO_SESSION` or `LIVE_SESSION`, the track status table
+    /// If the session transitions to `NO_SESSION` or `LIVE_SESSION`, the race message table
     /// is cleared to prepare for a new session or clean up after one.
     ///
     /// @param sessionState The new state of the session.

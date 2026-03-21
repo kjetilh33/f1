@@ -30,8 +30,8 @@ import java.time.Instant;
 /// parses the payload to determine the current session lifecycle state (Live, Inactive, etc.),
 /// and broadcasts updates to the rest of the application.
 @ApplicationScoped
-public class F1SessionInfoProcessor {
-    private static final Logger LOG = Logger.getLogger(F1SessionInfoProcessor.class);
+public class SessionInfoProcessor {
+    private static final Logger LOG = Logger.getLogger(SessionInfoProcessor.class);
     /// Default fallback value used when specific JSON fields are missing or null.
     private static final String defaultStatus = "unknown";
 

@@ -30,8 +30,8 @@ import java.util.Set;
 /// - Emitting status updates to the `status-out` channel.
 /// It uses `AgroalDataSource` for database interactions and `Micrometer` for metrics.
 @ApplicationScoped
-public class F1KafkaStorageProcessor {
-    private static final Logger LOG = Logger.getLogger(F1KafkaStorageProcessor.class);
+public class KafkaStorageProcessor {
+    private static final Logger LOG = Logger.getLogger(KafkaStorageProcessor.class);
 
     @ConfigProperty(name = "app.livetiming.table")
     String livetimingTable;
