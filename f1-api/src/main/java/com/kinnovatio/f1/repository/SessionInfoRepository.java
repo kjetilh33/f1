@@ -30,7 +30,7 @@ public class SessionInfoRepository {
         String sessionStatusKey = "sessionInfo";
 
         String sql = """
-                Select (key, message, message_timestamp)
+                Select key, message, message_timestamp, updated_timestamp
                 FROM %s
                 WHERE key = ?;
                 """.formatted(sessionInfoTable);
