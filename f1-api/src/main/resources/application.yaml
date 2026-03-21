@@ -7,12 +7,6 @@ mp:
         "auto.offset.reset": earliest
         value:
           deserializer: org.apache.kafka.common.serialization.StringDeserializer
-    #outgoing:
-      #words-out:
-        #connector: smallrye-kafka
-        #topic: words
-        #value:
-          #serializer: org.apache.kafka.common.serialization.StringSerializer
 
 smallrye:
   messaging:
@@ -33,12 +27,13 @@ quarkus:
       #username: <your username>
       #password: <your password>
     jdbc:
-    #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
+      #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
       max-size: 50
       min-size: 10
       acquisition-timeout: 5s
   jib:
     base-jvm-image: gcr.io/distroless/java25-debian13
+
 app:
   database: app
   livetiming:
