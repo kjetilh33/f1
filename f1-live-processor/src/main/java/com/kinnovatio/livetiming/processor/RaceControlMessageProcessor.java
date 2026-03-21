@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
+import com.kinnovatio.livetiming.repository.RepositoryUtilities;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
 import io.smallrye.common.annotation.RunOnVirtualThread;
@@ -31,6 +32,9 @@ public class RaceControlMessageProcessor {
 
     @Inject
     AgroalDataSource storageDataSource;
+
+    @Inject
+    RepositoryUtilities repositoryUtilities;
 
     @ConfigProperty(name = "app.race-control-message.table")
     String raceControlMessageTable;
@@ -97,25 +101,13 @@ public class RaceControlMessageProcessor {
     @Incoming("session-status-update")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
-    @Transactional
     public void processSessionStatusChange(GlobalStateManager.SessionState sessionState) throws Exception {
         if (sessionState == GlobalStateManager.SessionState.NO_SESSION
                 || sessionState == GlobalStateManager.SessionState.LIVE_SESSION) {
             LOG.infof("Session status changed to %s. Will clear the %s table.",
                     sessionState.getStatus(), raceControlMessageTable);
-            String sql = """
-                    DELETE FROM %s;
-                    """.formatted(raceControlMessageTable);
-
-            try (Connection connection = storageDataSource.getConnection();
-                 Statement statement = connection.createStatement()) {
-                statement.executeUpdate(sql);
-            } catch (Exception e) {
-                LOG.warnf("Error when trying to clear the %s table. Will retry shortly. Error: %s",
-                        raceControlMessageTable,
-                        e.getMessage());
-                throw e;
-            }
+            int rowsAffected = repositoryUtilities.clearAllRowsFromTable(raceControlMessageTable);
+            LOG.infof("%d rows deleted from the %s table.", rowsAffected, raceControlMessageTable);
         } else {
             LOG.infof("Session status changed to %s. Will not clear the %s table.",
                     sessionState.getStatus(), raceControlMessageTable);

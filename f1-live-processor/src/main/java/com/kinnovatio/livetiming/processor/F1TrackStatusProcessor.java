@@ -2,6 +2,7 @@ package com.kinnovatio.livetiming.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
+import com.kinnovatio.livetiming.repository.RepositoryUtilities;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -34,7 +35,7 @@ public class F1TrackStatusProcessor {
     AgroalDataSource storageDataSource;
 
     @Inject
-    MeterRegistry registry;
+    RepositoryUtilities repositoryUtilities;
 
     @ConfigProperty(name = "app.track-status.table")
     String trackStatusTable;
@@ -81,25 +82,13 @@ public class F1TrackStatusProcessor {
     @Incoming("session-status-update")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
-    @Transactional
     public void processSessionStatusChange(GlobalStateManager.SessionState sessionState) throws Exception {
         if (sessionState == GlobalStateManager.SessionState.NO_SESSION
                 || sessionState == GlobalStateManager.SessionState.LIVE_SESSION) {
             LOG.infof("Session status changed to %s. Will clear the %s table.",
                     sessionState.getStatus(), trackStatusTable);
-            String sql = """
-                    DELETE FROM %s;
-                    """.formatted(trackStatusTable);
-
-            try (Connection connection = storageDataSource.getConnection();
-                 Statement statement = connection.createStatement()) {
-                statement.executeUpdate(sql);
-            } catch (Exception e) {
-                LOG.warnf("Error when trying to clear the %s table. Will retry shortly. Error: %s",
-                        trackStatusTable,
-                        e.getMessage());
-                throw e;
-            }
+            int rowsAffected = repositoryUtilities.clearAllRowsFromTable(trackStatusTable);
+            LOG.infof("%d rows deleted from the %s table.", rowsAffected, trackStatusTable);
         } else {
             LOG.infof("Session status changed to %s. Will not clear the %s table.",
                     sessionState.getStatus(), trackStatusTable);
