@@ -139,6 +139,7 @@ public class F1SessionInfoProcessor {
     /// received message. If the session is currently marked as {@code LIVE_SESSION} but no
     /// messages have been received for over 30 minutes, the session state is forcibly transitioned
     /// to {@code UNKNOWN} to reflect the potential loss of connectivity or stream termination.
+    @RunOnVirtualThread
     @Scheduled(every = "2m", delayed = "30m")
     public void checkInputDataStreamAlive() {
         Duration limit = Duration.ofMinutes(30);
