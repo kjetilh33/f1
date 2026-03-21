@@ -1,8 +1,6 @@
-package com.kinnovatio;
+package com.kinnovatio.f1;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.util.UUID;
 
 import io.smallrye.reactive.messaging.kafka.companion.ProducerTask;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -13,12 +11,11 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
-import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
 @QuarkusTest
 @QuarkusTestResource(KafkaCompanionResource.class)
-public class F1LiveTimingWithBrokerTest {
+public class LiveTimingWithBrokerTest {
 
     @InjectKafkaCompanion
     KafkaCompanion companion;

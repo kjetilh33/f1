@@ -24,8 +24,8 @@ import java.time.Duration;
 
 @ApplicationScoped
 @Path("/live/livetiming")
-public class F1LiveTiming {
-    private static final Logger LOG = Logger.getLogger(F1LiveTiming.class);
+public class LiveTiming {
+    private static final Logger LOG = Logger.getLogger(LiveTiming.class);
 
     @Inject
     @Channel("f1-live-processed")

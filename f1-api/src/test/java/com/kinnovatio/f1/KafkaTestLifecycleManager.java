@@ -1,4 +1,4 @@
-package com.kinnovatio;
+package com.kinnovatio.f1;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.smallrye.reactive.messaging.memory.InMemoryConnector;
