@@ -2,7 +2,7 @@ package com.kinnovatio.f1.api;
 
 import com.kinnovatio.f1.model.SessionInfoRaw;
 import com.kinnovatio.f1.model.SessionStatus;
-import com.kinnovatio.f1.repository.SessionInfoRepository;
+import com.kinnovatio.f1.service.SessionInfoService;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -21,7 +21,7 @@ public class SessionInfoResource {
     private static final Logger LOG = Logger.getLogger(SessionInfoResource.class);
 
     @Inject
-    SessionInfoRepository sessionInfoRepository;
+    SessionInfoService sessionInfoService;
 
     @GET
     public SessionStatus getSessionStatus() {
@@ -31,7 +31,7 @@ public class SessionInfoResource {
     @GET
     @Path("/session-info")
     public SessionInfoRaw getSessionInfoLive() {
-        return sessionInfoRepository.getSessionInfoLive()
+        return sessionInfoService.getSessionInfoLive()
                 .orElseThrow(() -> new NotFoundException("No session info found"));
     }
 }
