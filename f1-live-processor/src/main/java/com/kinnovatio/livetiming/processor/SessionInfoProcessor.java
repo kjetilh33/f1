@@ -91,6 +91,7 @@ public class SessionInfoProcessor {
 
         try (Connection connection = storageDataSource.getConnection();
                 PreparedStatement statement = connection.prepareStatement(upsertSessionInfoSql)) {
+            LOG.infof("Storing session info. Using timstamp strng: %s", message.timestamp().toString());
             statement.setString(1, sessionInfoKey);
             statement.setString(2, message.message());
             statement.setString(3, message.timestamp().toString());
@@ -163,6 +164,7 @@ public class SessionInfoProcessor {
 
         try (Connection connection = storageDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(upsertSessionStateSql)) {
+            LOG.infof("Storing session state. Using timstamp strng: %s", Instant.now().atZone(ZoneId.of("UTC")).toString());
             statement.setString(1, sessionStateKey);
             statement.setString(2, objectMapper.writeValueAsString(sessionStatus));
             statement.setString(3, Instant.now().atZone(ZoneId.of("UTC")).toString());
