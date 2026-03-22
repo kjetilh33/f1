@@ -3,6 +3,7 @@ package com.kinnovatio.livetiming.processor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
+import com.kinnovatio.livetiming.model.SessionStatus;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.scheduler.Scheduled;
@@ -23,6 +24,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 
 /// Processor for F1 session status messages.
 ///
@@ -73,9 +75,9 @@ public class SessionInfoProcessor {
     @Transactional
     public void processSessionInfo(String recordValue) throws Exception {
         // Constant key used for the singleton row in the database table
-        String sessionStatusKey = "sessionInfo";
+        String sessionInfoKey = "sessionInfo";
 
-        String sql = """
+        String upsertSessionInfoSql = """
                 INSERT INTO %s (key, message, message_timestamp, updated_timestamp) 
                 VALUES (?, ?::jsonb, ?::timestamptz, NOW())
                 ON CONFLICT (key)
@@ -88,8 +90,8 @@ public class SessionInfoProcessor {
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
 
         try (Connection connection = storageDataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, sessionStatusKey);
+                PreparedStatement statement = connection.prepareStatement(upsertSessionInfoSql)) {
+            statement.setString(1, sessionInfoKey);
             statement.setString(2, message.message());
             statement.setString(3, message.timestamp().toString());
             statement.executeUpdate();
@@ -131,6 +133,44 @@ public class SessionInfoProcessor {
         };
 
         processSessionStateChange(newSessionState);
+    }
+
+    /// Listens for global session state changes and performs cleanup operations.
+    ///
+    /// If the session transitions to `NO_SESSION` or `LIVE_SESSION`, the race message table
+    /// is cleared to prepare for a new session or clean up after one.
+    ///
+    /// @param sessionState The new state of the session.
+    /// @throws Exception If the database delete operation fails.
+    @Incoming("session-status-update")
+    @Retry(delay = 500, maxRetries = 5)
+    @RunOnVirtualThread
+    public void processSessionStatusChange(GlobalStateManager.SessionState sessionState) throws Exception {
+        // Constant key used for the singleton row in the database table
+        String sessionStateKey = "sessionState";
+
+        String upsertSessionStateSql = """
+                INSERT INTO %s (key, message, message_timestamp, updated_timestamp) 
+                VALUES (?, ?::jsonb, ?::timestamptz, NOW())
+                ON CONFLICT (key)
+                DO UPDATE SET
+                    message = EXCLUDED.message,
+                    message_timestamp = EXCLUDED.message_timestamp,
+                    updated_timestamp = EXCLUDED.updated_timestamp;
+                """.formatted(sessionInfoTable);
+
+        SessionStatus sessionStatus = new SessionStatus(sessionState.getStatusValue(), sessionState.getStatus());
+
+        try (Connection connection = storageDataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(upsertSessionStateSql)) {
+            statement.setString(1, sessionStateKey);
+            statement.setString(2, objectMapper.writeValueAsString(sessionStatus));
+            statement.setString(3, Instant.now().atZone(ZoneId.of("UTC")).toString());
+            statement.executeUpdate();
+        } catch (Exception e) {
+            LOG.warnf("Error when trying to store session state. Will retry shortly. Error: %s", e.getMessage());
+            throw e;
+        }
     }
 
     /// Periodically checks if the input data stream is still active during a live session.

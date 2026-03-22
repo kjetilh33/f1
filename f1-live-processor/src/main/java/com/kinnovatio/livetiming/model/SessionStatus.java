@@ -1,4 +1,4 @@
-package com.kinnovatio.f1.model;
+package com.kinnovatio.livetiming.model;
 
 public record SessionStatus(int statusCode, String sessionStatus) {
 }
