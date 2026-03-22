@@ -25,7 +25,8 @@ public class SessionInfoResource {
 
     @GET
     public SessionStatus getSessionStatus() {
-        return new SessionStatus("test");
+        return sessionInfoService.getSessionStatus()
+                .orElseThrow(() -> new NotFoundException("No session status found"));
     }
 
     @GET
