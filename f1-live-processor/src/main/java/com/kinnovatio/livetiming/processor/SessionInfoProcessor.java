@@ -163,7 +163,7 @@ public class SessionInfoProcessor {
              PreparedStatement statement = connection.prepareStatement(upsertSessionStateSql)) {
             statement.setString(1, sessionStateKey);
             statement.setString(2, objectMapper.writeValueAsString(sessionStatus));
-            statement.setString(3, ZonedDateTime.now(ZoneOffset.UTC).toString());
+            statement.setString(3, Instant.now().toString());   // Will output ISO compatible UTC timestamp
             statement.executeUpdate();
         } catch (Exception e) {
             LOG.warnf("Error when trying to store session state. Will retry shortly. Error: %s", e.getMessage());
