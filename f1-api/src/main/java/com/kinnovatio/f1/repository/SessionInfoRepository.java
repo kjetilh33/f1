@@ -72,7 +72,9 @@ public class SessionInfoRepository {
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
                     String message = resultSet.getString("message");
+                    LOG.infof("Session status message from database: %s", message);
                     SessionStatus sessionStatus = objectMapper.readValue(message, SessionStatus.class);
+                    LOG.infof("Session status after json parsing: %s", sessionStatus.toString());
                     return Optional.of(sessionStatus);
                 }
             }
