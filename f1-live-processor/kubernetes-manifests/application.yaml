@@ -42,6 +42,8 @@ quarkus:
     #password: <your password>
     jdbc:
       url: jdbc:postgresql://f1-db-rw:5432/app
+      max-size: 50
+      min-size: 10
       acquisition-timeout: 5s
 
 kafka:
@@ -56,5 +58,9 @@ app:
     table: live_session_info
   track-status:
     table: live_track_status
+  race-control-message:
+    table: live_race_control_messages
+  weather-data:
+    table: live_weather_data
   log:
     source: "External config file."

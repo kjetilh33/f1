@@ -1,4 +1,4 @@
-package com.kinnovatio.livetiming;
+package com.kinnovatio.livetiming.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agroal.api.AgroalDataSource;
@@ -30,8 +30,8 @@ import java.util.Set;
 /// - Emitting status updates to the `status-out` channel.
 /// It uses `AgroalDataSource` for database interactions and `Micrometer` for metrics.
 @ApplicationScoped
-public class F1KafkaStorageProcessor {
-    private static final Logger LOG = Logger.getLogger(F1KafkaStorageProcessor.class);
+public class KafkaStorageProcessor {
+    private static final Logger LOG = Logger.getLogger(KafkaStorageProcessor.class);
 
     @ConfigProperty(name = "app.livetiming.table")
     String livetimingTable;
@@ -70,7 +70,7 @@ public class F1KafkaStorageProcessor {
     @RunOnVirtualThread
     @Transactional
     public void toStorage(ConsumerRecords<String, String> records) throws Exception {
-        LOG.infof("Livetiming messages received on f1-live-raw-storage channel. Number of records: %d", records.count());
+        LOG.debugf("Livetiming messages received on f1-live-raw-storage channel. Number of records: %d", records.count());
         final int batchSize = 1000;
         int recordCount = 0;
 

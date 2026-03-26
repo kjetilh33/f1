@@ -1,7 +1,5 @@
 package com.kinnovatio.f1.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Multi;
@@ -23,28 +21,21 @@ import org.jboss.resteasy.reactive.ResponseHeader;
 import org.jboss.resteasy.reactive.NoCache;
 
 import java.time.Duration;
-import java.util.Set;
 
 @ApplicationScoped
-@Path("/live")
-public class F1LiveTiming {
-    private static final Logger LOG = Logger.getLogger(F1LiveTiming.class);
-
-    private static final Set<String> excludeCategories = Set.of("Heartbeat");
+@Path("/live/livetiming")
+public class LiveTiming {
+    private static final Logger LOG = Logger.getLogger(LiveTiming.class);
 
     @Inject
-    @Channel("f1-live-raw")
+    @Channel("f1-live-processed")
     Multi<String> LiveTimingMessage;
 
     @Inject
     Sse sse;
 
-    @Inject
-    ObjectMapper objectMapper;
-
-    @ConfigProperty(name = "log.source")
-    String logSurce;
-
+    @ConfigProperty(name = "app.log.source")
+    String logSource;
 
     /// Initializes the processor on startup.
     /// This method is triggered by the `StartupEvent`. It logs the startup configuration
@@ -53,12 +44,10 @@ public class F1LiveTiming {
     /// @param ev The startup event.
     public void onStartup(@Observes StartupEvent ev) {
         LOG.infof("Starting the live timing api...");
-        LOG.infof("Config picked up from %s", logSurce);
+        LOG.infof("Config picked up from %s", logSource);
 
         LOG.infof("The api is ready. Waiting for live timing messages...");
     }
-
-
 
     /// Streams status updates to clients using Server-Sent Events (SSE).
     /// This method merges the `statusMessages` stream with a periodic ping stream.
@@ -71,8 +60,6 @@ public class F1LiveTiming {
     @ResponseHeader(name = "X-Accel-Buffering", value = "no")
     @RunOnVirtualThread
     public Multi<OutboundSseEvent> getLiveTimingStream() {
-        //TODO: add filter for messages (i.e. team radio which needs to be transcribed first).
-        
         return Multi.createBy().merging()
                 .streams(LiveTimingMessage, emitAPeriodicPing())
                 .map(message -> sse.newEventBuilder()

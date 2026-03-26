@@ -41,15 +41,15 @@ quarkus:
   jib:
     base-jvm-image: gcr.io/distroless/java25-debian13
   datasource:
-      db-kind: postgresql
-      #username: <your username>
-      #password: <your password>
-      jdbc:
-        #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
-        # Connection Pool Tuning for Virtual Threads
-        max-size: 50
-        min-size: 10
-        acquisition-timeout: 5s
+    db-kind: postgresql
+    #username: <your username>
+    #password: <your password>
+    jdbc:
+      #url: jdbc:postgresql://localhost:5432/hibernate_orm_test
+      # Connection Pool Tuning for Virtual Threads
+      max-size: 50
+      min-size: 10
+      acquisition-timeout: 5s
 
 app:
   database: app
@@ -59,6 +59,10 @@ app:
     table: live_session_info
   track-status:
     table: live_track_status
+  race-control-message:
+    table: live_race_control_messages
+  weather-data:
+    table: live_weather_data
 
   log:
     source: "Default config file."

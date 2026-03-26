@@ -1,9 +1,10 @@
-package com.kinnovatio.livetiming;
+package com.kinnovatio.livetiming.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kinnovatio.livetiming.GlobalStateManager;
+import com.kinnovatio.livetiming.repository.RepositoryUtilities;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -15,13 +16,15 @@ import org.jboss.logging.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 
 /// Processor for F1 track status messages.
-
+///
+/// This processor handles track status updates (e.g., Yellow Flag, Safety Car, Green Flag)
+/// by persisting them to a database. It also manages the lifecycle of the track status table
+/// by clearing data when a session starts or ends.
 @ApplicationScoped
-public class F1TrackStatusProcessor {
-    private static final Logger LOG = Logger.getLogger(F1TrackStatusProcessor.class);
+public class TrackStatusProcessor {
+    private static final Logger LOG = Logger.getLogger(TrackStatusProcessor.class);
 
     @Inject
     ObjectMapper objectMapper;
@@ -30,7 +33,7 @@ public class F1TrackStatusProcessor {
     AgroalDataSource storageDataSource;
 
     @Inject
-    MeterRegistry registry;
+    RepositoryUtilities repositoryUtilities;
 
     @ConfigProperty(name = "app.track-status.table")
     String trackStatusTable;
@@ -38,9 +41,10 @@ public class F1TrackStatusProcessor {
     @Inject
     GlobalStateManager stateManager;
 
-    /// Processes a batch of Kafka records and stores them in the database.
-    /// @param record The record.
-    /// @throws Exception If an error occurs during database insertion or processing.
+    /// Processes an incoming track status message and stores it in the database.
+    ///
+    /// @param recordValue The raw JSON string received from the "track-status" channel.
+    /// @throws Exception If database connectivity fails or JSON parsing errors occur.
     @Incoming("track-status")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
@@ -66,24 +70,26 @@ public class F1TrackStatusProcessor {
         }
     }
 
+    /// Listens for global session state changes and performs cleanup operations.
+    ///
+    /// If the session transitions to `NO_SESSION` or `LIVE_SESSION`, the track status table
+    /// is cleared to prepare for a new session or clean up after one.
+    ///
+    /// @param sessionState The new state of the session.
+    /// @throws Exception If the database delete operation fails.
     @Incoming("session-status-update")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
-    @Transactional
     public void processSessionStatusChange(GlobalStateManager.SessionState sessionState) throws Exception {
-        LOG.infof("Session status changed. Will clear the %s table.", trackStatusTable);
-        String sql = """
-                DELETE FROM %s;
-                """.formatted(trackStatusTable);
-
-        try (Connection connection = storageDataSource.getConnection();
-             Statement statement = connection.createStatement()) {
-            statement.executeUpdate(sql);
-        } catch (Exception e) {
-            LOG.warnf("Error when trying to clear the %s table. Will retry shortly. Error: %s",
-                    trackStatusTable,
-                    e.getMessage());
-            throw e;
+        if (sessionState == GlobalStateManager.SessionState.NO_SESSION
+                || sessionState == GlobalStateManager.SessionState.LIVE_SESSION) {
+            LOG.infof("Session status changed to %s. Will clear the %s table.",
+                    sessionState.getStatus(), trackStatusTable);
+            int rowsAffected = repositoryUtilities.clearAllRowsFromTable(trackStatusTable);
+            LOG.infof("%d rows deleted from the %s table.", rowsAffected, trackStatusTable);
+        } else {
+            LOG.infof("Session status changed to %s. Will not clear the %s table.",
+                    sessionState.getStatus(), trackStatusTable);
         }
     }
 }

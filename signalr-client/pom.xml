@@ -15,13 +15,13 @@
         <maven.compiler.release>25</maven.compiler.release>
 
         <auto-value.version>1.11.1</auto-value.version>
-        <jackson.version>2.21.1</jackson.version>
+        <jackson.version>2.21.2</jackson.version>
         <slf4j-api.version>2.0.17</slf4j-api.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
         <kafka-clients.version>4.2.0</kafka-clients.version>
         <logback-classic.version>1.5.32</logback-classic.version>
         <smallrye.config.version>3.16.0</smallrye.config.version>
-        <io.prometheus.version>1.5.0</io.prometheus.version>
+        <io.prometheus.version>1.5.1</io.prometheus.version>
         <maven-compiler.version>3.15.0</maven-compiler.version>
         <jib.maven.plugin.version>3.5.1</jib.maven.plugin.version>
         <junit.version>6.0.3</junit.version>

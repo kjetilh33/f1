@@ -72,7 +72,7 @@ public abstract class F1HubConnection {
             "ExtrapolatedClock", "TopThree", "RcmSeries",
             "TimingStats", "TimingAppData", "TeamRadio",
             "WeatherData", "TrackStatus", "DriverList",
-            "RaceControlMessages", "SessionInfo",
+            "RaceControlMessages", "SessionInfo", "SessionStatus",
             "SessionData", "LapCount", "TimingData",
             "PitLaneTimeCollection",
             // subscription only?

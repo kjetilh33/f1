@@ -69,6 +69,7 @@ public class Generator {
         LOG.info("Start data feed...");
         fileDataFeed.start();
         Thread.sleep(runDuration);
+        fileDataFeed.close();
         LOG.info("Finished job...");
     }
 

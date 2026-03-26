@@ -1,5 +1,6 @@
 package com.kinnovatio.livetiming;
 
+import com.kinnovatio.livetiming.repository.RepositoryUtilities;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -10,6 +11,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 @ApplicationScoped
@@ -19,8 +21,11 @@ public class AppLifeCycleObserver {
     @Inject
     AgroalDataSource storageDataSource;
 
+    @Inject
+    RepositoryUtilities repositoryUtilities;
+
     @ConfigProperty(name = "app.log.source")
-    String logSurce;
+    String logSource;
 
     @ConfigProperty(name = "app.livetiming.table")
     String livetimingTable;
@@ -31,15 +36,30 @@ public class AppLifeCycleObserver {
     @ConfigProperty(name = "app.track-status.table")
     String trackStatusTable;
 
+    @ConfigProperty(name = "app.race-control-message.table")
+    String raceControlMessageTable;
+
+    @ConfigProperty(name = "app.weather-data.table")
+    String weatherDataTable;
+
 
     void onStart(@Observes StartupEvent ev) {
         // This runs when the application is starting.
         LOG.infof("Starting the live timing processor...");
-        LOG.infof("Config picked up from %s", logSurce);
+        LOG.infof("Config picked up from %s", logSource);
 
         createLiveTimingDbTableIfNotExists(livetimingTable);
-        createSessionInfoDbTableIfNotExists(sessionInfoTable);
-        createTrackStatusDbTableIfNotExists(trackStatusTable);
+        createSessionInfoDbTableIfNotExists(sessionInfoTable); // cannot use repositoryUtils because of session key field
+
+
+        try {
+            repositoryUtilities.createMultiMessageDbTableIfNotExists(trackStatusTable);
+            repositoryUtilities.createMultiMessageDbTableIfNotExists(raceControlMessageTable);
+            repositoryUtilities.createKeyMessageDbTableIfNotExists(weatherDataTable);
+        } catch (SQLException e) {
+            LOG.errorf("Error when bootstrapping the DB tables. Error: %s", e.getMessage());
+        }
+
 
         LOG.infof("The processor is ready. Waiting for live timing messages...");
     }
@@ -96,22 +116,4 @@ public class AppLifeCycleObserver {
         }
     }
 
-    private void createTrackStatusDbTableIfNotExists(String tableName) {
-        String createTableSql = """
-                CREATE TABLE IF NOT EXISTS %s (
-                    message_id SERIAL PRIMARY KEY,
-                    session_key INT,
-                    message JSONB,
-                    message_timestamp TIMESTAMPTZ,
-                    updated_timestamp TIMESTAMPTZ DEFAULT NOW()
-                );
-                """.formatted(tableName);
-
-        try (Connection connection = storageDataSource.getConnection(); Statement statement = connection.createStatement()) {
-            statement.execute(createTableSql);
-            LOG.infof("Successfully created (if not already exists) the track status DB table...");
-        } catch (Exception e) {
-            LOG.errorf("An error happened when creating the DB table: %s", e.getMessage());
-        }
-    }
 }
