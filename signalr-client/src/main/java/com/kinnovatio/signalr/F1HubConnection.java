@@ -461,8 +461,8 @@ public abstract class F1HubConnection {
             String cookie = negotiateResponse.headers().firstValue("set-cookie").orElse("");
             LOG.debug(loggingPrefix + "Negotiate cookie: {}", cookie);
             JsonNode responseBodyRoot = objectReader.readTree(responseBody);
-            if (responseBodyRoot.path("ConnectionToken").isTextual()) {
-                connectionToken = responseBodyRoot.path("ConnectionToken").asText();
+            if (responseBodyRoot.path("ConnectionToken").isString()) {
+                connectionToken = responseBodyRoot.path("ConnectionToken").asString();
             } else {
                 // A connection token is mandatory for the next step.
                 throw new IOException(loggingPrefix + "Unable to get connection token from the SignalR service during negotiation.");
@@ -472,7 +472,7 @@ public abstract class F1HubConnection {
             if (responseBodyRoot.path("KeepAliveTimeout").isNumber()) {
                 keepAliveTimeout = Duration.ofSeconds(responseBodyRoot.path("KeepAliveTimeout").asInt());
                 LOG.debug(loggingPrefix + "Found keep alive timeout spec in connection negotiation: {}",
-                        responseBodyRoot.path("KeepAliveTimeout").asText());
+                        responseBodyRoot.path("KeepAliveTimeout").asString());
             } else if (responseBodyRoot.path("KeepAliveTimeout").isNull()) {
                 keepAliveTimeout = Duration.ofDays(365);
                 LOG.debug(loggingPrefix + "KeepAliveTimeout = null. Setting the reconnect timeout to one year.");

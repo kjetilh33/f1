@@ -242,12 +242,12 @@ public class Client {
                 }
 
                 // Add the newest update from the message
-                meetingName = root.path("Meeting").path("Name").asText(meetingName);
-                sessionStatus = root.path("SessionStatus").asText(sessionStatus);
-                archiveStatus = root.path("ArchiveStatus").path("Status").asText(archiveStatus);
-                sessionType = root.path("Type").asText(sessionType);
-                startDateString = root.path("StartDate").asText(startDateString);
-                endDateString = root.path("EndDate").asText(endDateString);
+                meetingName = root.path("Meeting").path("Name").asString(meetingName);
+                sessionStatus = root.path("SessionStatus").asString(sessionStatus);
+                archiveStatus = root.path("ArchiveStatus").path("Status").asString(archiveStatus);
+                sessionType = root.path("Type").asString(sessionType);
+                startDateString = root.path("StartDate").asString(startDateString);
+                endDateString = root.path("EndDate").asString(endDateString);
 
                 LOG.info(loggingPrefix + "We have an updated session status: {}", sessionStatus);
 
@@ -284,16 +284,16 @@ public class Client {
                 if (root.path("StatusSeries").isObject()) {
                     // we may have status as a single object entry.
                     for (JsonNode entry : root.path("StatusSeries")) {
-                        if (entry.path("SessionStatus").isTextual()) {
-                            sessionStatus = entry.path("SessionStatus").asText(sessionStatus);
+                        if (entry.path("SessionStatus").isString()) {
+                            sessionStatus = entry.path("SessionStatus").asString(sessionStatus);
                             LOG.info(loggingPrefix + "We have an updated session status: {}", sessionStatus);
                         }
                     }
                 } else if (root.path("StatusSeries").isArray()) {
                     // We have a collection of status objects. Need to iterate over them.
                     for (JsonNode entry : root.path("StatusSeries")) {
-                        if (entry.path("SessionStatus").isTextual()) {
-                            sessionStatus = entry.path("SessionStatus").asText(sessionStatus);
+                        if (entry.path("SessionStatus").isString()) {
+                            sessionStatus = entry.path("SessionStatus").asString(sessionStatus);
                             LOG.info(loggingPrefix + "We have an updated session status: {}", sessionStatus);
                         }
                     }
