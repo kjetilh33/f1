@@ -1,9 +1,9 @@
 package com.kinnovatio.signalr.messages;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
 import io.prometheus.metrics.core.metrics.Counter;
 import org.jboss.logging.Logger;
 
@@ -37,7 +37,7 @@ public class MessageDecoder {
     /// @param message The json message to check.
     /// @return true if the message is an init message.
     /// @throws JsonProcessingException if the input is not a valid json string.
-    public static boolean isInitMessage(String message) throws JsonProcessingException {
+    public static boolean isInitMessage(String message) throws JacksonException {
         return parseSignalRMessage(message) instanceof InitMessage;
     }
 
@@ -48,7 +48,7 @@ public class MessageDecoder {
     /// @param message The Json message to check.
     /// @return true if the message is a keep alive message.
     /// @throws JsonProcessingException if the input is not a valid json string.
-    public static boolean isKeepAliveMessage(String message) throws JsonProcessingException {
+    public static boolean isKeepAliveMessage(String message) throws JacksonException {
         return parseSignalRMessage(message) instanceof KeepAliveMessage;
     }
 
@@ -60,7 +60,7 @@ public class MessageDecoder {
     /// @param identifier A client-defined identifier for the method call.
     /// @return A JSON string representing the SignalR message.
     /// @throws JsonProcessingException if the arguments cannot be serialized to JSON.
-    public static String toMessageJson(String hub, String method, List<Object> arguments, int identifier) throws JsonProcessingException {
+    public static String toMessageJson(String hub, String method, List<Object> arguments, int identifier) throws JacksonException {
         Map<String, Object> root = Map.of(
             "H", hub,
             "M", method,
@@ -80,7 +80,7 @@ public class MessageDecoder {
     /// @return A list of [LiveTimingMessage]s contained in the envelope. The list will be empty if the
     ///         message is not a data-carrying message (e.g., keep-alive).
     /// @throws JsonProcessingException if the JSON is malformed.
-    public static List<? extends LiveTimingRecord> parseLiveTimingMessages(String messageJson) throws JsonProcessingException {
+    public static List<? extends LiveTimingRecord> parseLiveTimingMessages(String messageJson) throws JacksonException {
         SignalRMessage signalRMessage = parseSignalRMessage(messageJson);
 
         return switch (signalRMessage) {
@@ -103,7 +103,7 @@ public class MessageDecoder {
     /// @param messageJson the raw SignalR message in Json format.
     /// @return the message parsed into one of the basic `SignalRMessage` types.
     /// @throws JsonProcessingException if the input is not a valid json string.
-    public static SignalRMessage parseSignalRMessage(String messageJson) throws JsonProcessingException {
+    public static SignalRMessage parseSignalRMessage(String messageJson) throws JacksonException {
         Objects.requireNonNull(messageJson);
 
         // Let's just shortcut if it is a keep alive message

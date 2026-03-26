@@ -1,9 +1,9 @@
 package com.kinnovatio.signalr;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
 import com.google.auto.value.AutoValue;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
@@ -543,7 +543,7 @@ public abstract class F1HubConnection {
                 case HubResponseMessage h -> "HubResponse";
                 case ClientMethodInvocationMessage c -> "ClientMethodInvocation";
             };
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOG.warn(loggingPrefix + "Error when processing received signalR message: Raw message: '{}'. Error: {}",
                     message, e.getMessage());;
         }
@@ -581,7 +581,7 @@ public abstract class F1HubConnection {
                 }
                 case DISCONNECTED -> LOG.error(loggingPrefix + "Message received while disconnected. Should not happen.");
             }
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             // This is a critical failure, as we can't understand the server.
             LOG.error(loggingPrefix + "Failed to parse JSON message from the SignalR hub. Message: '{}'", message, e);
             throw new RuntimeException("Unrecoverable JSON parsing error", e);
@@ -623,7 +623,7 @@ public abstract class F1HubConnection {
                 LOG.debug(loggingPrefix + "Parsed raw message into {} live timing messages", messages.size());
                 messages.forEach(message -> getConsumer().accept(message));
             }
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOG.warn("Error when processing received signalR message: Raw message: '{}'. Error: {}", rawMessage, e.getMessage());
         }
     }

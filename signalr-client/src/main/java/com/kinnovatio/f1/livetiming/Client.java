@@ -1,8 +1,8 @@
 package com.kinnovatio.f1.livetiming;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.kinnovatio.signalr.F1HubConnection;
 import com.kinnovatio.signalr.messages.LiveTimingHubResponseMessage;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
@@ -253,7 +253,7 @@ public class Client {
 
                 // Store the session info
                 sessionInfo = new SessionInfo(meetingName, sessionStatus, sessionType, startDateString, endDateString, archiveStatus);
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 LOG.warn(loggingPrefix + "Failed to process session info message. Error: {}", e);
             }
         } else if (message.category().equalsIgnoreCase("SessionData")) {
@@ -301,7 +301,7 @@ public class Client {
 
                 // Store the session info
                 sessionInfo = new SessionInfo(meetingName, sessionStatus, sessionType, startDateString, endDateString, archiveStatus);
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 LOG.warn("Failed to process session data message. Error: {}", e);
             }
         }

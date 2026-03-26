@@ -1,8 +1,7 @@
 package com.kinnovatio.f1.livetiming;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.prometheus.metrics.core.metrics.Counter;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -59,8 +58,6 @@ public class KafkaProducer {
     /// Initializes the Jackson ObjectMapper with the JavaTimeModule and configures
     /// and creates the underlying Apache Kafka producer instance.
     private KafkaProducer() {
-        objectMapper.registerModule(new JavaTimeModule());
-
         Properties props = new Properties();
         props.put("bootstrap.servers", kafkaBootstrapHost);
         props.put("client.id", kafkaClientId);
@@ -95,7 +92,7 @@ public class KafkaProducer {
 
         try {
                 publish(message.category(), objectMapper.writeValueAsString(message), headers);
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 LOG.error("Error writing message to kafka: {}", e);
             }
     }
