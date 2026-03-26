@@ -115,30 +115,30 @@ public class MessageDecoder {
         // Init messages contains "S" property
         if (root.path("S").isIntegralNumber() && root.path("S").asInt() == 1) {
             return new InitMessage(
-                    root.path("C").asText(""),
+                    root.path("C").asString(""),
                     root.path("S").asInt(),
                     parseJsonObjectArray(root.path("M")));
         }
 
         // Group membership messages contains the "G" property
-        if (root.path("G").isTextual()) {
+        if (root.path("G").isString()) {
             return new GroupMembershipMessage(
-                    root.path("C").asText(""),
-                    root.path("G").asText(""),
+                    root.path("C").asString(""),
+                    root.path("G").asString(""),
                     parseJsonObjectArray(root.path("M")));
         }
 
         // Hub reply messages (replies to client calling the hub) contains the "R" property
         if (root.path("R").isObject()) {
             return new HubResponseMessage(
-                    root.path("I").asText(""),
+                    root.path("I").asString(""),
                     root.path("R").toString());
         }
 
         // Client side hub method invocation carries the payload in an "M" property.
         if (root.path("M").isArray()) {
             return new ClientMethodInvocationMessage(
-                    root.path("C").asText(""),
+                    root.path("C").asString(""),
                     parseJsonObjectArray(root.path("M")));
         }
 
@@ -168,18 +168,18 @@ public class MessageDecoder {
             JsonNode root = objectMapper.readTree(messageJson);
             
             // If the message is a streaming feed, unpack the envelope and extract the message data.
-            if (root.path("H").asText().equalsIgnoreCase("Streaming")
-                    && root.path("M").asText().equalsIgnoreCase("feed")
+            if (root.path("H").asString().equalsIgnoreCase("Streaming")
+                    && root.path("M").asString().equalsIgnoreCase("feed")
                     && root.path("A") instanceof ArrayNode array) {
 
                 // The arguments array has a fixed structure: [Category, Data, Timestamp]
-                String category = array.get(0).asText();
+                String category = array.get(0).asString();
                 String messageValue = array.get(1).toString();
-                ZonedDateTime timeStamp = ZonedDateTime.parse(array.get(2).asText());
+                ZonedDateTime timeStamp = ZonedDateTime.parse(array.get(2).asString());
 
                 // Check if the message body is compressed
                 if (category.endsWith(".z")) {
-                    messageValue = inflate(array.get(1).textValue());
+                    messageValue = inflate(array.get(1).stringValue());
                 }
 
                 returnValue = Optional.of(new LiveTimingMessage(category, messageValue, timeStamp, true));
@@ -204,8 +204,8 @@ public class MessageDecoder {
             ZonedDateTime timeStamp;
 
             // Check if we have timestamp data in the payload
-            if (root.path("ExtrapolatedClock").path("Utc").isTextual()) {
-                timeStamp = ZonedDateTime.parse(root.path("ExtrapolatedClock").path("Utc").textValue());
+            if (root.path("ExtrapolatedClock").path("Utc").isString()) {
+                timeStamp = ZonedDateTime.parse(root.path("ExtrapolatedClock").path("Utc").stringValue());
             } else {
                 // Set a default timestamp
                 timeStamp = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC"));
@@ -217,7 +217,7 @@ public class MessageDecoder {
                         String messageValue = entry.getValue().toString();
                         // Check if the message body is compressed
                         if (entry.getKey().endsWith(".z")) {
-                                messageValue = inflate(entry.getValue().textValue());
+                                messageValue = inflate(entry.getValue().stringValue());
                         }
                         LiveTimingMessages.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp, false));
 

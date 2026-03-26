@@ -204,7 +204,7 @@ public class MessageDecoder {
 
             // Check if we have timestamp data in the payload
             if (root.path("ExtrapolatedClock").path("Utc").isString()) {
-                timeStamp = ZonedDateTime.parse(root.path("ExtrapolatedClock").path("Utc").asString());
+                timeStamp = ZonedDateTime.parse(root.path("ExtrapolatedClock").path("Utc").stringValue());
             } else {
                 // Set a default timestamp
                 timeStamp = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC"));
@@ -216,7 +216,7 @@ public class MessageDecoder {
                         String messageValue = entry.getValue().toString();
                         // Check if the message body is compressed
                         if (entry.getKey().endsWith(".z")) {
-                                messageValue = inflate(entry.getValue().asString());
+                                messageValue = inflate(entry.getValue().stringValue());
                         }
                         LiveTimingMessages.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp, false));
 
