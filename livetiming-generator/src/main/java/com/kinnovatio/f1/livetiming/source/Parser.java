@@ -1,7 +1,7 @@
 package com.kinnovatio.f1.livetiming.source;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
 import com.kinnovatio.signalr.messages.MessageDecoder;
 import com.kinnovatio.signalr.messages.transport.*;
@@ -35,7 +35,7 @@ public class Parser {
             messages = MessageDecoder.parseLiveTimingMessages(rawMessage);
             LOG.debug(loggingPrefix + "Parsed raw message into {} live timing messages", messages.size());
 
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOG.warn(loggingPrefix + "Error when processing received signalR message: Raw message: '{}'. Error: {}",
                     rawMessage, e.getMessage());;
         }

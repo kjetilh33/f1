@@ -1,9 +1,9 @@
 package com.kinnovatio.signalr.messages;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
 import com.kinnovatio.signalr.messages.transport.*;
 import io.prometheus.metrics.core.metrics.Counter;
 import org.jboss.logging.Logger;
@@ -36,7 +36,7 @@ public class MessageDecoder {
     /// @param message The json message to check.
     /// @return true if the message is an init message.
     /// @throws JsonProcessingException if the input is not a valid json string.
-    public static boolean isInitMessage(String message) throws JsonProcessingException {
+    public static boolean isInitMessage(String message) throws JacksonException {
         return parseSignalRMessage(message) instanceof InitMessage;
     }
 
@@ -47,7 +47,7 @@ public class MessageDecoder {
     /// @param message The Json message to check.
     /// @return true if the message is a keep alive message.
     /// @throws JsonProcessingException if the input is not a valid json string.
-    public static boolean isKeepAliveMessage(String message) throws JsonProcessingException {
+    public static boolean isKeepAliveMessage(String message) throws JacksonException {
         return parseSignalRMessage(message) instanceof KeepAliveMessage;
     }
 
@@ -59,7 +59,7 @@ public class MessageDecoder {
     /// @param identifier A client-defined identifier for the method call.
     /// @return A JSON string representing the SignalR message.
     /// @throws JsonProcessingException if the arguments cannot be serialized to JSON.
-    public static String toMessageJson(String hub, String method, List<Object> arguments, int identifier) throws JsonProcessingException {
+    public static String toMessageJson(String hub, String method, List<Object> arguments, int identifier) throws JacksonException {
         Map<String, Object> root = Map.of(
             "H", hub,
             "M", method,
@@ -79,7 +79,7 @@ public class MessageDecoder {
     /// @return A list of [LiveTimingMessage]s contained in the envelope. The list will be empty if the
     ///         message is not a data-carrying message (e.g., keep-alive).
     /// @throws JsonProcessingException if the JSON is malformed.
-    public static List<? extends LiveTimingRecord> parseLiveTimingMessages(String messageJson) throws JsonProcessingException {
+    public static List<? extends LiveTimingRecord> parseLiveTimingMessages(String messageJson) throws JacksonException {
         SignalRMessage signalRMessage = parseSignalRMessage(messageJson);
 
         return switch (signalRMessage) {
@@ -102,7 +102,7 @@ public class MessageDecoder {
     /// @param messageJson the raw SignalR message in Json format.
     /// @return the message parsed into one of the basic `SignalRMessage` types.
     /// @throws JsonProcessingException if the input is not a valid json string.
-    public static SignalRMessage parseSignalRMessage(String messageJson) throws JsonProcessingException {
+    public static SignalRMessage parseSignalRMessage(String messageJson) throws JacksonException {
         Objects.requireNonNull(messageJson);
 
         // Let's just shortcut if it is a keep alive message
@@ -114,30 +114,30 @@ public class MessageDecoder {
         // Init messages contains "S" property
         if (root.path("S").isIntegralNumber() && root.path("S").asInt() == 1) {
             return new InitMessage(
-                    root.path("C").asText(""),
+                    root.path("C").asString(""),
                     root.path("S").asInt(),
                     parseJsonObjectArray(root.path("M")));
         }
 
         // Group membership messages contains the "G" property
-        if (root.path("G").isTextual()) {
+        if (root.path("G").isString()) {
             return new GroupMembershipMessage(
-                    root.path("C").asText(""),
-                    root.path("G").asText(""),
+                    root.path("C").asString(""),
+                    root.path("G").asString(""),
                     parseJsonObjectArray(root.path("M")));
         }
 
         // Hub reply messages (replies to client calling the hub) contains the "R" property
         if (root.path("R").isObject()) {
             return new HubResponseMessage(
-                    root.path("I").asText(""),
+                    root.path("I").asString(""),
                     root.path("R").toString());
         }
 
         // Client side hub method invocation carries the payload in an "M" property.
         if (root.path("M").isArray()) {
             return new ClientMethodInvocationMessage(
-                    root.path("C").asText(""),
+                    root.path("C").asString(""),
                     parseJsonObjectArray(root.path("M")));
         }
 
@@ -167,18 +167,18 @@ public class MessageDecoder {
             JsonNode root = objectMapper.readTree(messageJson);
             
             // If the message is a streaming feed, unpack the envelope and extract the message data.
-            if (root.path("H").asText().equalsIgnoreCase("Streaming")
-                    && root.path("M").asText().equalsIgnoreCase("feed")
+            if (root.path("H").asString().equalsIgnoreCase("Streaming")
+                    && root.path("M").asString().equalsIgnoreCase("feed")
                     && root.path("A") instanceof ArrayNode array) {
 
                 // The arguments array has a fixed structure: [Category, Data, Timestamp]
-                String category = array.get(0).asText();
+                String category = array.get(0).asString();
                 String messageValue = array.get(1).toString();
-                ZonedDateTime timeStamp = ZonedDateTime.parse(array.get(2).asText());
+                ZonedDateTime timeStamp = ZonedDateTime.parse(array.get(2).asString());
 
                 // Check if the message body is compressed
                 if (category.endsWith(".z")) {
-                    messageValue = inflate(array.get(1).textValue());
+                    messageValue = inflate(array.get(1).stringValue());
                 }
 
                 returnValue = Optional.of(new LiveTimingMessage(category, messageValue, timeStamp, true));
@@ -203,8 +203,8 @@ public class MessageDecoder {
             ZonedDateTime timeStamp;
 
             // Check if we have timestamp data in the payload
-            if (root.path("ExtrapolatedClock").path("Utc").isTextual()) {
-                timeStamp = ZonedDateTime.parse(root.path("ExtrapolatedClock").path("Utc").textValue());
+            if (root.path("ExtrapolatedClock").path("Utc").isString()) {
+                timeStamp = ZonedDateTime.parse(root.path("ExtrapolatedClock").path("Utc").asString());
             } else {
                 // Set a default timestamp
                 timeStamp = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC"));
@@ -216,7 +216,7 @@ public class MessageDecoder {
                         String messageValue = entry.getValue().toString();
                         // Check if the message body is compressed
                         if (entry.getKey().endsWith(".z")) {
-                                messageValue = inflate(entry.getValue().textValue());
+                                messageValue = inflate(entry.getValue().asString());
                         }
                         LiveTimingMessages.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp, false));
 

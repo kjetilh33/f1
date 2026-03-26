@@ -1,6 +1,6 @@
 package com.kinnovatio.f1.livetiming;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.kinnovatio.f1.livetiming.source.FileDataFeed;
 import com.kinnovatio.signalr.messages.LiveTimingHubResponseMessage;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
