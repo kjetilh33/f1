@@ -1,8 +1,8 @@
 package com.kinnovatio.f1.livetiming;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import org.apache.commons.lang3.StringUtils;
