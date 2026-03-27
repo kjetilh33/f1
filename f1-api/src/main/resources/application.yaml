@@ -39,6 +39,8 @@ app:
   livetiming:
     session-info:
       table: live_session_info
+    race-control-message:
+      table: live_race_control_messages
   log:
     source: "Default config file."
 
