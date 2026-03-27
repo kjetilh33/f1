@@ -1,6 +1,9 @@
 package com.kinnovatio.f1.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kinnovatio.f1.model.SessionInfoRaw;
 import com.kinnovatio.f1.model.SessionMessage;
 import com.kinnovatio.f1.model.SessionStatus;
@@ -22,11 +25,15 @@ public class RaceControlMessageService {
     @Inject
     ObjectMapper objectMapper;
 
-    public String getRaceControlMessages() {
+    public ObjectNode getRaceControlMessages() {
         List<SessionMessage> raceControlMessages = raceControlMessagesRepository.getRaceControlMessages();
+        ObjectNode root = objectMapper.createObjectNode();
+        ArrayNode messages = root.putArray("messages");
+        for (SessionMessage message : raceControlMessages) {
+            messages.add(objectMapper.valueToTree(message.message()));
+        }
 
-
-        return null;
+        return root;
     }
 
 }

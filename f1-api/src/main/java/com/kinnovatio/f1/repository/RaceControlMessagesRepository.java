@@ -57,6 +57,11 @@ public class RaceControlMessagesRepository {
             throw new RuntimeException("Database error fetching session info", e);
         }
 
+        // Check if we are close to the limit on number of results
+        if (returnList.size() == limit) {
+            LOG.warnf("Number of results from table %s is at the limit of %d items. Please check the database",
+                    raceControlMessageTable, limit);
+        }
         return returnList;
     }
 }
