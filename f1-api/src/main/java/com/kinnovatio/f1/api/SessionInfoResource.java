@@ -18,7 +18,6 @@ import org.jboss.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON)
 @RunOnVirtualThread
 public class SessionInfoResource {
-    private static final Logger LOG = Logger.getLogger(SessionInfoResource.class);
 
     @Inject
     SessionInfoService sessionInfoService;
