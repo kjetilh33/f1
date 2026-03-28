@@ -29,7 +29,7 @@ public class RaceControlMessagesRepository {
         List<SessionMessage> returnList = new ArrayList<>();
 
         String sql = """
-                Select id, session_key, message, message_timestamp, updated_timestamp
+                Select id, session_id, message, message_timestamp, updated_timestamp
                 FROM %s
                 limit %d;
                 """.formatted(raceControlMessageTable, limit);
