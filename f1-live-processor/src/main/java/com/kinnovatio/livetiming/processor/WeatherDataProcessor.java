@@ -45,7 +45,7 @@ public class WeatherDataProcessor {
         String weatherKey = "weatherData";
 
         String sql = """
-                INSERT INTO %s (key, session_key, message, message_timestamp, updated_timestamp) 
+                INSERT INTO %s (key, session_id, message, message_timestamp, updated_timestamp) 
                 VALUES (?, ?, ?::jsonb, ?::timestamptz, NOW())
                 ON CONFLICT (key)
                 DO UPDATE SET

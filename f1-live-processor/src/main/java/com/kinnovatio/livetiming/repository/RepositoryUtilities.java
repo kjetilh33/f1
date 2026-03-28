@@ -20,8 +20,8 @@ public class RepositoryUtilities {
     public void createMultiMessageDbTableIfNotExists(String tableName) throws SQLException {
         String createTableSql = """
                 CREATE TABLE IF NOT EXISTS %s (
-                    message_id SERIAL PRIMARY KEY,
-                    session_key INT DEFAULT -1,
+                    id SERIAL PRIMARY KEY,
+                    session_id INT DEFAULT -1,
                     message JSONB,
                     message_timestamp TIMESTAMPTZ,
                     updated_timestamp TIMESTAMPTZ DEFAULT NOW()
@@ -37,11 +37,11 @@ public class RepositoryUtilities {
         }
     }
 
-    public void createKeyMessageDbTableIfNotExists(String tableName) throws SQLException {
+    public void createKeyedMessageDbTableIfNotExists(String tableName) throws SQLException {
         String createTableSql = """
                 CREATE TABLE IF NOT EXISTS %s (
                     key VARCHAR(100) PRIMARY KEY,
-                    session_key INT DEFAULT -1,
+                    session_id INT DEFAULT -1,
                     message JSONB,
                     message_timestamp TIMESTAMPTZ,
                     updated_timestamp TIMESTAMPTZ DEFAULT NOW()

@@ -55,7 +55,7 @@ public class AppLifeCycleObserver {
         try {
             repositoryUtilities.createMultiMessageDbTableIfNotExists(trackStatusTable);
             repositoryUtilities.createMultiMessageDbTableIfNotExists(raceControlMessageTable);
-            repositoryUtilities.createKeyMessageDbTableIfNotExists(weatherDataTable);
+            repositoryUtilities.createKeyedMessageDbTableIfNotExists(weatherDataTable);
         } catch (SQLException e) {
             LOG.errorf("Error when bootstrapping the DB tables. Error: %s", e.getMessage());
         }
@@ -101,7 +101,7 @@ public class AppLifeCycleObserver {
     private void createSessionInfoDbTableIfNotExists(String tableName) {
         String createTableSql = """
                 CREATE TABLE IF NOT EXISTS %s (
-                    key VARCHAR(100) PRIMARY KEY,
+                    id VARCHAR(100) PRIMARY KEY,
                     message JSONB,
                     message_timestamp TIMESTAMPTZ,
                     updated_timestamp TIMESTAMPTZ DEFAULT NOW()

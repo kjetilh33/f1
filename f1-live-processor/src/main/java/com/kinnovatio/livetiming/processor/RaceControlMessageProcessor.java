@@ -52,7 +52,7 @@ public class RaceControlMessageProcessor {
     @Transactional
     public void processRaceControlMessage(String recordValue) throws Exception {
         String sql = """
-                INSERT INTO %s (session_key, message, message_timestamp)
+                INSERT INTO %s (session_id, message, message_timestamp)
                 VALUES (?, ?::jsonb, ?::timestamptz)
                 ;
                 """.formatted(raceControlMessageTable);

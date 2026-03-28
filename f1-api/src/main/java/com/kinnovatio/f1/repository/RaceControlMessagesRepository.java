@@ -53,8 +53,8 @@ public class RaceControlMessagesRepository {
             }
 
         } catch (Exception e) {
-            LOG.warnf("Error when trying to read session info. Error: %s", e.getMessage());
-            throw new RuntimeException("Database error fetching session info", e);
+            LOG.warnf("Error when trying to read race control messages. Error: %s", e.getMessage());
+            throw new RuntimeException("Database error fetching race control messages", e);
         }
 
         // Check if we are close to the limit on number of results
