@@ -101,7 +101,7 @@ public class AppLifeCycleObserver {
     private void createSessionInfoDbTableIfNotExists(String tableName) {
         String createTableSql = """
                 CREATE TABLE IF NOT EXISTS %s (
-                    id VARCHAR(100) PRIMARY KEY,
+                    key VARCHAR(100) PRIMARY KEY,
                     message JSONB,
                     message_timestamp TIMESTAMPTZ,
                     updated_timestamp TIMESTAMPTZ DEFAULT NOW()
