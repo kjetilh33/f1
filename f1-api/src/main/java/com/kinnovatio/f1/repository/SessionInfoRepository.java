@@ -24,7 +24,7 @@ public class SessionInfoRepository {
     @Inject
     ObjectMapper objectMapper;
 
-    @ConfigProperty(name = "app.livetiming.session-info.table")
+    @ConfigProperty(name = "app.session-info.table")
     String sessionInfoTable;
 
     public Optional<SessionInfoRaw> getSessionInfoLive() {
