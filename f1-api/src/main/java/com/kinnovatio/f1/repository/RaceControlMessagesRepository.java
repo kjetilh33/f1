@@ -1,8 +1,6 @@
 package com.kinnovatio.f1.repository;
 
-import com.kinnovatio.f1.model.SessionInfoRaw;
 import com.kinnovatio.f1.model.SessionMessage;
-import com.kinnovatio.f1.model.SessionStatus;
 import io.agroal.api.AgroalDataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -13,10 +11,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @ApplicationScoped
 public class RaceControlMessagesRepository {
@@ -33,7 +29,7 @@ public class RaceControlMessagesRepository {
         List<SessionMessage> returnList = new ArrayList<>();
 
         String sql = """
-                Select message_id, session_key, message, message_timestamp, updated_timestamp
+                Select id, session_key, message, message_timestamp, updated_timestamp
                 FROM %s
                 limit %d;
                 """.formatted(raceControlMessageTable, limit);
@@ -43,7 +39,7 @@ public class RaceControlMessagesRepository {
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
-                    int id = resultSet.getInt("message_id");
+                    int id = resultSet.getInt("id");
                     int sessionId = resultSet.getInt("session_id");
                     String message = resultSet.getString("message");
                     Instant messageTimestamp = resultSet.getObject("message_timestamp", Instant.class);
