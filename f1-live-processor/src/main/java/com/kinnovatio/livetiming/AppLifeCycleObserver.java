@@ -42,6 +42,8 @@ public class AppLifeCycleObserver {
     @ConfigProperty(name = "app.weather-data.table")
     String weatherDataTable;
 
+    @ConfigProperty(name = "app.driver-list.table")
+    String driverListTable;
 
     void onStart(@Observes StartupEvent ev) {
         // This runs when the application is starting.
@@ -56,6 +58,7 @@ public class AppLifeCycleObserver {
             repositoryUtilities.createMultiMessageDbTableIfNotExists(trackStatusTable);
             repositoryUtilities.createMultiMessageDbTableIfNotExists(raceControlMessageTable);
             repositoryUtilities.createKeyedMessageDbTableIfNotExists(weatherDataTable);
+            repositoryUtilities.createKeyedMessageDbTableIfNotExists(driverListTable);
         } catch (SQLException e) {
             LOG.errorf("Error when bootstrapping the DB tables. Error: %s", e.getMessage());
         }

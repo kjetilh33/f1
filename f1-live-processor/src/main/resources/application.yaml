@@ -61,6 +61,8 @@ app:
     table: live_track_status
   race-control-message:
     table: live_race_control_messages
+  driver-list:
+    table: live_driver_list
   weather-data:
     table: live_weather_data
 
