@@ -38,10 +38,13 @@ kafka:
 
 app:
   database: app
-  livetiming:
-    session-info:
-      table: live_session_info
-    race-control-message:
-      table: live_race_control_messages
+  session-info:
+    table: live_session_info
+  track-status:
+    table: live_track_status
+  race-control-message:
+    table: live_race_control_messages
+  weather-data:
+    table: live_weather_data
   log:
     source: "Default config file."
