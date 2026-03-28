@@ -74,7 +74,7 @@ public class AppLifeCycleObserver {
     private void createLiveTimingDbTableIfNotExists(String tableName) {
         String createTableSql = """
                 CREATE TABLE IF NOT EXISTS %s (
-                    message_id SERIAL PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
                     category VARCHAR(100) DEFAULT 'N/A',
                     is_streaming BOOLEAN DEFAULT FALSE,
                     message JSONB,
