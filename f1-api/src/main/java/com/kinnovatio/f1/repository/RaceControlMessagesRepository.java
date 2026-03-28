@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,8 +43,8 @@ public class RaceControlMessagesRepository {
                     int id = resultSet.getInt("id");
                     int sessionId = resultSet.getInt("session_id");
                     String message = resultSet.getString("message");
-                    Instant messageTimestamp = resultSet.getObject("message_timestamp", Instant.class);
-                    Instant updatedTimestamp = resultSet.getObject("updated_timestamp", Instant.class);
+                    Instant messageTimestamp = resultSet.getObject("message_timestamp", OffsetDateTime.class).toInstant();
+                    Instant updatedTimestamp = resultSet.getObject("updated_timestamp", OffsetDateTime.class).toInstant();
                     returnList.add(new SessionMessage(id, sessionId, message, messageTimestamp, updatedTimestamp));
                 }
             }
