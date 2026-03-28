@@ -46,12 +46,12 @@ function parseEvent(event) {
         message = {
             category: "keep-alive",
             message: JSON.stringify({message: "Keep alive message"}),
-            timestamp: Math.floor(Date.now() / 1000),
+            timestamp: new Date().toISOString(),
             isStreaming: false
         }
     }
 
-    message = {...message, message: JSON.parse(message.message), timestamp: parseNanoTimestamp(message.timestamp)};
+    message = {...message, message: JSON.parse(message.message), timestamp: new Date(message.timestamp)};
     
     return message;
 }

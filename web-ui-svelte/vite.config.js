@@ -9,7 +9,7 @@ export default defineConfig({
             '/api': {
                 target: 'http://f1.kinnovatio.local', // Replace with your backend server URL
                 changeOrigin: true,
-                //rewrite: (path) => path.replace(/^\/api/, '')
+                rewrite: (path) => path.replace(/^\/api\/v1/, '/api/test')
             }
         }
     }
