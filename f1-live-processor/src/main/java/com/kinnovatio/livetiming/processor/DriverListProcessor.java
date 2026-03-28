@@ -21,6 +21,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.time.Duration;
@@ -51,16 +52,43 @@ public class DriverListProcessor {
     RepositoryUtilities repositoryUtilities;
 
     private final AtomicReference<JsonNode> driverListRoot = new AtomicReference<>(objectMapper.createObjectNode());
+    private final AtomicReference<Instant> driverListUpdateTimestamp = new AtomicReference<>(Instant.now());
 
     @Incoming("driver-list")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
     @Transactional
     public void processDriverList(String recordValue) throws Exception {
-        // Constant key used for the singleton row in the database table
-        String driverListKey = "driverList";
+        LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
 
-        String upsertSessionInfoSql = """
+        try {
+            JsonNode update = objectMapper.readTree(message.message());
+
+            driverListRoot.updateAndGet(current -> {
+                try {
+                    // readerForUpdating modifies 'current' in-place or returns updated version
+                    return objectMapper.readerForUpdating(current).readValue(update);
+                } catch (IOException e) {
+                    return current; // Fallback on error
+                }
+            });
+            driverListUpdateTimestamp.set(message.timestamp().toInstant());
+        } catch (Exception e) {
+            // Log parsing error
+        }
+
+    }
+
+    @RunOnVirtualThread
+    @Scheduled(every = "5s", delayed = "5s")
+    public void storeDriverList() {
+        Duration limit = Duration.ofMinutes(30);
+        Duration elapsed = Duration.between(stateManager.getLastMessageReceived(), Instant.now());
+        if (stateManager.getSessionState() == GlobalStateManager.SessionState.LIVE_SESSION && elapsed.compareTo(limit) > 0) {
+            // Constant key used for the singleton row in the database table
+            String driverListKey = "driverList";
+
+            String upsertSessionInfoSql = """
                 INSERT INTO %s (key, message, message_timestamp, updated_timestamp) 
                 VALUES (?, ?::jsonb, ?::timestamptz, NOW())
                 ON CONFLICT (key)
@@ -70,28 +98,15 @@ public class DriverListProcessor {
                     updated_timestamp = EXCLUDED.updated_timestamp;
                 """.formatted(driverListTable);
 
-        LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
-
-        try (Connection connection = storageDataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(upsertSessionInfoSql)) {
-            statement.setString(1, driverListKey);
-            statement.setString(2, message.message());
-            statement.setString(3, message.timestamp().toString());
-            statement.executeUpdate();
-        } catch (Exception e) {
-            LOG.warnf("Error when trying to store session info. Will retry shortly. Error: %s", e.getMessage());
-            throw e;
-        }
-    }
-
-    @RunOnVirtualThread
-    @Scheduled(every = "5s", delayed = "5s")
-    public void storeDriverList() {
-        Duration limit = Duration.ofMinutes(30);
-        Duration elapsed = Duration.between(stateManager.getLastMessageReceived(), Instant.now());
-        if (stateManager.getSessionState() == GlobalStateManager.SessionState.LIVE_SESSION && elapsed.compareTo(limit) > 0) {
-            LOG.warnf("We are in a live session, but have not received any messages for 30 minutes. "
-                    + "Will set the session state to UNKNOWN.");
+            try (Connection connection = storageDataSource.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(upsertSessionInfoSql)) {
+                statement.setString(1, driverListKey);
+                statement.setString(2, objectMapper.writeValueAsString(driverListRoot.get()));
+                statement.setString(3, driverListUpdateTimestamp.toString());
+                statement.executeUpdate();
+            } catch (Exception e) {
+                LOG.warnf("Error when trying to store driver list. Error: %s", e.getMessage());
+            }
         }
     }
 
