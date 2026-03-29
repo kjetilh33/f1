@@ -2,6 +2,7 @@ package com.kinnovatio.livetiming.processor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
+import com.kinnovatio.livetiming.model.SessionStateUpdate;
 import com.kinnovatio.livetiming.repository.RepositoryUtilities;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
@@ -69,26 +70,30 @@ public class WeatherDataProcessor {
         }
     }
 
-    /// Listens for global session state changes and performs cleanup operations.
+    /// Responds to session state transitions by managing the weather data table.
     ///
-    /// If the session transitions to `NO_SESSION` or `LIVE_SESSION`, the race message table
-    /// is cleared to prepare for a new session or clean up after one.
+    /// When a session ends (`NO_SESSION`), becomes `INACTIVE`, or a new `LIVE_SESSION` starts
+    /// (excluding transitions from an inactive warmup), this method clears the existing
+    /// weather data to ensure the dashboard or downstream consumers only see data
+    /// relevant to the current active session.
     ///
-    /// @param sessionState The new state of the session.
-    /// @throws Exception If the database delete operation fails.
+    /// @param sessionStateUpdate The transition details between the old and new session states.
+    /// @throws Exception If the database cleanup operation fails.
     @Incoming("session-status-update")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
-    public void processSessionStatusChange(GlobalStateManager.SessionState sessionState) throws Exception {
-        if (sessionState == GlobalStateManager.SessionState.NO_SESSION
-                || sessionState == GlobalStateManager.SessionState.LIVE_SESSION) {
-            LOG.infof("Session status changed to %s. Will clear the %s table.",
-                    sessionState.getStatus(), weatherDataTable);
+    public void processSessionStatusChange(SessionStateUpdate sessionStateUpdate) throws Exception {
+        if (sessionStateUpdate.newState() == GlobalStateManager.SessionState.NO_SESSION
+                || sessionStateUpdate.newState() == GlobalStateManager.SessionState.INACTIVE
+                || (sessionStateUpdate.newState() == GlobalStateManager.SessionState.LIVE_SESSION
+                && sessionStateUpdate.oldState() != GlobalStateManager.SessionState.INACTIVE)) {
+            LOG.infof("Session state changed from %s to %s. Will clear the %s table.",
+                    sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus(), weatherDataTable);
             int rowsAffected = repositoryUtilities.clearAllRowsFromTable(weatherDataTable);
             LOG.infof("%d rows deleted from the %s table.", rowsAffected, weatherDataTable);
         } else {
-            LOG.infof("Session status changed to %s. Will not clear the %s table.",
-                    sessionState.getStatus(), weatherDataTable);
+            LOG.infof("Session state changed from %s to %s. Will not clear the %s table.",
+                    sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus(), weatherDataTable);
         }
     }
 }

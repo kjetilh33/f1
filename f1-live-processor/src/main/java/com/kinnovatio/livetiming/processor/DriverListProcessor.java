@@ -3,29 +3,24 @@ package com.kinnovatio.livetiming.processor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
-import com.kinnovatio.livetiming.model.SessionStatus;
+import com.kinnovatio.livetiming.model.SessionStateUpdate;
 import com.kinnovatio.livetiming.repository.RepositoryUtilities;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.RunOnVirtualThread;
-import io.smallrye.reactive.messaging.annotations.Broadcast;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.faulttolerance.Retry;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -147,26 +142,30 @@ public class DriverListProcessor {
         }
     }
 
-    /// Listens for global session state changes and performs cleanup operations.
+    /// Responds to session state transitions by managing the driver list table.
     ///
-    /// If the session transitions to `NO_SESSION` or `LIVE_SESSION`, the race message table
-    /// is cleared to prepare for a new session or clean up after one.
+    /// When a session ends (`NO_SESSION`), becomes `INACTIVE`, or a new `LIVE_SESSION` starts
+    /// (excluding transitions from an inactive warmup), this method clears the existing
+    /// driver list to ensure the dashboard or downstream consumers only see data
+    /// relevant to the current active session.
     ///
-    /// @param sessionState The new state of the session.
-    /// @throws Exception If the database delete operation fails.
+    /// @param sessionStateUpdate The transition details between the old and new session states.
+    /// @throws Exception If the database cleanup operation fails.
     @Incoming("session-status-update")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
-    public void processSessionStatusChange(GlobalStateManager.SessionState sessionState) throws Exception {
-        if (sessionState == GlobalStateManager.SessionState.NO_SESSION
-                || sessionState == GlobalStateManager.SessionState.LIVE_SESSION) {
-            LOG.infof("Session status changed to %s. Will clear the %s table.",
-                    sessionState.getStatus(), driverListTable);
+    public void processSessionStatusChange(SessionStateUpdate sessionStateUpdate) throws Exception {
+        if (sessionStateUpdate.newState() == GlobalStateManager.SessionState.NO_SESSION
+                || sessionStateUpdate.newState() == GlobalStateManager.SessionState.INACTIVE
+                || (sessionStateUpdate.newState() == GlobalStateManager.SessionState.LIVE_SESSION
+                        && sessionStateUpdate.oldState() != GlobalStateManager.SessionState.INACTIVE)) {
+            LOG.infof("Session state changed from %s to %s. Will clear the %s table.",
+                    sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus(), driverListTable);
             int rowsAffected = repositoryUtilities.clearAllRowsFromTable(driverListTable);
             LOG.infof("%d rows deleted from the %s table.", rowsAffected, driverListTable);
         } else {
-            LOG.infof("Session status changed to %s. Will not clear the %s table.",
-                    sessionState.getStatus(), driverListTable);
+            LOG.infof("Session state changed from %s to %s. Will not clear the %s table.",
+                    sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus(), driverListTable);
         }
     }
 }

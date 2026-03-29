@@ -3,6 +3,7 @@ package com.kinnovatio.livetiming.processor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
+import com.kinnovatio.livetiming.model.SessionStateUpdate;
 import com.kinnovatio.livetiming.model.SessionStatus;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
@@ -53,7 +54,7 @@ public class SessionInfoProcessor {
     @Broadcast
     @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("session-status-update")
-    Emitter<GlobalStateManager.SessionState> sessionStatusUpdateEmitter;
+    Emitter<SessionStateUpdate> sessionStatusUpdateEmitter;
 
 
     /// Processes an incoming raw JSON record containing session information.
@@ -132,18 +133,19 @@ public class SessionInfoProcessor {
 
         processSessionStateChange(newSessionState);
     }
-
-    /// Listens for global session state changes and performs cleanup operations.
+    
+    /// Persists session status updates to the database.
     ///
-    /// If the session transitions to `NO_SESSION` or `LIVE_SESSION`, the race message table
-    /// is cleared to prepare for a new session or clean up after one.
+    /// This method is triggered by internal state change notifications. It maps the updated
+    /// session state to a JSON representation and performs an upsert into the database
+    /// to maintain a persistent record of the current session lifecycle.
     ///
-    /// @param sessionState The new state of the session.
-    /// @throws Exception If the database delete operation fails.
+    /// @param sessionStateUpdate The object containing the transition details between states.
+    /// @throws Exception If database connectivity fails or JSON serialization errors occur.
     @Incoming("session-status-update")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
-    public void processSessionStatusChange(GlobalStateManager.SessionState sessionState) throws Exception {
+    public void processSessionStatusChange(SessionStateUpdate sessionStateUpdate) throws Exception {
         // Constant key used for the singleton row in the database table
         String sessionStateKey = "sessionState";
 
@@ -156,8 +158,9 @@ public class SessionInfoProcessor {
                     message_timestamp = EXCLUDED.message_timestamp,
                     updated_timestamp = EXCLUDED.updated_timestamp;
                 """.formatted(sessionInfoTable);
-
-        SessionStatus sessionStatus = new SessionStatus(sessionState.getStatusValue(), sessionState.getStatus());
+    
+        GlobalStateManager.SessionState newSessionState = sessionStateUpdate.newState();
+        SessionStatus sessionStatus = new SessionStatus(newSessionState.getStatusValue(), newSessionState.getStatus());
 
         try (Connection connection = storageDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(upsertSessionStateSql)) {
@@ -188,21 +191,22 @@ public class SessionInfoProcessor {
             processSessionStateChange(GlobalStateManager.SessionState.UNKNOWN);
         }
     }
-
-    /// Updates the global session state and broadcasts changes if a transition occurs.
+    
+    /// Orchestrates the transition between session states.
     ///
-    /// This method compares the proposed new state against the current state in {@link GlobalStateManager}.
-    /// If they differ, it updates the manager, emits the new state to the "session-status-update" channel,
-    /// and logs the event.
+    /// If the provided state differs from the current global state, this method updates
+    /// the global state manager and broadcasts the change via the emitter. This serves
+    /// as the central point for triggering downstream reactions to lifecycle changes.
     ///
-    /// @param newSessionState The new session state to apply.
+    /// @param newSessionState The state to transition to.
     private void processSessionStateChange(GlobalStateManager.SessionState newSessionState) {
         // Detect state transitions and notify subscribers
         if (stateManager.getSessionState() != newSessionState) {
+            SessionStateUpdate sessionStateUpdate = new SessionStateUpdate(stateManager.getSessionState(), newSessionState);
             stateManager.setSessionState(newSessionState);
-            sessionStatusUpdateEmitter.send(newSessionState);
-            LOG.infof("We have an update session status. New session status: %s.",
-                    newSessionState);
+            sessionStatusUpdateEmitter.send(sessionStateUpdate);
+            LOG.infof("We have an update session state. Old session state: %s. New session state: %s.",
+                    sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus());
         }
     }
 }

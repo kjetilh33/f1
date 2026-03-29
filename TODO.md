@@ -3,7 +3,7 @@
 ## 🚀 High Priority
 - [ ] <!-- TODO: --> Have "inactive" session status mark the start of a new session
 - [ ] <!-- TODO: --> Capture driver list w/names
-- [ ] <!-- TODO: --> State change w/ from - to states
+- [x] <!-- TODO: --> State change w/ from - to states
 
 ## 🛠️ Features
 - [ ] ...

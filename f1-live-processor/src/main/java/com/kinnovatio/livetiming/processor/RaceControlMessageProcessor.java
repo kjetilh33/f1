@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
+import com.kinnovatio.livetiming.model.SessionStateUpdate;
 import com.kinnovatio.livetiming.repository.RepositoryUtilities;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.agroal.api.AgroalDataSource;
@@ -19,10 +20,14 @@ import org.jboss.logging.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+/// Processor for F1 Race Control messages.
+///
+/// This class consumes race control notifications (like flags, penalties, or safety car periods),
+/// persists them to a relational database, and manages the lifecycle of the message table 
+/// by clearing stale data when session states transition.
 @ApplicationScoped
 public class RaceControlMessageProcessor {
     private static final Logger LOG = Logger.getLogger(RaceControlMessageProcessor.class);
@@ -91,26 +96,30 @@ public class RaceControlMessageProcessor {
         }
     }
 
-    /// Listens for global session state changes and performs cleanup operations.
+    /// Responds to session state transitions by managing the race control message table.
     ///
-    /// If the session transitions to `NO_SESSION` or `LIVE_SESSION`, the race message table
-    /// is cleared to prepare for a new session or clean up after one.
+    /// When a session ends (`NO_SESSION`), becomes `INACTIVE`, or a new `LIVE_SESSION` starts 
+    /// (excluding transitions from an inactive warmup), this method clears the existing 
+    /// race control messages to ensure the dashboard or downstream consumers only see data 
+    /// relevant to the current active session.
     ///
-    /// @param sessionState The new state of the session.
-    /// @throws Exception If the database delete operation fails.
+    /// @param sessionStateUpdate The transition details between the old and new session states.
+    /// @throws Exception If the database cleanup operation fails.
     @Incoming("session-status-update")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
-    public void processSessionStatusChange(GlobalStateManager.SessionState sessionState) throws Exception {
-        if (sessionState == GlobalStateManager.SessionState.NO_SESSION
-                || sessionState == GlobalStateManager.SessionState.LIVE_SESSION) {
-            LOG.infof("Session status changed to %s. Will clear the %s table.",
-                    sessionState.getStatus(), raceControlMessageTable);
+    public void processSessionStatusChange(SessionStateUpdate sessionStateUpdate) throws Exception {
+        if (sessionStateUpdate.newState() == GlobalStateManager.SessionState.NO_SESSION
+                || sessionStateUpdate.newState() == GlobalStateManager.SessionState.INACTIVE
+                || (sessionStateUpdate.newState() == GlobalStateManager.SessionState.LIVE_SESSION
+                && sessionStateUpdate.oldState() != GlobalStateManager.SessionState.INACTIVE)) {
+            LOG.infof("Session state changed from %s to %s. Will clear the %s table.",
+                    sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus(), raceControlMessageTable);
             int rowsAffected = repositoryUtilities.clearAllRowsFromTable(raceControlMessageTable);
             LOG.infof("%d rows deleted from the %s table.", rowsAffected, raceControlMessageTable);
         } else {
-            LOG.infof("Session status changed to %s. Will not clear the %s table.",
-                    sessionState.getStatus(), raceControlMessageTable);
+            LOG.infof("Session state changed from %s to %s. Will not clear the %s table.",
+                    sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus(), raceControlMessageTable);
         }
     }
 }
