@@ -10,6 +10,7 @@ import io.agroal.api.AgroalDataSource;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -57,7 +58,7 @@ public class DriverListProcessor {
 
     /// Holds the current consolidated state of the driver list as a JSON tree.
     /// Updated in-place by incoming message updates.
-    private final AtomicReference<JsonNode> driverListRoot = new AtomicReference<>(objectMapper.createObjectNode());
+    private final AtomicReference<JsonNode> driverListRoot = new AtomicReference<>();
 
     /// The timestamp of the most recent update received from the live timing stream.
     private final AtomicReference<Instant> driverListUpdateTimestamp = new AtomicReference<>(Instant.now());
@@ -65,6 +66,12 @@ public class DriverListProcessor {
     /// The timestamp of the last successful database persistence operation.
     /// Used to determine if a new write is necessary.
     private final AtomicReference<Instant> driverListStorageTimestamp = new AtomicReference<>(Instant.now());
+
+    // 2. This runs AFTER 'mapper' is injected
+    @PostConstruct
+    void init() {
+        driverListRoot.set(objectMapper.createObjectNode());
+    }
 
     /// Processes incoming driver list updates from the message broker.
     ///
