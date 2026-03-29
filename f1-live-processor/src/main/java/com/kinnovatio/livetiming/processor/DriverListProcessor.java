@@ -86,7 +86,7 @@ public class DriverListProcessor {
     public void processDriverList(String recordValue) throws Exception {
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
         JsonNode update = objectMapper.readTree(message.message());
-        LOG.infof("Received driver list message: %s", message.message());
+        LOG.debugf("Received driver list message: %s", message.message());
         
         driverListRoot.updateAndGet(current -> {
             try {
@@ -97,7 +97,7 @@ public class DriverListProcessor {
             }
         });
         
-        driverListUpdateTimestamp.set(message.timestamp().toInstant());
+        driverListUpdateTimestamp.set(Instant.now());
     }
 
     /// Periodically persists the current driver list state to the database.
@@ -111,11 +111,11 @@ public class DriverListProcessor {
     @Scheduled(every = "5s", delayed = "5s")
     @Transactional
     public void storeDriverList() {
-        LOG.infof("Running storeDriverList task. Driver list update time: %s, storage time: %s",
+        LOG.tracef("Running storeDriverList task. Driver list update time: %s, storage time: %s",
                 driverListUpdateTimestamp.get(), driverListStorageTimestamp.get());
 
         if (driverListUpdateTimestamp.get().isAfter(driverListStorageTimestamp.get())) {
-            LOG.infof("Updating driver list to storage: %s", driverListRoot.get().toString());
+            LOG.debugf("Updating driver list to storage: %s", driverListRoot.get().toString());
             // Constant key used for the singleton row in the database table
             String driverListKey = "driverList";
 
