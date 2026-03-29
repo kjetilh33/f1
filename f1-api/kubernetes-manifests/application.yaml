@@ -46,5 +46,7 @@ app:
     table: live_race_control_messages
   weather-data:
     table: live_weather_data
+  driver-list:
+    table: live_driver_list
   log:
     source: "Default config file."

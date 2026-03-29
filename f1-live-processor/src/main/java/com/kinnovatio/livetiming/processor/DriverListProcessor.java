@@ -26,15 +26,18 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.concurrent.atomic.AtomicReference;
 
 /// Processor for F1 driver list messages.
-
+///
+/// This component aggregates partial JSON updates into a complete driver list state
+/// and periodically persists that state to the database. It also handles cleanup
+/// when the session status changes.
 @ApplicationScoped
 public class DriverListProcessor {
     private static final Logger LOG = Logger.getLogger(DriverListProcessor.class);
-    /// Default fallback value used when specific JSON fields are missing or null.
-    private static final String defaultStatus = "unknown";
 
     @Inject
     ObjectMapper objectMapper;
@@ -42,6 +45,7 @@ public class DriverListProcessor {
     @Inject
     AgroalDataSource storageDataSource;
 
+    /// The database table name where driver list data is stored, sourced from configuration.
     @ConfigProperty(name = "app.driver-list.table")
     String driverListTable;
 
@@ -51,40 +55,55 @@ public class DriverListProcessor {
     @Inject
     RepositoryUtilities repositoryUtilities;
 
+    /// Holds the current consolidated state of the driver list as a JSON tree.
+    /// Updated in-place by incoming message updates.
     private final AtomicReference<JsonNode> driverListRoot = new AtomicReference<>(objectMapper.createObjectNode());
+
+    /// The timestamp of the most recent update received from the live timing stream.
     private final AtomicReference<Instant> driverListUpdateTimestamp = new AtomicReference<>(Instant.now());
 
+    /// The timestamp of the last successful database persistence operation.
+    /// Used to determine if a new write is necessary.
+    private final AtomicReference<Instant> driverListStorageTimestamp = new AtomicReference<>(Instant.now());
+
+    /// Processes incoming driver list updates from the message broker.
+    ///
+    /// This method uses Jackson's `readerForUpdating` to merge incoming partial updates
+    /// into the existing state stored in [driverListRoot].
+    ///
+    /// @param recordValue The raw JSON message containing driver list updates.
+    /// @throws Exception if message parsing fails.
     @Incoming("driver-list")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
-    @Transactional
     public void processDriverList(String recordValue) throws Exception {
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
-
-        try {
-            JsonNode update = objectMapper.readTree(message.message());
-
-            driverListRoot.updateAndGet(current -> {
-                try {
-                    // readerForUpdating modifies 'current' in-place or returns updated version
-                    return objectMapper.readerForUpdating(current).readValue(update);
-                } catch (IOException e) {
-                    return current; // Fallback on error
-                }
-            });
-            driverListUpdateTimestamp.set(message.timestamp().toInstant());
-        } catch (Exception e) {
-            // Log parsing error
-        }
-
+        JsonNode update = objectMapper.readTree(message.message());
+        
+        driverListRoot.updateAndGet(current -> {
+            try {
+                // readerForUpdating modifies 'current' in-place or returns updated version
+                return objectMapper.readerForUpdating(current).readValue(update);
+            } catch (IOException e) {
+                return current; // Fallback on error
+            }
+        });
+        
+        driverListUpdateTimestamp.set(message.timestamp().toInstant());
     }
 
+    /// Periodically persists the current driver list state to the database.
+    ///
+    /// The operation is only performed if [driverListUpdateTimestamp] is newer than
+    /// [driverListStorageTimestamp], indicating there is unsaved data.
+    ///
+    /// An `UPSERT` (INSERT ... ON CONFLICT) strategy is used to maintain a single record
+    /// per session/key.
     @RunOnVirtualThread
     @Scheduled(every = "5s", delayed = "5s")
+    @Transactional
     public void storeDriverList() {
-        Duration limit = Duration.ofMinutes(30);
-        Duration elapsed = Duration.between(stateManager.getLastMessageReceived(), Instant.now());
-        if (stateManager.getSessionState() == GlobalStateManager.SessionState.LIVE_SESSION && elapsed.compareTo(limit) > 0) {
+        if (driverListUpdateTimestamp.get().isAfter(driverListStorageTimestamp.get())) {
             // Constant key used for the singleton row in the database table
             String driverListKey = "driverList";
 
@@ -102,8 +121,9 @@ public class DriverListProcessor {
                  PreparedStatement statement = connection.prepareStatement(upsertSessionInfoSql)) {
                 statement.setString(1, driverListKey);
                 statement.setString(2, objectMapper.writeValueAsString(driverListRoot.get()));
-                statement.setString(3, driverListUpdateTimestamp.toString());
+                statement.setObject(3, OffsetDateTime.ofInstant(driverListUpdateTimestamp.get(), ZoneOffset.UTC));
                 statement.executeUpdate();
+                driverListStorageTimestamp.set(Instant.now());
             } catch (Exception e) {
                 LOG.warnf("Error when trying to store driver list. Error: %s", e.getMessage());
             }
