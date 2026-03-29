@@ -60,6 +60,9 @@ public class DriverListProcessor {
     /// Updated in-place by incoming message updates.
     private final AtomicReference<JsonNode> driverListRoot = new AtomicReference<>();
 
+    /// The timestamp from the most recent driver list message received.
+    private final AtomicReference<Instant> driverListMessageTimestamp = new AtomicReference<>(Instant.now());
+
     /// The timestamp of the most recent update received from the live timing stream.
     private final AtomicReference<Instant> driverListUpdateTimestamp = new AtomicReference<>(Instant.now());
 
@@ -98,6 +101,7 @@ public class DriverListProcessor {
         });
         
         driverListUpdateTimestamp.set(Instant.now());
+        driverListMessageTimestamp.set(message.timestamp().toInstant());
     }
 
     /// Periodically persists the current driver list state to the database.
@@ -134,7 +138,7 @@ public class DriverListProcessor {
                 statement.setString(1, driverListKey);
                 statement.setInt(2, stateManager.getSessionKey());
                 statement.setString(3, objectMapper.writeValueAsString(driverListRoot.get()));
-                statement.setObject(4, OffsetDateTime.ofInstant(driverListUpdateTimestamp.get(), ZoneOffset.UTC));
+                statement.setObject(4, OffsetDateTime.ofInstant(driverListMessageTimestamp.get(), ZoneOffset.UTC));
                 statement.executeUpdate();
                 driverListStorageTimestamp.set(Instant.now());
             } catch (Exception e) {
