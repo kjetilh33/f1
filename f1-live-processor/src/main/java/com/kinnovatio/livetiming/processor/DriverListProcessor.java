@@ -117,8 +117,8 @@ public class DriverListProcessor {
             String driverListKey = "driverList";
 
             String upsertSessionInfoSql = """
-                INSERT INTO %s (key, message, message_timestamp, updated_timestamp) 
-                VALUES (?, ?::jsonb, ?::timestamptz, NOW())
+                INSERT INTO %s (key, session_id, message, message_timestamp, updated_timestamp) 
+                VALUES (?, ?, ?::jsonb, ?::timestamptz, NOW())
                 ON CONFLICT (key)
                 DO UPDATE SET
                     message = EXCLUDED.message,
@@ -129,8 +129,9 @@ public class DriverListProcessor {
             try (Connection connection = storageDataSource.getConnection();
                  PreparedStatement statement = connection.prepareStatement(upsertSessionInfoSql)) {
                 statement.setString(1, driverListKey);
-                statement.setString(2, objectMapper.writeValueAsString(driverListRoot.get()));
-                statement.setObject(3, OffsetDateTime.ofInstant(driverListUpdateTimestamp.get(), ZoneOffset.UTC));
+                statement.setInt(2, stateManager.getSessionKey());
+                statement.setString(3, objectMapper.writeValueAsString(driverListRoot.get()));
+                statement.setObject(4, OffsetDateTime.ofInstant(driverListUpdateTimestamp.get(), ZoneOffset.UTC));
                 statement.executeUpdate();
                 driverListStorageTimestamp.set(Instant.now());
             } catch (Exception e) {
