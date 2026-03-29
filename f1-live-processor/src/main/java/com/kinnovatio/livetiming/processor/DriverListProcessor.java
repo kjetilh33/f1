@@ -111,6 +111,9 @@ public class DriverListProcessor {
     @Scheduled(every = "5s", delayed = "5s")
     @Transactional
     public void storeDriverList() {
+        LOG.infof("Running storeDriverList task. Driver list update time: %s, storage time: %s",
+                driverListUpdateTimestamp.get(), driverListStorageTimestamp.get());
+
         if (driverListUpdateTimestamp.get().isAfter(driverListStorageTimestamp.get())) {
             LOG.infof("Updating driver list to storage: %s", driverListRoot.get().toString());
             // Constant key used for the singleton row in the database table
