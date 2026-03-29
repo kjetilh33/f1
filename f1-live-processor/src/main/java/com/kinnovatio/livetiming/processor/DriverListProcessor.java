@@ -86,6 +86,7 @@ public class DriverListProcessor {
     public void processDriverList(String recordValue) throws Exception {
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
         JsonNode update = objectMapper.readTree(message.message());
+        LOG.infof("Received driver list message: %s", message.message());
         
         driverListRoot.updateAndGet(current -> {
             try {
@@ -111,6 +112,7 @@ public class DriverListProcessor {
     @Transactional
     public void storeDriverList() {
         if (driverListUpdateTimestamp.get().isAfter(driverListStorageTimestamp.get())) {
+            LOG.infof("Updating driver list to storage: %s", driverListRoot.get().toString());
             // Constant key used for the singleton row in the database table
             String driverListKey = "driverList";
 
