@@ -188,9 +188,9 @@ public class RepositoryUtilities {
                     """.formatted(tableName);
 
         try (Connection connection = storageDataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, key);
-            rowsAffected = statement.executeUpdate(sql);
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setString(1, key);
+            rowsAffected = preparedStatement.executeUpdate();
         } catch (Exception e) {
             LOG.warnf("Error when trying to clear row with key %s from the %s table. Error: %s",
                     key,
