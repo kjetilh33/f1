@@ -7,8 +7,12 @@ import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 /**
  * Utility class for managing database tables used for storing live timing messages.
@@ -30,6 +34,12 @@ public class RepositoryUtilities {
      * @throws SQLException if a database access error occurs or the SQL execution fails.
      */
     public void createMultiMessageDbTableIfNotExists(String tableName) throws SQLException {
+        // IMPORTANT: Validate the table name against a predefined list
+        // or a strict pattern to prevent SQL injection.
+        if (!isValidTableName(tableName)) {
+            throw new IllegalArgumentException("Invalid table name: " + tableName);
+        }
+
         String createTableSql = """
                 CREATE TABLE IF NOT EXISTS %s (
                     id SERIAL PRIMARY KEY,
@@ -57,6 +67,12 @@ public class RepositoryUtilities {
      * @throws SQLException if a database access error occurs or the SQL execution fails.
      */
     public void createKeyedMessageDbTableIfNotExists(String tableName) throws SQLException {
+        // IMPORTANT: Validate the table name against a predefined list
+        // or a strict pattern to prevent SQL injection.
+        if (!isValidTableName(tableName)) {
+            throw new IllegalArgumentException("Invalid table name: " + tableName);
+        }
+
         String createTableSql = """
                 CREATE TABLE IF NOT EXISTS %s (
                     key VARCHAR(100) PRIMARY KEY,
@@ -77,6 +93,50 @@ public class RepositoryUtilities {
     }
 
     /**
+     * Stores a message into a keyed table using an upsert operation.
+     * If a record with the same key already exists, it updates the existing record's message,
+     * message timestamp, and updated timestamp.
+     *
+     * @param tableName the name of the table where the message will be stored.
+     * @param rowKey the unique key identifying the message.
+     * @param sessionId the session identifier.
+     * @param message the JSONB message content.
+     * @param messageTimestamp the timestamp of the message.
+     * @throws Exception if a database access error occurs or the SQL execution fails.
+     */
+    public void storeIntoKeyedMessageTable(String tableName, String rowKey, int sessionId, String message, Instant messageTimestamp) throws Exception {
+        // IMPORTANT: Validate the table name against a predefined list
+        // or a strict pattern to prevent SQL injection.
+        if (!isValidTableName(tableName)) {
+            throw new IllegalArgumentException("Invalid table name: " + tableName);
+        }
+
+        String upsertMessageSql = """
+            INSERT INTO %s (key, session_id, message, message_timestamp, updated_timestamp) 
+            VALUES (?, ?, ?::jsonb, ?::timestamptz, NOW())
+            ON CONFLICT (key)
+            DO UPDATE SET
+                message = EXCLUDED.message,
+                message_timestamp = EXCLUDED.message_timestamp,
+                updated_timestamp = EXCLUDED.updated_timestamp;
+            """.formatted(tableName);
+
+        try (Connection connection = storageDataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(upsertMessageSql)) {
+            statement.setString(1, rowKey);
+            statement.setInt(2, sessionId);
+            statement.setString(3, message);
+            statement.setObject(4, OffsetDateTime.ofInstant(messageTimestamp, ZoneOffset.UTC));
+            statement.executeUpdate();
+        } catch (Exception e) {
+            LOG.warnf("Error when trying to store message into the %s table. Error: %s",
+                    tableName,
+                    e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
      * Deletes all rows from the specified table.
      * This operation is executed within a transaction.
      *
@@ -86,6 +146,12 @@ public class RepositoryUtilities {
      */
     @Transactional
     public int clearAllRowsFromTable(String tableName) throws SQLException {
+        // IMPORTANT: Validate the table name against a predefined list
+        // or a strict pattern to prevent SQL injection.
+        if (!isValidTableName(tableName)) {
+            throw new IllegalArgumentException("Invalid table name: " + tableName);
+        }
+
         int rowsAffected = -1;
         String sql = """
                     DELETE FROM %s;
@@ -102,5 +168,43 @@ public class RepositoryUtilities {
         }
 
         return rowsAffected;
+    }
+
+    /**
+     * Deletes row matching the key from the specified table.
+     * This operation is executed within a transaction.
+     *
+     * @param tableName the name of the table to clear.
+     * @param key the key matching the row to clear.
+     * @return the number of rows affected by the delete operation.
+     * @throws SQLException if a database access error occurs or the SQL execution fails.
+     */
+    @Transactional
+    public int clearRowFromKeyedTable(String tableName, String key) throws SQLException {
+        int rowsAffected = -1;
+        String sql = """
+                    DELETE FROM %s
+                    WHERE key = ?;
+                    """.formatted(tableName);
+
+        try (Connection connection = storageDataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, key);
+            rowsAffected = statement.executeUpdate(sql);
+        } catch (Exception e) {
+            LOG.warnf("Error when trying to clear row with key %s from the %s table. Error: %s",
+                    key,
+                    tableName,
+                    e.getMessage());
+            throw e;
+        }
+
+        return rowsAffected;
+    }
+
+    // A simple validation method
+    private boolean isValidTableName(String name) {
+        // Only allow alphanumeric characters and underscores to be safe
+        return name.matches("[A-Za-z0-9_]+");
     }
 }

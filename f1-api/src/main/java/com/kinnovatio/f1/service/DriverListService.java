@@ -2,9 +2,6 @@ package com.kinnovatio.f1.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.kinnovatio.f1.model.SessionInfoRaw;
-import com.kinnovatio.f1.model.SessionKeyedMessage;
-import com.kinnovatio.f1.model.SessionStatus;
 import com.kinnovatio.f1.repository.DriverListRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,7 +20,7 @@ public class DriverListService {
     ObjectMapper objectMapper;
 
     public Optional<ObjectNode> getDriverList() {
-        return driverListRepository.getDriverList().map(sessionKeyedMessage -> {
+        return driverListRepository.getDriverListLive().map(sessionKeyedMessage -> {
             try {
                 return objectMapper.createObjectNode()
                         .put("updatedTimestamp", sessionKeyedMessage.updatedTimestamp().toString())

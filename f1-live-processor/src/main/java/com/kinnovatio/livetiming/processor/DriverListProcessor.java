@@ -34,6 +34,8 @@ import java.util.concurrent.atomic.AtomicReference;
 @ApplicationScoped
 public class DriverListProcessor {
     private static final Logger LOG = Logger.getLogger(DriverListProcessor.class);
+    private static final String driverListLiveKey = "driverListLive";
+    private static final String driverListBaselineKey = "driverListBaseline";
 
     @Inject
     ObjectMapper objectMapper;
@@ -83,20 +85,29 @@ public class DriverListProcessor {
     @RunOnVirtualThread
     public void processDriverList(String recordValue) throws Exception {
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
-        JsonNode update = objectMapper.readTree(message.message());
-        LOG.debugf("Received driver list message: %s", message.message());
-        
-        driverListRoot.updateAndGet(current -> {
-            try {
-                // readerForUpdating modifies 'current' in-place or returns updated version
-                return objectMapper.readerForUpdating(current).readValue(update);
-            } catch (IOException e) {
-                return current; // Fallback on error
-            }
-        });
-        
-        driverListUpdateTimestamp.set(Instant.now());
-        driverListMessageTimestamp.set(message.timestamp().toInstant());
+
+        if (message.isStreaming()) {
+            // This is a live-streaming driver list update. Merge with the in-memory state.
+            // The in-memory state will be written to storage by a separate scheduled task.
+            JsonNode update = objectMapper.readTree(message.message());
+            LOG.debugf("Received driver list message: %s", message.message());
+
+            driverListRoot.updateAndGet(current -> {
+                try {
+                    // readerForUpdating modifies 'current' in-place or returns updated version
+                    return objectMapper.readerForUpdating(current).readValue(update);
+                } catch (IOException e) {
+                    return current; // Fallback on error
+                }
+            });
+
+            driverListUpdateTimestamp.set(Instant.now());
+            driverListMessageTimestamp.set(message.timestamp().toInstant());
+        } else {
+            // This is an offline (non-live) update to the driver list. Will most likely contain the full
+            // driver list state. Write directly to storage.
+            storeBaselineDriverList(message);
+        }
     }
 
     /// Periodically persists the current driver list state to the database.
@@ -109,36 +120,46 @@ public class DriverListProcessor {
     @RunOnVirtualThread
     @Scheduled(every = "5s", delayed = "5s")
     @Transactional
-    public void storeDriverList() {
-        LOG.tracef("Running storeDriverList task. Driver list update time: %s, storage time: %s",
+    public void storeLiveDriverList() {
+        LOG.debugf("Running storeLiveDriverList task. Driver list update time: %s, storage time: %s",
                 driverListUpdateTimestamp.get(), driverListStorageTimestamp.get());
 
         if (driverListUpdateTimestamp.get().isAfter(driverListStorageTimestamp.get())) {
             LOG.debugf("Updating driver list to storage: %s", driverListRoot.get().toString());
-            // Constant key used for the singleton row in the database table
-            String driverListKey = "driverList";
 
-            String upsertSessionInfoSql = """
-                INSERT INTO %s (key, session_id, message, message_timestamp, updated_timestamp) 
-                VALUES (?, ?, ?::jsonb, ?::timestamptz, NOW())
-                ON CONFLICT (key)
-                DO UPDATE SET
-                    message = EXCLUDED.message,
-                    message_timestamp = EXCLUDED.message_timestamp,
-                    updated_timestamp = EXCLUDED.updated_timestamp;
-                """.formatted(driverListTable);
-
-            try (Connection connection = storageDataSource.getConnection();
-                 PreparedStatement statement = connection.prepareStatement(upsertSessionInfoSql)) {
-                statement.setString(1, driverListKey);
-                statement.setInt(2, stateManager.getSessionKey());
-                statement.setString(3, objectMapper.writeValueAsString(driverListRoot.get()));
-                statement.setObject(4, OffsetDateTime.ofInstant(driverListMessageTimestamp.get(), ZoneOffset.UTC));
-                statement.executeUpdate();
-                driverListStorageTimestamp.set(Instant.now());
+            try {
+                repositoryUtilities.storeIntoKeyedMessageTable(
+                        driverListTable,
+                        driverListLiveKey,
+                        stateManager.getSessionKey(),
+                        objectMapper.writeValueAsString(driverListRoot.get()),
+                        driverListMessageTimestamp.get());
             } catch (Exception e) {
                 LOG.warnf("Error when trying to store driver list. Error: %s", e.getMessage());
             }
+
+            driverListStorageTimestamp.set(Instant.now());
+        }
+    }
+
+    /// Persists the baseline driver list to the database.
+    ///
+    /// This method is typically called for non-streaming messages that contain a complete,
+    /// stable snapshot of the driver list, serving as a baseline for subsequent updates.
+    ///
+    /// @param message The baseline live timing message containing the driver list state.
+    private void storeBaselineDriverList(LiveTimingMessage message) {
+        LOG.debugf("Updating baseline driver list to storage: %s", driverListRoot.get().toString());
+
+        try {
+            repositoryUtilities.storeIntoKeyedMessageTable(
+                    driverListTable,
+                    driverListBaselineKey,
+                    stateManager.getSessionKey(),
+                    message.message(),
+                    message.timestamp().toInstant());
+        } catch (Exception e) {
+            LOG.warnf("Error when trying to store driver list. Error: %s", e.getMessage());
         }
     }
 
@@ -159,9 +180,9 @@ public class DriverListProcessor {
                 || sessionStateUpdate.newState() == GlobalStateManager.SessionState.INACTIVE
                 || (sessionStateUpdate.newState() == GlobalStateManager.SessionState.LIVE_SESSION
                         && sessionStateUpdate.oldState() != GlobalStateManager.SessionState.INACTIVE)) {
-            LOG.infof("Session state changed from %s to %s. Will clear the %s table.",
+            LOG.infof("Session state changed from %s to %s. Will clear the live driver list from the %s table.",
                     sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus(), driverListTable);
-            int rowsAffected = repositoryUtilities.clearAllRowsFromTable(driverListTable);
+            int rowsAffected = repositoryUtilities.clearRowFromKeyedTable(driverListTable, driverListLiveKey);
             LOG.infof("%d rows deleted from the %s table.", rowsAffected, driverListTable);
         } else {
             LOG.infof("Session state changed from %s to %s. Will not clear the %s table.",

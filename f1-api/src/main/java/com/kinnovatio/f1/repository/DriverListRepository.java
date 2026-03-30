@@ -1,10 +1,6 @@
 package com.kinnovatio.f1.repository;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kinnovatio.f1.model.SessionInfoRaw;
 import com.kinnovatio.f1.model.SessionKeyedMessage;
-import com.kinnovatio.f1.model.SessionMessage;
-import com.kinnovatio.f1.model.SessionStatus;
 import io.agroal.api.AgroalDataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -21,19 +17,24 @@ import java.util.Optional;
 @ApplicationScoped
 public class DriverListRepository {
     private static final Logger LOG = Logger.getLogger(DriverListRepository.class);
+    private static final String driverListLiveKey = "driverListLive";
+    private static final String driverListBaselineKey = "driverListBaseline";
 
     @Inject
     AgroalDataSource storageDataSource;
 
-    @Inject
-    ObjectMapper objectMapper;
-
     @ConfigProperty(name = "app.driver-list.table")
     String driverListTable;
 
-    public Optional<SessionKeyedMessage> getDriverList() {
-        String driverListKey = "driverList";
+    public Optional<SessionKeyedMessage> getDriverListLive() {
+        return getDriverListByKey(driverListLiveKey);
+    }
 
+    public Optional<SessionKeyedMessage> getDriverListBaseline() {
+        return getDriverListByKey(driverListBaselineKey);
+    }
+
+    private Optional<SessionKeyedMessage> getDriverListByKey(String rowKey) {
         String sql = """
                 Select key, session_id, message, message_timestamp, updated_timestamp
                 FROM %s
@@ -43,7 +44,7 @@ public class DriverListRepository {
         try (Connection connection = storageDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setString(1, driverListKey);
+            statement.setString(1, rowKey);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
                     String key = resultSet.getString("Key");
