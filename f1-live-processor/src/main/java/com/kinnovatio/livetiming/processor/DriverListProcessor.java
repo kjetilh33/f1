@@ -67,10 +67,10 @@ public class DriverListProcessor {
     /// Used to determine if a new write is necessary.
     private final AtomicReference<Instant> driverListStorageTimestamp = new AtomicReference<>(Instant.now());
 
-    // 2. This runs AFTER 'mapper' is injected
+    // This runs AFTER 'objectMapper' is injected
     @PostConstruct
     void init() {
-        driverListRoot.set(objectMapper.createObjectNode());
+        initializeDriverList();
     }
 
     /// Processes incoming driver list updates from the message broker.
@@ -163,6 +163,11 @@ public class DriverListProcessor {
         }
     }
 
+    /// Initialize the driver list to an empty Json object node.
+    private void initializeDriverList() {
+        driverListRoot.set(objectMapper.createObjectNode());
+    }
+
     /// Responds to session state transitions by managing the driver list table.
     ///
     /// When a session ends (`NO_SESSION`), becomes `INACTIVE`, or a new `LIVE_SESSION` starts
@@ -182,6 +187,7 @@ public class DriverListProcessor {
                         && sessionStateUpdate.oldState() != GlobalStateManager.SessionState.INACTIVE)) {
             LOG.infof("Session state changed from %s to %s. Will clear the live driver list from the %s table.",
                     sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus(), driverListTable);
+            initializeDriverList();
             int rowsAffected = repositoryUtilities.clearRowFromKeyedTable(driverListTable, driverListLiveKey);
             LOG.infof("%d rows deleted from the %s table.", rowsAffected, driverListTable);
         } else {
