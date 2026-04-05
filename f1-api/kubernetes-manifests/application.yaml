@@ -44,9 +44,17 @@ app:
     table: live_track_status
   race-control-message:
     table: live_race_control_messages
-  weather-data:
-    table: live_weather_data
   driver-list:
     table: live_driver_list
+  weather-data:
+    table: live_weather_data
+  timing-data:
+    table: live_timing_data
+  timing-app-data:
+    table: live_timing_app_data
+  timing-stats:
+    table: live_timing_stats
+  top-three:
+    table: live_top_three
   log:
     source: "Default config file."
