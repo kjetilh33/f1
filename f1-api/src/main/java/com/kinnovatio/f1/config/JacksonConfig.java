@@ -12,6 +12,7 @@ public class JacksonConfig implements ObjectMapperCustomizer {
     @Override
     public void customize(ObjectMapper objectMapper) {
         objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES);
+        objectMapper.setDefaultMergeable(true);
         //objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.UPPER_CAMEL_CASE);
     }
 
