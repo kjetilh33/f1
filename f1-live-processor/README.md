@@ -180,7 +180,7 @@ Streaming data during in-session offers partial updates:
 ```
 
 ### TimingStats
-Statistics over best lap, best speed, etc. First data object is non-streaming just before the session starts. Note the default value (i.e. no data):
+Statistics over best lap, best speed, etc. First data object is non-streaming just before the session starts. Please note that `BestSectors` have array notation in the initial baseline object (non-streaming), but use object notation in the streaming updates. Note the default value (i.e. no data):
 ```Json
 {
   "_kf": true,
@@ -251,7 +251,7 @@ Streaming data during in-session offers partial updates:
 ```
 
 ### TimingData
-The most verbose data stream. It is initialized with a non-streaming message just before the session starts (see `TimingData-init.json`). Updates about three times per second with partial updates during session. Example:
+The most verbose data stream. It is initialized with a non-streaming message just before the session starts (see `TimingData-init.json`). Updates about three times per second with partial updates during session. Please note that `sectors` and `segments` have array notation in the initial baseline object (non-streaming), but use object notation in the streaming updates. Example:
 ```Json
 {
   "Lines": {
