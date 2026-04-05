@@ -44,29 +44,17 @@ public class WeatherDataProcessor {
     public void processWeatherData(String recordValue) throws Exception {
         // Constant key used for the singleton row in the database table
         String weatherKey = "weatherData";
-
-        String sql = """
-                INSERT INTO %s (key, session_id, message, message_timestamp, updated_timestamp) 
-                VALUES (?, ?, ?::jsonb, ?::timestamptz, NOW())
-                ON CONFLICT (key)
-                DO UPDATE SET
-                    message = EXCLUDED.message,
-                    message_timestamp = EXCLUDED.message_timestamp,
-                    updated_timestamp = EXCLUDED.updated_timestamp;
-                """.formatted(weatherDataTable);
-
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
 
-        try (Connection connection = storageDataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, weatherKey);
-            statement.setInt(2, stateManager.getSessionKey());
-            statement.setString(3, message.message());
-            statement.setString(4, message.timestamp().toString());
-            statement.executeUpdate();
+        try {
+            repositoryUtilities.storeIntoKeyedMessageTable(
+                    weatherDataTable,
+                    weatherKey,
+                    stateManager.getSessionKey(),
+                    message.message(),
+                    message.timestamp().toInstant());
         } catch (Exception e) {
-            LOG.warnf("Error when trying to store weather data. Will retry shortly. Error: %s", e.getMessage());
-            throw e;
+            LOG.warnf("Error when trying to store weather data. Error: %s", e.getMessage());
         }
     }
 
