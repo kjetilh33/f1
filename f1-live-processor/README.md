@@ -251,7 +251,7 @@ Streaming data during in-session offers partial updates:
 ```
 
 ### TimingData
-The most verbose data stream. Updates about three times per second with partial updates. Example:
+The most verbose data stream. It is initialized with a non-streaming message just before the session starts (see `TimingData-init.json`). Updates about three times per second with partial updates during session. Example:
 ```Json
 {
   "Lines": {
