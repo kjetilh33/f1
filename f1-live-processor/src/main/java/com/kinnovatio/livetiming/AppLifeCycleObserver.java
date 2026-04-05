@@ -45,6 +45,9 @@ public class AppLifeCycleObserver {
     @ConfigProperty(name = "app.driver-list.table")
     String driverListTable;
 
+    @ConfigProperty(name = "app.timing-data.table")
+    String timingDataTable;
+
     void onStart(@Observes StartupEvent ev) {
         // This runs when the application is starting.
         LOG.infof("Starting the live timing processor...");
@@ -59,6 +62,7 @@ public class AppLifeCycleObserver {
             repositoryUtilities.createMultiMessageDbTableIfNotExists(raceControlMessageTable);
             repositoryUtilities.createKeyedMessageDbTableIfNotExists(weatherDataTable);
             repositoryUtilities.createKeyedMessageDbTableIfNotExists(driverListTable);
+            repositoryUtilities.createKeyedMessageDbTableIfNotExists(timingDataTable);
         } catch (SQLException e) {
             LOG.errorf("Error when bootstrapping the DB tables. Error: %s", e.getMessage());
         }

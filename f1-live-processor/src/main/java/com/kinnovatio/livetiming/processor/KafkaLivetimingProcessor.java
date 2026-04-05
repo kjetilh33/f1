@@ -25,7 +25,7 @@ public class KafkaLivetimingProcessor {
     private static final Logger LOG = Logger.getLogger(KafkaLivetimingProcessor.class);
 
     private static final Set<String> excludeCategories = Set.of("Heartbeat");
-    private static final Set<String> nonStreamingCategories = Set.of("SessionInfo", "DriverList");
+    private static final Set<String> nonStreamingCategories = Set.of("SessionInfo", "DriverList", "TimingData");
 
     @Inject
     ObjectMapper objectMapper;
@@ -65,17 +65,12 @@ public class KafkaLivetimingProcessor {
     @Channel("driver-list")
     Emitter<String> driverListEmitter;
 
-    /*
-    @Inject
-    @OnOverflow(value = OnOverflow.Strategy.DROP)
-    @Channel("session-data")
-    Emitter<String> sessionDataEmitter;
-
     @Inject
     @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("timing-data")
     Emitter<String> timingDataEmitter;
 
+    /*
     @Inject
     @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("timing-app-data")
@@ -125,8 +120,8 @@ public class KafkaLivetimingProcessor {
                     case "RaceControlMessages" -> raceControlMessageEmitter.send(record.value());
                     case "WeatherData" -> weatherDataEmitter.send(record.value());
                     case "DriverList" -> driverListEmitter.send(record.value());
+                    case "TimingData" -> timingDataEmitter.send(record.value());
                     //case "SessionData" -> sessionDataEmitter.send(record.value());
-                    //case "TimingData" -> timingDataEmitter.send(record.value());
                     //case "TimingAppData" -> timingAppDataEmitter.send(record.value());
                     //case "TimingStats" -> timingStatsEmitter.send(record.value());
                     default -> {
