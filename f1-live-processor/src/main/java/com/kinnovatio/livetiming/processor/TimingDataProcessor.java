@@ -105,7 +105,7 @@ public class TimingDataProcessor {
             JsonNode root = objectMapper.readTree(message.message());
             JsonNode driver1 = root.path("Lines").path("1");
             if (driver1.isObject() && driver1.path("BestLapTime").isObject()
-                    && driver1.path("BestLapTime").path("Value").asText("").equalsIgnoreCase("")) {
+                    && driver1.path("BestLapTime").path("Value").asText("").isBlank()) {
                 LOG.infof("Received a valid baseline timing data message. Will use this as a new baseline.");
                 storeBaselineTimingData(message);
             }
