@@ -100,12 +100,15 @@ public class TimingDataProcessor {
             timingDataUpdateTimestamp.set(Instant.now());
             timingDataMessageTimestamp.set(message.timestamp().toInstant());
         } else {
-            // This is an offline (non-live) update to the timing data.
-            // Check if it is a valid init message.
+            // This is an offline (non-live) update to the timing data. Check if it is a valid init message.
+            // There should always be a driver with nr "1". Probe this first.
             JsonNode root = objectMapper.readTree(message.message());
-            // TODO: Add logic to validate baseline/init timing data.
-
-            storeBaselineTimingData(message);
+            JsonNode driver1 = root.path("Lines").path("1");
+            if (driver1.isObject() && driver1.path("BestLapTime").isObject()
+                    && driver1.path("BestLapTime").path("Value").asText("").equalsIgnoreCase("")) {
+                LOG.infof("Received a valid baseline timing data message. Will use this as a new baseline.");
+                storeBaselineTimingData(message);
+            }
         }
     }
 

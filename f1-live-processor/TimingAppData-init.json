@@ -1,0 +1,268 @@
+{
+  "Lines": {
+    "1": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "3": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "5": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "6": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "10": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "11": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "12": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "14": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "16": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "18": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "23": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "27": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "30": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "31": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "41": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "43": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "44": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "55": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "63": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "77": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "HARD",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "81": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    },
+    "87": {
+      "Stints": [
+        {
+          "New": "true",
+          "Compound": "MEDIUM",
+          "LapFlags": 0,
+          "StartLaps": 0,
+          "TotalLaps": 0,
+          "TyresNotChanged": "0"
+        }
+      ]
+    }
+  }
+}
