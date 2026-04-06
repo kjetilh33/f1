@@ -41,32 +41,26 @@ public class KafkaLivetimingProcessor {
     Emitter<Record<String, String>> livetimingOutEmitter;
 
     @Inject
-    @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("track-status")
     Emitter<String> trackStatusEmitter;
 
     @Inject
-    @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("session-info")
     Emitter<String> sessionInfoEmitter;
 
-    @Inject
-    @OnOverflow(value = OnOverflow.Strategy.DROP)
+    @Inject    @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("race-control-message")
     Emitter<String> raceControlMessageEmitter;
 
     @Inject
-    @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("weather-data")
     Emitter<String> weatherDataEmitter;
 
     @Inject
-    @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("driver-list")
     Emitter<String> driverListEmitter;
 
     @Inject
-    @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("timing-data")
     Emitter<String> timingDataEmitter;
 
