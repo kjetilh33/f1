@@ -79,7 +79,7 @@ public class TimingDataProcessor {
     @Incoming("timing-data")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
-    public void processDriverList(String recordValue) throws Exception {
+    public void processTimingData(String recordValue) throws Exception {
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
 
         if (message.isStreaming()) {
@@ -108,6 +108,9 @@ public class TimingDataProcessor {
                     && driver1.path("BestLapTime").path("Value").asText("").isBlank()) {
                 LOG.infof("Received a valid baseline timing data message. Will use this as a new baseline.");
                 storeBaselineTimingData(message);
+            } else {
+                LOG.infof("TimingDataProcessor: Received non-streaming message. Message did not validate as a baseline. "
+                        + "Message excerpt: %s",message.message().substring(0, Math.min(200, message.message().length() - 1)));
             }
         }
     }

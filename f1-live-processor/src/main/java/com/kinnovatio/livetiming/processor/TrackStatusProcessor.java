@@ -58,6 +58,7 @@ public class TrackStatusProcessor {
                 """.formatted(trackStatusTable);
 
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
+        LOG.infof("TrackStatusProcessor: Received track status message: %s", message.message());
 
         try (Connection connection = storageDataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {

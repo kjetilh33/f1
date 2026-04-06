@@ -66,12 +66,10 @@ public class KafkaLivetimingProcessor {
 
     /*
     @Inject
-    @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("timing-app-data")
     Emitter<String> timingAppDataEmitter;
 
     @Inject
-    @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("timing-stats")
     Emitter<String> timingStatsEmitter;
 
