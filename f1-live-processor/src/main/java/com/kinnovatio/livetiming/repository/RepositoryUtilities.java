@@ -181,6 +181,12 @@ public class RepositoryUtilities {
      */
     @Transactional
     public int clearRowFromKeyedTable(String tableName, String key) throws SQLException {
+        // IMPORTANT: Validate the table name against a predefined list
+        // or a strict pattern to prevent SQL injection.
+        if (!isValidTableName(tableName)) {
+            throw new IllegalArgumentException("Invalid table name: " + tableName);
+        }
+
         int rowsAffected = -1;
         String sql = """
                     DELETE FROM %s

@@ -16,10 +16,10 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 
 @ApplicationScoped
-public class DriverListRepository {
-    private static final Logger LOG = Logger.getLogger(DriverListRepository.class);
-    private static final String driverListLiveKey = "driverListLive";
-    private static final String driverListBaselineKey = "driverListBaseline";
+public class TimingDataRepository {
+    private static final Logger LOG = Logger.getLogger(TimingDataRepository.class);
+    private static final String timingDataLiveKey = "timingDataLive";
+    private static final String timingDataBaselineKey = "timingDataBaseline";
 
     @Inject
     AgroalDataSource storageDataSource;
@@ -27,20 +27,20 @@ public class DriverListRepository {
     @Inject
     RepositoryUtilities repositoryUtilities;
 
-    @ConfigProperty(name = "app.driver-list.table")
-    String driverListTable;
+    @ConfigProperty(name = "app.timing-data.table")
+    String timingDataTable;
 
-    public Optional<SessionKeyedMessage> getDriverListLive() {
+    public Optional<SessionKeyedMessage> getTimingDataLive() {
         try {
-            return repositoryUtilities.getRowFromKeyedTable(driverListTable, driverListLiveKey);
+            return repositoryUtilities.getRowFromKeyedTable(timingDataTable, timingDataLiveKey);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public Optional<SessionKeyedMessage> getDriverListBaseline() {
+    public Optional<SessionKeyedMessage> getTimingDataBaseline() {
         try {
-            return repositoryUtilities.getRowFromKeyedTable(driverListTable, driverListBaselineKey);
+            return repositoryUtilities.getRowFromKeyedTable(timingDataTable, timingDataBaselineKey);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

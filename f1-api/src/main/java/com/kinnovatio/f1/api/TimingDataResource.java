@@ -3,6 +3,7 @@ package com.kinnovatio.f1.api;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kinnovatio.f1.service.DriverListService;
+import com.kinnovatio.f1.service.TimingDataService;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -14,30 +15,30 @@ import jakarta.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-@Path("live/driver-list")
+@Path("live/timing-data")
 @Produces(MediaType.APPLICATION_JSON)
 @RunOnVirtualThread
-public class DriverListResource {
-    private static final Logger LOG = Logger.getLogger(DriverListResource.class);
+public class TimingDataResource {
+    private static final Logger LOG = Logger.getLogger(TimingDataResource.class);
 
     @Inject
     ObjectMapper objectMapper;
 
     @Inject
-    DriverListService driverListService;
+    TimingDataService timingDataService;
 
     @GET
     public String getDriverList() {
-        return driverListService.getDriverList()
+        return timingDataService.getTimingData()
                 .map(root -> {
                     try {
                         return objectMapper.writeValueAsString(root);
                     } catch (JsonProcessingException e) {
-                        LOG.warnf("Error getting driver list: %s", e.getMessage());
-                        throw new jakarta.ws.rs.ProcessingException("Error getting driver list");
+                        LOG.warnf("Error getting timing data: %s", e.getMessage());
+                        throw new jakarta.ws.rs.ProcessingException("Error getting timing data");
                     }
                 })
-                .orElseThrow(() -> new NotFoundException("No driver list found"));
+                .orElseThrow(() -> new NotFoundException("No timing data found"));
     }
 
 }
