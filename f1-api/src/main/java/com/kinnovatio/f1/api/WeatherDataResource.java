@@ -2,7 +2,7 @@ package com.kinnovatio.f1.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kinnovatio.f1.service.TimingDataService;
+import com.kinnovatio.f1.service.WeatherDataService;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -14,21 +14,21 @@ import jakarta.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-@Path("live/timing-data")
+@Path("live/weather-data")
 @Produces(MediaType.APPLICATION_JSON)
 @RunOnVirtualThread
-public class TimingDataResource {
-    private static final Logger LOG = Logger.getLogger(TimingDataResource.class);
+public class WeatherDataResource {
+    private static final Logger LOG = Logger.getLogger(WeatherDataResource.class);
 
     @Inject
     ObjectMapper objectMapper;
 
     @Inject
-    TimingDataService timingDataService;
+    WeatherDataService weatherDataService;
 
     @GET
-    public String getTimingData() {
-        return timingDataService.getTimingData()
+    public String getWeatherData() {
+        return weatherDataService.getWeatherData()
                 .map(root -> {
                     try {
                         return objectMapper.writeValueAsString(root);
