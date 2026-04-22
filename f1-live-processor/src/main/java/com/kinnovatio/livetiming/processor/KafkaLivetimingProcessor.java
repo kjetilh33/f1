@@ -25,7 +25,7 @@ public class KafkaLivetimingProcessor {
     private static final Logger LOG = Logger.getLogger(KafkaLivetimingProcessor.class);
 
     private static final Set<String> excludeCategories = Set.of("Heartbeat");
-    private static final Set<String> nonStreamingCategories = Set.of("SessionInfo", "DriverList", "TimingData");
+    private static final Set<String> routingIncludeCategories = Set.of("SessionInfo", "DriverList", "TimingData");
 
     @Inject
     ObjectMapper objectMapper;
@@ -89,9 +89,7 @@ public class KafkaLivetimingProcessor {
         try {
             LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
 
-            if (message.message().isEmpty()
-                    || excludeCategories.contains(message.category())
-                    || (!message.isStreaming() && !nonStreamingCategories.contains(message.category()))) {
+            if (message.message().isEmpty() || excludeCategories.contains(message.category())) {
                 // The message should be discarded and not processed further.
                 Counter.builder("livetiming_router_processor_record_discarded_total")
                         .description("Total number of live timing records discarded by the router.")
@@ -100,11 +98,16 @@ public class KafkaLivetimingProcessor {
                         .increment();
 
                 LOG.debugf("Discarded record >> offset = %d, key = %s, value = %s%n", record.key(), record.value());
-            } else {
-                // The message is ok to distribute to the generic downstream.
+                return;
+            }
+
+            if (message.isStreaming()) {
+                // The message should be forwarded to the live-streaming channel.
                 livetimingOutEmitter.send(record);
                 LOG.tracef("Livetiming message publisched to livetiming-out channel. Message category: %s", message.category());
+            }
 
+            if (message.isStreaming() || routingIncludeCategories.contains(message.category())) {
                 // Route the message to appropriate per-category handlers
                 switch (message.category()) {
                     case "TrackStatus" -> trackStatusEmitter.send(record.value());
