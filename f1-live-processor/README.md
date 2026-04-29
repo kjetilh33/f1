@@ -8,7 +8,7 @@ Livetiming message categories:
 - `TeamRadio`.
 - `SessionInfo`.
 - `SessionData`.
-- `TrackStatus`.
+- `TrackStatus`. (Not so interesting. Covered by race control messages)
 - `RaceControlMessages`.
 - `TimingData`.
 - `TimingAppData`.
