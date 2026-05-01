@@ -42,6 +42,7 @@ flowchart TB
 ```
 ## Data samples
 ### TimingAppData
+Non-streaming message use array notation while streaming messages use object notation.
 Start of session:
 ```Json
 {
@@ -251,7 +252,7 @@ Streaming data during in-session offers partial updates:
 ```
 
 ### TimingData
-The most verbose data stream. It is initialized with a non-streaming message just before the session starts (see `TimingData-init.json`). Updates about three times per second with partial updates during session. Please note that `sectors` and `segments` have array notation in the initial baseline object (non-streaming), but use object notation in the streaming updates. Example:
+The most verbose data stream. It is initialized with a non-streaming message just before the session starts (see `TimingData-init.json`). Updates about three times per second with partial updates during session. Please note that `sectors` and `segments` have array notation in the initial baseline object (non-streaming), but use object notation in the streaming updates (with "0" as first element of the array). Streaming data example:
 ```Json
 {
   "Lines": {
