@@ -1,7 +1,10 @@
 package com.kinnovatio.livetiming.processor;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.livetiming.model.SessionStateUpdate;
 import com.kinnovatio.livetiming.repository.RepositoryUtilities;
@@ -12,6 +15,7 @@ import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.json.Json;
 import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.faulttolerance.Retry;
@@ -20,6 +24,8 @@ import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 /// Processor for F1 driver list messages.
@@ -107,11 +113,63 @@ public class TimingDataProcessor {
             if (driver1.isObject() && driver1.path("BestLapTime").isObject()
                     && driver1.path("BestLapTime").path("Value").asText("").isBlank()) {
                 LOG.infof("Received a valid baseline timing data message. Will use this as a new baseline.");
-                storeBaselineTimingData(message);
+                storeBaselineTimingData(processBaselineMessage(message));
             } else {
                 LOG.infof("TimingDataProcessor: Received non-streaming message. Message did not validate as a baseline. "
                         + "Message excerpt: %s",message.message().substring(0, Math.min(200, message.message().length() - 1)));
             }
+        }
+    }
+
+    /// Check the Json message for sectors and segments in array notation and convert them to object notation.
+    private LiveTimingMessage processBaselineMessage(LiveTimingMessage message) {
+        try {
+            JsonNode root = objectMapper.readTree(message.message());
+            if (root.path("Lines").isObject()) {
+                Set<Map.Entry<String, JsonNode>> lines = root.path("Lines").properties();
+                for (Map.Entry<String, JsonNode> line : lines) {
+                    if (line.getValue().path("Sectors").isArray()) {
+                        // We have a sectors array. Convert it and its content to object notation
+                        ObjectNode lineObject = (ObjectNode) line.getValue();
+                        ArrayNode sectorsArray = (ArrayNode) lineObject.path("Sectors");
+                        ObjectNode sectors = objectMapper.createObjectNode();
+                        int counter = 0;
+                        for (JsonNode sector : sectorsArray) {
+                            processSectorNode((ObjectNode) sector);
+                            sectors.set(String.valueOf(counter), sector);
+                            counter++;
+                        }
+                        lineObject.set("Sectors", sectors);
+                    } else {
+                        LOG.warnf("processBaselineMessage() - The Lines.%s property does not contain the expected sectors array.",
+                                line.getKey());
+                    }
+                }
+            }
+
+            return new LiveTimingMessage(message.category(),
+                    objectMapper.writeValueAsString(root),
+                    message.timestamp(),
+                    message.isStreaming());
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /// Check if the sector node contains a segment array, and convert it to object notation
+    private void processSectorNode(ObjectNode sectorNode) throws JsonProcessingException {
+        if (sectorNode.path("Segments").isArray()) {
+            ArrayNode segmentsArray = (ArrayNode) sectorNode.path("Segments");
+            ObjectNode segments = objectMapper.createObjectNode();
+            int counter = 0;
+            for (JsonNode segment : segmentsArray) {
+                segments.set(String.valueOf(counter), segment);
+                counter++;
+            }
+            sectorNode.set("Segments", segments);
+        } else {
+            LOG.warnf("processSectorNode() - The Sector property does not contain the expected Segments array.");
         }
     }
 
