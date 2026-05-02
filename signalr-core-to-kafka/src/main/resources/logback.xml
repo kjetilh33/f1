@@ -27,6 +27,7 @@
     </appender>
 
     <logger name="com.kinnovatio.signalr" level="info" />
+    <logger name="com.microsoft.signalr" level="debug" />
 
     <root level="info">
         <appender-ref ref="STDOUT" />

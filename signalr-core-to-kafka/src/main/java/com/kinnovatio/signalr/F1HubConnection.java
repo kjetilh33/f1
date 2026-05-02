@@ -1,5 +1,11 @@
 package com.kinnovatio.signalr;
 
+import com.microsoft.signalr.Action1;
+import com.microsoft.signalr.HubConnection;
+import com.microsoft.signalr.HubConnectionBuilder;
+import com.microsoft.signalr.TypeReference;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.observers.DisposableSingleObserver;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -85,6 +91,9 @@ public abstract class F1HubConnection {
     private State connectionState = State.READY;
     private OperationalState operationalState = OperationalState.CLOSED;
     private ScheduledExecutorService executorService = null;
+
+    // Signalr connection management
+    HubConnection hubConnection;
 
     // Keep-alive and connection management fields
     private Instant lastKeepAliveMessage = Instant.now();
@@ -180,7 +189,10 @@ public abstract class F1HubConnection {
     /// @throws IOException if something goes wrong at the network layer.
     /// @throws InterruptedException if the working thread gets interrupted.
     public boolean connect() throws IOException, InterruptedException {
-        return connect(false);
+        //return connect(false);
+        connectSignalR(false);
+
+        return true;
     }
 
     /// Checks if the client is currently connected to the SignalR hub.
@@ -226,6 +238,55 @@ public abstract class F1HubConnection {
         LOG.info("F1HubConnection - changing SignalR connection state from {} to {}", this.connectionState, connectionState);
         this.connectionState = connectionState;
         connectorConnectionState.set(connectionState.getStatusValue());
+    }
+
+    private void connectSignalR(boolean forceConnect) {
+        setOperationalState(F1HubConnection.OperationalState.OPEN);
+        String wssConnect = "wss://livetiming.formula1.com/signalrcore";
+        String negotiateUrl = "https://livetiming.formula1.com/signalrcore/negotiate";
+
+        hubConnection = HubConnectionBuilder.create(wssConnect)
+                .build();
+
+        hubConnection.onClosed(exception -> LOG.info("HubConnection - connection closed: {}", exception.getMessage()));
+
+        hubConnection.<List<String>>on("feed",
+                (Action1<List<String>>) (userList) -> onFeed(userList),
+                new TypeReference<List<String>>() {}.getType());
+
+        setConnectionState(F1HubConnection.State.CONNECTING);
+        hubConnection.start()
+                .blockingAwait();
+        LOG.info("Connected to SignalR hub with connection id {}", hubConnection.getConnectionId());
+
+        //Observable<String> subscription = hubConnection.stream(String.class, "Subscribe", List.of(List.of(dataStreams)));
+        //subscription.subscribe(message -> LOG.info("Received signalR message: {}", message));
+        //hubConnection.send("Subscribe", List.of(List.of(dataStreams)));
+        Single<String> response =  hubConnection.invoke(String.class, "Subscribe", List.of(List.of(dataStreams)));
+        response.subscribeWith(new DisposableSingleObserver<String>() {
+            @Override
+            public void onStart() {
+                LOG.info("Hub invoke started");
+            }
+
+            @Override
+            public void onSuccess(String value) {
+                LOG.info("Hun invoke success: " + value);
+            }
+
+            @Override
+            public void onError(Throwable error) {
+                LOG.error(error.toString());
+            }
+        });
+
+
+        setConnectionState(F1HubConnection.State.CONNECTED);
+    }
+
+    private void onFeed(List<String> args) {
+        LOG.info("onFeed() - Received {} feed messages.", args.size());
+        args.forEach(message -> LOG.info("Message: {}", message));
     }
 
     /// Initiates or forces a reconnection to the SignalR hub.
