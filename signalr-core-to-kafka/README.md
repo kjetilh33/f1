@@ -16,7 +16,7 @@ You can run this module in several ways: 1) locally as a Java application, 2) lo
 ### Run as a local Java application
 
 The minimum requirements for running the module locally:
-- Java 17 SDK
+- Java 25 SDK
 - Maven
 
 On Linux/MaxOS:
@@ -32,7 +32,7 @@ On Windows Powershell:
 ### Run as a container on Kubernetes
 
 Minimum requirements for running the module on K8s:
-- Java 25 SDK: [https://adoptium.net/](https://adoptium.net/)
+- Java 17 SDK: [https://adoptium.net/](https://adoptium.net/)
 - Maven: [https://maven.apache.org/download.cgi](https://maven.apache.org/download.cgi)
 - Skaffold: [https://github.com/GoogleContainerTools/skaffold/releases](https://github.com/GoogleContainerTools/skaffold/releases)
 - Local K8s with kubectl
