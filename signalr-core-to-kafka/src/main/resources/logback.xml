@@ -26,7 +26,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.kinnovatio.signalr" level="info" />
+    <logger name="com.kinnovatio.signalr" level="debug" />
     <logger name="com.microsoft.signalr" level="debug" />
 
     <root level="info">

@@ -4,6 +4,7 @@ import com.microsoft.signalr.Action1;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
 import com.microsoft.signalr.TypeReference;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.observers.DisposableSingleObserver;
 import tools.jackson.core.JacksonException;
@@ -37,6 +38,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CompletionException;
@@ -54,7 +56,6 @@ import java.util.stream.Collectors;
 /// Use the static factory methods [#create()] or [#of(String)] to instantiate.
 /// Once created, configure it using methods like [#withConsumer(Consumer)] and then
 /// call [#connect()] to establish the connection. After connecting, call
-/// [#subscribeToAll()] to start receiving data.
 /// This class is designed to be immutable through the use of AutoValue. Configuration methods
 /// return a new instance with the updated configuration.
 @AutoValue
@@ -65,10 +66,6 @@ public abstract class F1HubConnection {
 
     // Constants for the F1 SignalR service
     private static final String baseUrl = "https://livetiming.formula1.com/signalr/";
-    private static final String negotiatePath = "negotiate";
-    private static final String clientProtocolKey = "clientProtocol";
-    private static final String clientProtocol = "1.5";
-    private static final String connectionDataKey = "connectionData";
     private static final String connectionData = """
                 [{"name": "streaming"}]
                 """;
@@ -93,15 +90,8 @@ public abstract class F1HubConnection {
     private ScheduledExecutorService executorService = null;
 
     // Signalr connection management
-    HubConnection hubConnection;
-
-    // Keep-alive and connection management fields
-    private Instant lastKeepAliveMessage = Instant.now();
-    private Duration keepAliveTimeout = Duration.ofSeconds(30);
-    private HttpClient httpClient = null;
-    private WebSocket webSocket = null;
-    private final SignalrWssListener wssListener = new SignalrWssListener();
-    private int errorCounter = 0;
+    private final HttpClient httpClient = HttpClient.newBuilder().build();
+    private HubConnection hubConnection;
 
     // Metrics fields
     static final Counter recordReceivedCounter = Counter.builder()
@@ -182,7 +172,7 @@ public abstract class F1HubConnection {
     }
 
     /// Initiate a SignalR connection. This method will try to set up a connection over websocket. Once the
-    /// connection is ready, you have to call [#subscribeToAll()] to start receiving live timing
+    /// connection is ready, you have to call
     /// messages.
     ///
     /// @return `true` if the connection was set up successfully. `false` otherwise.
@@ -197,7 +187,7 @@ public abstract class F1HubConnection {
 
     /// Checks if the client is currently connected to the SignalR hub.
     ///
-    /// @return `true` if the connection state is [#OPEN], `false` otherwise.
+    /// @return `true` if the connection state is `false` otherwise.
     public boolean isConnected() {
         return operationalState == OperationalState.OPEN;
     }
@@ -245,7 +235,10 @@ public abstract class F1HubConnection {
         String wssConnect = "wss://livetiming.formula1.com/signalrcore";
         String negotiateUrl = "https://livetiming.formula1.com/signalrcore/negotiate";
 
+        String cookie = getCookie(negotiateUrl).orElse("");
+
         hubConnection = HubConnectionBuilder.create(wssConnect)
+                .withHeader("Cookie", cookie)
                 .build();
 
         hubConnection.onClosed(exception -> LOG.info("HubConnection - connection closed: {}", exception.getMessage()));
@@ -261,8 +254,9 @@ public abstract class F1HubConnection {
 
         //Observable<String> subscription = hubConnection.stream(String.class, "Subscribe", List.of(List.of(dataStreams)));
         //subscription.subscribe(message -> LOG.info("Received signalR message: {}", message));
-        //hubConnection.send("Subscribe", List.of(List.of(dataStreams)));
-        Single<String> response =  hubConnection.invoke(String.class, "Subscribe", List.of(List.of(dataStreams)));
+        //hubConnection.send("Subscribe", List.of(dataStreams));
+
+        Single<String> response =  hubConnection.invoke(String.class, "Subscribe", List.of(dataStreams));
         response.subscribeWith(new DisposableSingleObserver<String>() {
             @Override
             public void onStart() {
@@ -271,7 +265,7 @@ public abstract class F1HubConnection {
 
             @Override
             public void onSuccess(String value) {
-                LOG.info("Hun invoke success: " + value);
+                LOG.info("Hub invoke success: " + value);
             }
 
             @Override
@@ -280,8 +274,42 @@ public abstract class F1HubConnection {
             }
         });
 
-
         setConnectionState(F1HubConnection.State.CONNECTED);
+    }
+
+    /// Obtain an Amazon load balancer cookie.
+    /// Need this to make subsequent calls to the SignalR hub.
+    private Optional<String> getCookie(String negotiateUrl) {
+        String loggingPrefix = "getCookie() - ";
+
+        try {
+            // 1. Perform the OPTIONS request
+            HttpRequest optionsRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(negotiateUrl))
+                    .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                    .build();
+
+            HttpResponse<Void> response = httpClient.send(optionsRequest, HttpResponse.BodyHandlers.discarding());
+            LOG.debug(loggingPrefix + "Negotiate response:\n {}", response.toString());
+            LOG.debug(loggingPrefix + "Response headers: \n{}", response.headers().toString());
+            LOG.debug(loggingPrefix + "Response body: \n{}", response);
+
+            // 2. Extract the AWSALBCORS cookie from the 'Set-Cookie' header
+            List<String> setCookie = response.headers().allValues("Set-Cookie");
+            LOG.debug(loggingPrefix + "Parsed set-cookie header: \n{}", setCookie.toString());
+
+            for (String cookie : setCookie) {
+                if (cookie.contains("AWSALBCORS")) {
+                    LOG.debug(loggingPrefix + "Found AWSALBCORS cookie: \n{}", cookie.split(";")[0]);
+                    return Optional.of(cookie.split(";")[0]);
+                }
+            }
+
+            return Optional.empty();
+        } catch (Exception e) {
+            LOG.warn(loggingPrefix + "Error getting cookie: {}", e.toString());
+            return Optional.empty();
+        }
     }
 
     private void onFeed(List<String> args) {
@@ -318,52 +346,6 @@ public abstract class F1HubConnection {
             return true;
         }
 
-        // In case we have an open websocket, close it
-        if (null != webSocket) {
-            LOG.warn(loggingPrefix + "The websocket connection is already open. Will close it before reconnecting.");
-            this.close();
-        }
-
-        // Check if we need to instantiate the http client
-        if (null == httpClient) httpClient = HttpClient.newHttpClient();
-
-        try {
-            Instant startInstant = Instant.now();
-            lastKeepAliveMessage = Instant.now();
-            setConnectionState(State.READY);
-            setOperationalState(OperationalState.OPEN);
-
-            webSocket = negotiateWebsocket();
-
-            // try for 20 seconds to establish a SignalR connection
-            while (Duration.between(startInstant, Instant.now()).compareTo(Duration.ofSeconds(20)) < 0
-                    && connectionState != State.CONNECTED) {
-                LOG.debug("Checking connection state. State: {}, duration: {}", connectionState, Duration.between(startInstant, Instant.now()));
-                Thread.sleep(1000);
-            }
-            if (connectionState != State.CONNECTED) {
-                throw new IOException("Timeout. Unable to establish connection to hub.");
-            }
-
-            // Check the executor service
-            if (null == executorService || executorService.isShutdown()) executorService = Executors.newSingleThreadScheduledExecutor();
-
-            // Start a scheduled task to check state (close, reconnect)
-            executorService.scheduleAtFixedRate(this::asyncKeepAliveLoop, 5, 1, TimeUnit.SECONDS);
-
-            // Start subscribing to the F1 live timing data.
-            webSocket.sendText(MessageDecoder.toMessageJson(
-                "Streaming",                        // hub
-                    "Subscribe",                        // method
-                    List.of(List.of(dataStreams)),      // arguments
-                    1),                                 // identifier
-                    true);
-        } catch (Exception e) {
-            LOG.warn(loggingPrefix + "Failed to negotiate a connection. Will try to clean up resources. Error: {}", e.toString());
-            close();
-            throw e;
-        }
-
         return true;
     }
 
@@ -377,16 +359,8 @@ public abstract class F1HubConnection {
         setOperationalState(OperationalState.CLOSED);
 
         if (null != executorService) executorService.shutdown();
-        if (null != webSocket) {
-            try {
-                webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "").join();
-            } catch (CompletionException e) {
-                LOG.warn("close() - Something happened when trying to close the websocket. "
-                        + "Most probably it was already closed. Error: {}", e.getCause());
-            }
-            webSocket.abort();
-            webSocket = null;
-        }
+        if (null != hubConnection) hubConnection.stop();
+
         if (connectionState != State.READY) setConnectionState(State.READY);
     }
 
@@ -395,16 +369,6 @@ public abstract class F1HubConnection {
     ///
     /// Its responsibilities include:
     ///
-    ///   - **Reconnecting:** If the connection state is not `CONNECTED` or `CONNECTING`,
-    ///     it attempts to re-establish the connection by calling [#connect()].
-    ///   - **Keep-Alive Check:** If the connection is active, it checks if a keep-alive message
-    ///     has been received within the [#keepAliveTimeout] duration. If not, it assumes
-    ///     the connection is stale, closes the current WebSocket, and attempts to reconnect.
-    ///   - **Error Handling:** It tracks consecutive connection failures. If the number of failures
-    ///     exceeds a threshold (10), it will stop trying to reconnect and [#close()] the client
-    ///     to prevent an infinite loop of failures.
-    ///   - **Shutdown:** When the [#operationalState] is set to `CLOSED`, this loop
-    ///     ensures the underlying executor service is forcefully shut down.
     ///
     private void asyncKeepAliveLoop() {
         String loggingPrefix = "Hub connection loop - ";
@@ -417,50 +381,7 @@ public abstract class F1HubConnection {
             this.close();
         } else {
             // We _should_ be connected (or in the process of establishing a connection)
-            if (connectionState == State.READY || connectionState == State.DISCONNECTED) {
-                // ... But we aren't. Need to take action to connect.
-                LOG.warn(loggingPrefix + "Not connected to the SignalR hub. Connection state: {}. Will try to reconnect...",
-                        connectionState);
-                try {
-                    connect();
-                    errorCounter = 0;
-                } catch (Exception e) {
-                    errorCounter++;
-                    LOG.warn(loggingPrefix + "Error connecting to hub: {}", e.toString());
-                    if (errorCounter > 9) {
-                        LOG.error(loggingPrefix + "Too many subsequent connections errors: {}. Will shut down the listener", 10);
-                        close();
-                    }
-                }     
-            } else {
-                // We are connected.
-                // Check if we have received a keep alive message recently--this indicates that the connection is alive
-                if (Duration.between(lastKeepAliveMessage, Instant.now()).compareTo(keepAliveTimeout) > 0) {
-                    LOG.warn(loggingPrefix + "Looks like we have a connection with the SignalR hub, but have not received a keep alive message in a while. "
-                            + "Connection state: {}, duration since last keep alive message: {}. Will try to reconnect...",
-                            connectionState, Duration.between(lastKeepAliveMessage, Instant.now()));
-                    // It has been too long since the last keep alive message. We need to try and reconnect.
-                    // In case we have an open websocket, close it
-                    if (null != webSocket) webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "");
 
-                    // reconnect
-                    try {
-                        connect(true);
-                        errorCounter = 0;
-                    } catch (Exception e) {
-                        errorCounter++;
-                        LOG.warn(loggingPrefix + "Error connecting to hub: {}", e.toString());
-                        if (errorCounter > 9) {
-                            LOG.error(loggingPrefix + "Too many subsequent connections errors: {}. Will shut down the listener", 10);
-                            close();
-                        }
-                    }
-                } else {
-                    // We are connected _and_ we have received a keep alive message. All is good.
-                    LOG.trace(loggingPrefix + "We are connected to the SignalR hub. Operational state: {}, Connection state: {}",
-                            operationalState, connectionState);
-                }
-            }
         }
     }
 
@@ -482,96 +403,7 @@ public abstract class F1HubConnection {
     /// @throws IOException if the negotiation request fails, the server returns an error, or the
     ///         WebSocket connection cannot be established.
     private WebSocket negotiateWebsocket() throws IOException {
-        String loggingPrefix = "negotiateWebsocket() - ";
-        setConnectionState(State.CONNECTING);
-
-        final ObjectReader objectReader = objectMapper.reader();
-        final URI negotiateURI = getBaseUri().resolve(String.format("%s?%s=%s&%s=%s",
-                negotiatePath,
-                connectionDataKey,
-                URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
-                clientProtocolKey,
-                clientProtocol));
-        LOG.info(loggingPrefix + "Negotiating connection to {}", negotiateURI.getAuthority());
-        LOG.trace(loggingPrefix + "Negotiate URI: {}", negotiateURI.toString());
-
-        HttpRequest negotiateRequest = HttpRequest.newBuilder()
-                .uri(negotiateURI)
-                .GET()
-                .build();
-
-        try {
-            HttpResponse<String> negotiateResponse = httpClient
-                    .send(negotiateRequest, HttpResponse.BodyHandlers.ofString());
-            String responseBody = negotiateResponse.body();
-
-            LOG.debug(loggingPrefix + "Negotiate response:\n {}", negotiateResponse.toString());
-            LOG.debug(loggingPrefix + "Response headers: \n{}", negotiateResponse.headers().toString());
-            LOG.debug(loggingPrefix + "Response body: \n{}", responseBody);
-            if (negotiateResponse.statusCode() >= 300) {
-                String message = loggingPrefix +  "Failed to negotiate connection to %s. Response: %s".formatted(
-                        negotiateURI.getAuthority(),
-                        negotiateResponse.toString()
-                );
-                LOG.error(message);
-                throw new IOException(message);
-            }
-
-            // Parse the response
-            String connectionToken = "";
-            String cookie = negotiateResponse.headers().firstValue("set-cookie").orElse("");
-            LOG.debug(loggingPrefix + "Negotiate cookie: {}", cookie);
-            JsonNode responseBodyRoot = objectReader.readTree(responseBody);
-            if (responseBodyRoot.path("ConnectionToken").isString()) {
-                connectionToken = responseBodyRoot.path("ConnectionToken").asString();
-            } else {
-                // A connection token is mandatory for the next step.
-                throw new IOException(loggingPrefix + "Unable to get connection token from the SignalR service during negotiation.");
-            }
-
-            // Check keep alive timeout.
-            if (responseBodyRoot.path("KeepAliveTimeout").isNumber()) {
-                keepAliveTimeout = Duration.ofSeconds(responseBodyRoot.path("KeepAliveTimeout").asInt());
-                LOG.debug(loggingPrefix + "Found keep alive timeout spec in connection negotiation: {}",
-                        responseBodyRoot.path("KeepAliveTimeout").asString());
-            } else if (responseBodyRoot.path("KeepAliveTimeout").isNull()) {
-                keepAliveTimeout = Duration.ofDays(365);
-                LOG.debug(loggingPrefix + "KeepAliveTimeout = null. Setting the reconnect timeout to one year.");
-            }
-
-            // Build the websocket URI. If the base URI was http, we need to use the ws scheme. Else, use wss.
-            String websocketScheme = "wss";     // Default to wss / secure connection
-            if (getBaseUri().getScheme().equalsIgnoreCase("http")) {
-                websocketScheme = "ws";
-            }
-
-            URI wssURI = new URI(getBaseUri().toString().replaceFirst(getBaseUri().getScheme(), websocketScheme))
-                    .resolve(String.format("connect?transport=webSockets&%s=%s&%s=%s&%s=%s",
-                            connectionDataKey,
-                            URLEncoder.encode(connectionData, StandardCharsets.UTF_8),
-                            clientProtocolKey,
-                            clientProtocol,
-                            "connectionToken",
-                            URLEncoder.encode(connectionToken, StandardCharsets.UTF_8))
-                    );
-
-            LOG.debug(loggingPrefix + "Websocket URI: {}", wssURI.toString());
-            LOG.info(loggingPrefix + "Setting up websocket connection...");
-
-            return httpClient.newWebSocketBuilder()
-                    .header("User-Agent", "BestHTTP")
-                    .header("Accept-Encoding", "gzip,identity")
-                    .header("Cookie", cookie)
-                    .connectTimeout(Duration.ofSeconds(30))
-                    .buildAsync(wssURI, wssListener)
-                    .join();
-
-        } catch (Exception e) {
-            LOG.error(loggingPrefix + "Error connecting to hub: {}", e.toString());
-            setConnectionState(State.READY);
-
-            throw new IOException(e);
-        }
+        return null;
     }
 
     /// Processes a raw message received from the WebSocket and directs it based on the current connection state.
@@ -583,7 +415,6 @@ public abstract class F1HubConnection {
     ///   - **Connecting State:** When in the `CONNECTING` state, it waits for a SignalR
     ///     initialization message. Upon receiving it, the connection state is transitioned to `CONNECTED`.
     ///   - **Connected State:** Once `CONNECTED`, it distinguishes between keep-alive pings (which
-    ///     update the [#lastKeepAliveMessage] timestamp) and actual data messages (which are passed to
     ///     [#notifySubscribers(String)] for parsing and distribution).
     ///
     /// Any unexpected messages or parsing failures will be logged as errors. A critical parsing failure
@@ -633,10 +464,10 @@ public abstract class F1HubConnection {
                 case CONNECTED -> {
                     if (MessageDecoder.isKeepAliveMessage(message)) {
                         LOG.debug(loggingPrefix + "Client in state _connected_, received keep alive message.");
-                        lastKeepAliveMessage = Instant.now();
+
                     } else {
                         LOG.debug(loggingPrefix + "Client in state _connected_, received subscription message.");
-                        lastKeepAliveMessage = Instant.now();
+
                         notifySubscribers(message);
                     }
                 }
@@ -686,55 +517,6 @@ public abstract class F1HubConnection {
             }
         } catch (JacksonException e) {
             LOG.warn("Error when processing received signalR message: Raw message: '{}'. Error: {}", rawMessage, e.getMessage());
-        }
-    }
-
-    public class SignalrWssListener implements WebSocket.Listener {
-        private List<CharSequence> parts = new ArrayList<>();
-        private CompletableFuture<?> accumulatedMessage = new CompletableFuture<>();
-
-        public void onOpen(WebSocket webSocket) {
-            webSocket.request(1);
-            LOG.info("Websocket open.");
-            LOG.debug("Websocket open: {}", webSocket.toString());
-        }
-
-        public CompletionStage<?> onText(WebSocket webSocket,
-                                         CharSequence message,
-                                         boolean last) {
-            parts.add(message);
-            // TODO should we move .request to the end? Should we just return null instead of completion stage?
-            webSocket.request(1);
-            if (last) {
-                processMessage(assembleMessage(parts));
-                parts = new ArrayList<>();
-                accumulatedMessage.complete(null);
-                CompletionStage<?> cf = accumulatedMessage;
-                accumulatedMessage = new CompletableFuture<>();
-                return cf;
-            }
-            return accumulatedMessage;
-        }
-
-        private String assembleMessage(List<CharSequence> parts) {
-            return parts.stream()
-                    .map(CharSequence::toString)
-                    .collect(Collectors.joining());
-        }
-
-        public CompletionStage<?> onClose(WebSocket webSocket,
-                                          int statusCode,
-                                          String reason) {
-            setConnectionState(State.READY);
-            LOG.info("Websocket closed. Status code: {}. Reason: {}",
-                    statusCode,
-                    reason);
-            return null;
-        }
-
-        public void onError(WebSocket webSocket, Throwable error) {
-            setConnectionState(State.DISCONNECTED);
-            LOG.warn("Websocket error: \n {}", error.toString());
         }
     }
 
