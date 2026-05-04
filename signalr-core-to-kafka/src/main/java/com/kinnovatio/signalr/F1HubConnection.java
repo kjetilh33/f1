@@ -1,5 +1,6 @@
 package com.kinnovatio.signalr;
 
+import com.google.gson.JsonElement;
 import com.microsoft.signalr.Action1;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
@@ -243,9 +244,9 @@ public abstract class F1HubConnection {
 
         hubConnection.onClosed(exception -> LOG.info("HubConnection - connection closed: {}", exception.getMessage()));
 
-        hubConnection.<List<String>>on("feed",
-                (Action1<List<String>>) (userList) -> onFeed(userList),
-                new TypeReference<List<String>>() {}.getType());
+        hubConnection.<JsonElement>on("feed",
+                (Action1<JsonElement>) (userList) -> onFeed(userList),
+                JsonElement.class);
 
         setConnectionState(F1HubConnection.State.CONNECTING);
         hubConnection.start()
@@ -256,16 +257,16 @@ public abstract class F1HubConnection {
         //subscription.subscribe(message -> LOG.info("Received signalR message: {}", message));
         //hubConnection.send("Subscribe", List.of(dataStreams));
 
-        Single<String> response =  hubConnection.invoke(String.class, "Subscribe", List.of(dataStreams));
-        response.subscribeWith(new DisposableSingleObserver<String>() {
+        Single<JsonElement> response =  hubConnection.invoke(JsonElement.class, "Subscribe", List.of(dataStreams));
+        response.subscribeWith(new DisposableSingleObserver<JsonElement>() {
             @Override
             public void onStart() {
                 LOG.info("Hub invoke started");
             }
 
             @Override
-            public void onSuccess(String value) {
-                LOG.info("Hub invoke success: " + value);
+            public void onSuccess(JsonElement value) {
+                LOG.info("Hub invoke success. Response: " + value.toString());
             }
 
             @Override
@@ -312,9 +313,11 @@ public abstract class F1HubConnection {
         }
     }
 
-    private void onFeed(List<String> args) {
-        LOG.info("onFeed() - Received {} feed messages.", args.size());
-        args.forEach(message -> LOG.info("Message: {}", message));
+    private void onFeed(JsonElement element) {
+        LOG.info("onFeed() - Received {} characters feed messages.", element.getAsString().length());
+        LOG.info("onFeed() - Message: {}...", element.getAsString().substring(0, Math.min(200, element.getAsString().length())));
+
+        //args.forEach(message -> LOG.info("Message: {}", message));
     }
 
     /// Initiates or forces a reconnection to the SignalR hub.
