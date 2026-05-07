@@ -47,13 +47,13 @@ public class FileDataFeed implements Runnable {
             String line;
             while (run.get() && (line = reader.readLine()) != null) {
                 messages = Parser.parseSignalRMessage(line);
-                messages.forEach(message -> consumer.accept(message));
+                messages.forEach(consumer::accept);
 
                 Thread.sleep(300);
             }
 
         } catch (Exception e) {
-            LOG.warn("Error while reading message file: %s", e.toString());
+            LOG.warn("Error while reading message file: {}", e.toString());
         }        
     }
 
@@ -61,7 +61,7 @@ public class FileDataFeed implements Runnable {
         List<Path> pathList = List.of(practicePath, racePath, racePath, raceImolaPath);
         Path filePath = pathList.get(ThreadLocalRandom.current().nextInt(0, 4));
         if (!Files.exists(filePath)) {
-            LOG.warn("Unable to read file %s. Will use bundled file instead.", filePath);
+            LOG.warn("Unable to read file {}. Will use bundled file instead.", filePath);
             filePath = Path.of(this.getClass().getResource(resourceLogFile).toURI());
         }
 
