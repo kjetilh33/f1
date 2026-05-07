@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -59,22 +60,32 @@ public class DbDataFeed implements Runnable {
 
     public void start() {
         run.set(true);
+        LOG.info("Starting DbDataFeed...");
         Thread.startVirtualThread(this);
     }
+
+    public void close() {
+        run.set(false);
+    }
+
 
     @Override
     public void run() {
         List<String> queryList = List.of(japaneseGP, miamiGP);
         String query = queryList.get(ThreadLocalRandom.current().nextInt(0, 2));
+        LOG.info("Connecting to database...");
 
         try (Connection conn = DriverManager.getConnection(jdbcUrl, username, password)) {
+            LOG.info("Connected.");
             conn.setAutoCommit(false);
             try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                LOG.info("Querying database...");
                 stmt.setFetchSize(1000);
                 ResultSet rs = stmt.executeQuery();
 
                 Instant queryStart = Instant.now();
                 Instant firstRecord = null;
+                LOG.info("Start processing records...");
                 while (run.get() && rs.next()) {
                     String category = rs.getString("category");
                     boolean isStreaming = rs.getBoolean("is_streaming");
@@ -85,14 +96,25 @@ public class DbDataFeed implements Runnable {
 
                     if (isStreaming) {
                         if (firstRecord == null) {
-                            firstRecord = messageTimestamp;
+                            firstRecord = liveTimingMessage.timestamp();
                         }
+
+                        // Check the timing, so we keep pace with the original message stream.
+                        Duration queryDuration = Duration.between(queryStart, Instant.now());
+                        Duration recordDuration = Duration.between(firstRecord, Instant.now());
+                        if (queryDuration.compareTo(recordDuration) < 0) {
+                            // we need to wait for the record to "catch up"
+                            long sleepMillies = Math.max(2000, recordDuration.toMillis() - queryDuration.toMillis());
+                            Thread.sleep(sleepMillies);
+                        }
+
+                        consumer.accept(liveTimingMessage);
+
+                    } else {
+                        consumer.accept(liveTimingMessage);
                     }
-
-
-
                 }
-
+                LOG.info("Reached the end of data set.");
 
             } catch (Exception e) {
                 throw new RuntimeException(e);
