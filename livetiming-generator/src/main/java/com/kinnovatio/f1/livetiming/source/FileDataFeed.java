@@ -57,7 +57,7 @@ public class FileDataFeed implements Runnable {
         }        
     }
 
-    private Path getFilePath() throws URISyntaxException, IOException {
+    private Path getFilePath() throws URISyntaxException {
         List<Path> pathList = List.of(practicePath, racePath, racePath, raceImolaPath);
         Path filePath = pathList.get(ThreadLocalRandom.current().nextInt(0, 4));
         if (!Files.exists(filePath)) {

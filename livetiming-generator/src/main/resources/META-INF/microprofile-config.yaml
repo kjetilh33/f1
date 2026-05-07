@@ -9,7 +9,9 @@ smallrye:
 # Default config settings for your module
 source:
   file: 1
-#  db:
+  jdbc:
+    url: jdbc:postgresql://f1-db-rw:5432/app
+    table: live_timing_messages
 
 target:
   kafka:
