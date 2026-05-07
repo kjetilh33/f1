@@ -47,7 +47,7 @@ public class Generator {
             if (args.length > 1 && args[1].equals("file")) {
                 runFile(runDuration);
             } else {
-
+                runDb(runDuration);
             }
 
 
