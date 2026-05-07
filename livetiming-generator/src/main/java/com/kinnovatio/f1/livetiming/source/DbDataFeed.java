@@ -119,6 +119,7 @@ public class DbDataFeed implements Runnable {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+            conn.commit();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

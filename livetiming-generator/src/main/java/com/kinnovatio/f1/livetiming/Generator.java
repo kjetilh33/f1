@@ -1,5 +1,6 @@
 package com.kinnovatio.f1.livetiming;
 
+import com.kinnovatio.f1.livetiming.source.DbDataFeed;
 import tools.jackson.databind.ObjectMapper;
 import com.kinnovatio.f1.livetiming.source.FileDataFeed;
 import com.kinnovatio.signalr.messages.LiveTimingHubResponseMessage;
@@ -40,10 +41,15 @@ public class Generator {
         try {
             // Execute the main logic
             Duration runDuration = Duration.ofSeconds(jobDurationSeconds);
-            if (args.length == 1) {
+            if (args.length > 0) {
                 runDuration = Duration.ofSeconds(Integer.parseInt(args[0]));
             }
-            run(runDuration);
+            if (args.length > 1 && args[1].equals("file")) {
+                runFile(runDuration);
+            } else {
+
+            }
+
 
         } catch (Exception e) {
             LOG.error("Unrecoverable error. Will exit. {}", e.toString());
@@ -55,7 +61,7 @@ public class Generator {
     /// This includes the SignalR connection, the status HTTP server, the metrics server,
     /// and the background task for connection management.
     /// @throws Exception if initialization of the SignalR client fails.
-    private static void run(Duration runDuration) throws Exception {
+    private static void runFile(Duration runDuration) throws Exception {
         LOG.info("Starting container...");
         LOG.info("Will generate data for {} before shutting down.", runDuration);
         LOG.info("Print messages to system out: {}", printMessages);
@@ -72,6 +78,29 @@ public class Generator {
         fileDataFeed.close();
         LOG.info("Finished job...");
     }
+
+    /// Initializes and starts all application components.
+    /// This includes the SignalR connection, the status HTTP server, the metrics server,
+    /// and the background task for connection management.
+    /// @throws Exception if initialization of the SignalR client fails.
+    private static void runDb(Duration runDuration) throws Exception {
+        LOG.info("Starting container...");
+        LOG.info("Will generate data for {} before shutting down.", runDuration);
+        LOG.info("Print messages to system out: {}", printMessages);
+        LOG.info("Enable Kafka: {}", enableKafka);
+        if (enableKafka) {
+            LOG.info("The data will be published to Kafka");
+        }
+
+        LOG.info("Setting up data feed from DB...");
+        DbDataFeed dbDataFeed = new DbDataFeed(Generator::processMessage);
+        LOG.info("Start data feed...");
+        dbDataFeed.start();
+        Thread.sleep(runDuration);
+        dbDataFeed.close();
+        LOG.info("Finished job...");
+    }
+
 
     /// The primary callback method for processing all data received from the [FileDataFeed].
     ///
