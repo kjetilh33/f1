@@ -1,6 +1,6 @@
 package com.kinnovatio.signalr.messages;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 /// Represents a single, parsed data message from the Formula 1 live timing SignalR feed.
 ///
@@ -13,5 +13,5 @@ import java.time.ZonedDateTime;
 ///                  data that can be further parsed by the consumer.
 /// @param timestamp The server-provided UTC timestamp indicating when the event occurred.
 /// @param isStreaming `true` if this message originates from the streaming feed. `false` if it originates from a hub response.
-public record LiveTimingMessage(String category, String message, ZonedDateTime timestamp, boolean isStreaming) implements LiveTimingRecord {
+public record LiveTimingMessage(String category, String message, Instant timestamp, boolean isStreaming) implements LiveTimingRecord {
 }

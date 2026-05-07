@@ -10,8 +10,6 @@ import org.jboss.logging.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
@@ -174,7 +172,7 @@ public class MessageDecoder {
                 // The arguments array has a fixed structure: [Category, Data, Timestamp]
                 String category = array.get(0).asString();
                 String messageValue = array.get(1).toString();
-                ZonedDateTime timeStamp = ZonedDateTime.parse(array.get(2).asString());
+                Instant timeStamp = Instant.parse(array.get(2).asString());
 
                 // Check if the message body is compressed
                 if (category.endsWith(".z")) {
