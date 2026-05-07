@@ -36,7 +36,7 @@ public class MessageDecoder {
     ///
     /// @param message The json message to check.
     /// @return true if the message is an init message.
-    /// @throws JsonProcessingException if the input is not a valid json string.
+    /// @throws JacksonException if the input is not a valid json string.
     public static boolean isInitMessage(String message) throws JacksonException {
         return parseSignalRMessage(message) instanceof InitMessage;
     }
@@ -47,7 +47,7 @@ public class MessageDecoder {
     ///
     /// @param message The Json message to check.
     /// @return true if the message is a keep alive message.
-    /// @throws JsonProcessingException if the input is not a valid json string.
+    /// @throws JacksonException if the input is not a valid json string.
     public static boolean isKeepAliveMessage(String message) throws JacksonException {
         return parseSignalRMessage(message) instanceof KeepAliveMessage;
     }
@@ -59,7 +59,7 @@ public class MessageDecoder {
     /// @param arguments  The list of arguments to supply to the method.
     /// @param identifier A client-defined identifier for the method call.
     /// @return A JSON string representing the SignalR message.
-    /// @throws JsonProcessingException if the arguments cannot be serialized to JSON.
+    /// @throws JacksonException if the arguments cannot be serialized to JSON.
     public static String toMessageJson(String hub, String method, List<Object> arguments, int identifier) throws JacksonException {
         Map<String, Object> root = Map.of(
             "H", hub,
@@ -79,7 +79,7 @@ public class MessageDecoder {
     /// @param messageJson The raw SignalR message as a JSON string.
     /// @return A list of [LiveTimingMessage]s contained in the envelope. The list will be empty if the
     ///         message is not a data-carrying message (e.g., keep-alive).
-    /// @throws JsonProcessingException if the JSON is malformed.
+    /// @throws JacksonException if the JSON is malformed.
     public static List<? extends LiveTimingRecord> parseLiveTimingMessages(String messageJson) throws JacksonException {
         SignalRMessage signalRMessage = parseSignalRMessage(messageJson);
 
@@ -102,7 +102,7 @@ public class MessageDecoder {
     ///
     /// @param messageJson the raw SignalR message in Json format.
     /// @return the message parsed into one of the basic `SignalRMessage` types.
-    /// @throws JsonProcessingException if the input is not a valid json string.
+    /// @throws JacksonException if the input is not a valid json string.
     public static SignalRMessage parseSignalRMessage(String messageJson) throws JacksonException {
         Objects.requireNonNull(messageJson);
 
@@ -175,7 +175,7 @@ public class MessageDecoder {
                 // The arguments array has a fixed structure: [Category, Data, Timestamp]
                 String category = array.get(0).asString();
                 String messageValue = array.get(1).toString();
-                ZonedDateTime timeStamp = ZonedDateTime.parse(array.get(2).asString());
+                Instant timeStamp = Instant.parse(array.get(2).asString());
 
                 // Check if the message body is compressed
                 if (category.endsWith(".z")) {
@@ -201,14 +201,14 @@ public class MessageDecoder {
         try {
             JsonNode root = objectMapper.readTree(messageJson);
             List<LiveTimingMessage> LiveTimingMessages = new ArrayList<>();
-            ZonedDateTime timeStamp;
+            Instant timeStamp;
 
             // Check if we have timestamp data in the payload
             if (root.path("ExtrapolatedClock").path("Utc").isString()) {
-                timeStamp = ZonedDateTime.parse(root.path("ExtrapolatedClock").path("Utc").stringValue());
+                timeStamp = Instant.parse(root.path("ExtrapolatedClock").path("Utc").stringValue());
             } else {
                 // Set a default timestamp
-                timeStamp = ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC"));
+                timeStamp = Instant.now();
             }
 
             // Iterate over all fields in the JSON object (e.g., "CarData.z", "SessionInfo").

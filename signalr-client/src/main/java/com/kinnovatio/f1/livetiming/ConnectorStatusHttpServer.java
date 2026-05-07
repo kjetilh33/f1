@@ -153,7 +153,7 @@ public class ConnectorStatusHttpServer {
                 ArrayNode messages = objectMapper.createArrayNode();
                 for (LiveTimingMessage message : connectorStatus.messages()) {
                     ObjectNode messageRoot = objectMapper.createObjectNode();
-                    messageRoot.put("timestampEpoch", message.timestamp().toEpochSecond());
+                    messageRoot.put("timestampEpoch", message.timestamp().getEpochSecond());
                     messageRoot.put("category", message.category());
                     messageRoot.put("messageShort", StringUtils.truncate(message.message(), 100));
                     messageRoot.put("message", message.message());

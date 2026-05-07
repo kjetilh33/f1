@@ -74,7 +74,7 @@ public class DbDataFeed implements Runnable {
                 ResultSet rs = stmt.executeQuery();
 
                 Instant queryStart = Instant.now();
-                Instant firstRecord;
+                Instant firstRecord = null;
                 while (run.get() && rs.next()) {
                     String category = rs.getString("category");
                     boolean isStreaming = rs.getBoolean("is_streaming");
@@ -84,11 +84,11 @@ public class DbDataFeed implements Runnable {
                     LiveTimingMessage liveTimingMessage = new LiveTimingMessage(category, message, messageTimestamp, isStreaming);
 
                     if (isStreaming) {
+                        if (firstRecord == null) {
+                            firstRecord = messageTimestamp;
+                        }
+                    }
 
-                    }
-                    if (firstRecord == null) {
-                        firstRecord = messageTimestamp;
-                    }
 
 
                 }
