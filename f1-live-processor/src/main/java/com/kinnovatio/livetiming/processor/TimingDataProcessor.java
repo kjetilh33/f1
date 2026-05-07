@@ -104,7 +104,7 @@ public class TimingDataProcessor {
             });
 
             timingDataUpdateTimestamp.set(Instant.now());
-            timingDataMessageTimestamp.set(message.timestamp().toInstant());
+            timingDataMessageTimestamp.set(message.timestamp());
         } else {
             // This is an offline (non-live) update to the timing data. Check if it is a valid init message.
             // There should always be a driver with nr "1". Probe this first.
@@ -220,7 +220,7 @@ public class TimingDataProcessor {
                     timingDataBaselineKey,
                     stateManager.getSessionKey(),
                     message.message(),
-                    message.timestamp().toInstant());
+                    message.timestamp());
         } catch (Exception e) {
             LOG.warnf("Error when trying to store timing data. Error: %s", e.getMessage());
         }

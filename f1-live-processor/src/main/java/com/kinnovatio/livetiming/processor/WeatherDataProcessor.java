@@ -52,7 +52,7 @@ public class WeatherDataProcessor {
                     weatherKey,
                     stateManager.getSessionKey(),
                     message.message(),
-                    message.timestamp().toInstant());
+                    message.timestamp());
         } catch (Exception e) {
             LOG.warnf("Error when trying to store weather data. Error: %s", e.getMessage());
         }

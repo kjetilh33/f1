@@ -102,7 +102,7 @@ public class DriverListProcessor {
             });
 
             driverListUpdateTimestamp.set(Instant.now());
-            driverListMessageTimestamp.set(message.timestamp().toInstant());
+            driverListMessageTimestamp.set(message.timestamp());
         } else {
             // This is an offline (non-live) update to the driver list. Will most likely contain the full
             // driver list state. Write directly to storage.
@@ -157,7 +157,7 @@ public class DriverListProcessor {
                     driverListBaselineKey,
                     stateManager.getSessionKey(),
                     message.message(),
-                    message.timestamp().toInstant());
+                    message.timestamp());
         } catch (Exception e) {
             LOG.warnf("Error when trying to store driver list. Error: %s", e.getMessage());
         }
