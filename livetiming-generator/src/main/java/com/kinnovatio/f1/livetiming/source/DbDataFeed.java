@@ -87,6 +87,7 @@ public class DbDataFeed implements Runnable {
     }
 
     public void close() {
+        LOG.info("Closing down data feed...");
         run.set(false);
         if (executorService != null) {
             executorService.shutdown();
@@ -122,14 +123,15 @@ public class DbDataFeed implements Runnable {
                     if (isStreaming) {
                         if (firstRecord == null) {
                             firstRecord = liveTimingMessage.timestamp();
+                            LOG.info("First live record, setting timestamp to {}...", firstRecord.toString());
                         }
 
                         // Check the timing, so we keep pace with the original message stream.
                         Duration queryDuration = Duration.between(queryStart, Instant.now());
-                        Duration recordDuration = Duration.between(firstRecord, Instant.now());
+                        Duration recordDuration = Duration.between(firstRecord, liveTimingMessage.timestamp());
                         if (queryDuration.compareTo(recordDuration) < 0) {
                             // we need to wait for the record to "catch up"
-                            long sleepMillies = Math.max(2000, recordDuration.toMillis() - queryDuration.toMillis());
+                            long sleepMillies = Math.min(2000, recordDuration.toMillis() - queryDuration.toMillis());
                             Thread.sleep(sleepMillies);
                         }
 
@@ -151,5 +153,9 @@ public class DbDataFeed implements Runnable {
             throw new RuntimeException(e);
         }
 
+        // Check if we are still in "open" mode.
+        if (run.get()) {
+            this.close();
+        }
     }
 }
