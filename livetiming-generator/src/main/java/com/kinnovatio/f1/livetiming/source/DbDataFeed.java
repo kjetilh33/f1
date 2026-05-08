@@ -12,8 +12,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /// Reads live timing records from DB.
@@ -52,20 +56,41 @@ public class DbDataFeed implements Runnable {
             ConfigProvider.getConfig().getValue("source.jdbc.table", String.class);
 
     private final AtomicBoolean run = new AtomicBoolean(false);
+    private final AtomicInteger messageCounterPerSecond = new AtomicInteger(0);
     private final Consumer<LiveTimingRecord> consumer;
+    private ScheduledExecutorService executorService = null;
 
     public DbDataFeed(Consumer<LiveTimingRecord> consumer) {
         this.consumer = consumer;
     }
 
     public void start() {
+        if (run.get()) {
+            LOG.warn("DbDataFeed is already running. Call close() before starting again.");
+            return;
+        }
+        if (executorService != null) {
+            executorService.shutdown();
+        }
+
         run.set(true);
+        executorService = Executors.newSingleThreadScheduledExecutor();
         LOG.info("Starting DbDataFeed...");
         Thread.startVirtualThread(this);
+
+        // Start a task to track the message rate per second
+        executorService.scheduleAtFixedRate(() -> {
+            // Get the current count and reset the counter
+            int currentCountSeconds = messageCounterPerSecond.getAndSet(0);
+            LOG.info("Message rate per second: {}", currentCountSeconds);
+        }, 1, 1, TimeUnit.SECONDS);
     }
 
     public void close() {
         run.set(false);
+        if (executorService != null) {
+            executorService.shutdown();
+        }
     }
 
 
@@ -109,9 +134,11 @@ public class DbDataFeed implements Runnable {
                         }
 
                         consumer.accept(liveTimingMessage);
+                        messageCounterPerSecond.incrementAndGet();
 
                     } else {
                         consumer.accept(liveTimingMessage);
+                        messageCounterPerSecond.incrementAndGet();
                     }
                 }
                 LOG.info("Reached the end of data set.");
