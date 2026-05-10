@@ -1,5 +1,7 @@
 package com.kinnovatio.signalr.messages;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -31,45 +33,6 @@ public class MessageDecoder {
             .help("Total number messages with compressed data received")
             .register();
 
-    /// Check if a message is a SignalR init message.
-    ///
-    /// @param message The json message to check.
-    /// @return true if the message is an init message.
-    /// @throws JacksonException if the input is not a valid json string.
-    public static boolean isInitMessage(String message) throws JacksonException {
-        return parseSignalRMessage(message) instanceof InitMessage;
-    }
-
-    /// Checks if a raw JSON message is a SignalR keep-alive message.
-    ///
-    /// A keep-alive message is an empty JSON object: "{}".
-    ///
-    /// @param message The Json message to check.
-    /// @return true if the message is a keep alive message.
-    /// @throws JacksonException if the input is not a valid json string.
-    public static boolean isKeepAliveMessage(String message) throws JacksonException {
-        return parseSignalRMessage(message) instanceof KeepAliveMessage;
-    }
-
-    /// Constructs a SignalR JSON message for invoking a hub method.
-    ///
-    /// @param hub        The name of the target hub (e.g., "Streaming").
-    /// @param method     The name of the hub method to call (e.g., "Subscribe").
-    /// @param arguments  The list of arguments to supply to the method.
-    /// @param identifier A client-defined identifier for the method call.
-    /// @return A JSON string representing the SignalR message.
-    /// @throws JacksonException if the arguments cannot be serialized to JSON.
-    public static String toMessageJson(String hub, String method, List<Object> arguments, int identifier) throws JacksonException {
-        Map<String, Object> root = Map.of(
-            "H", hub,
-            "M", method,
-            "A", arguments,
-            "I", identifier
-        );
-
-        return objectMapper.writeValueAsString(root);
-    }
-
     /// Parses a raw SignalR message envelope and extracts the list of [LiveTimingMessage]s it contains.
     ///
     /// This method handles different SignalR message structures, such as hub responses and client method invocations,
@@ -79,81 +42,17 @@ public class MessageDecoder {
     /// @return A list of [LiveTimingMessage]s contained in the envelope. The list will be empty if the
     ///         message is not a data-carrying message (e.g., keep-alive).
     /// @throws JacksonException if the JSON is malformed.
-    public static List<? extends LiveTimingRecord> parseLiveTimingMessages(String messageJson) throws JacksonException {
-        SignalRMessage signalRMessage = parseSignalRMessage(messageJson);
-
-        return switch (signalRMessage) {
-            case UnknownMessage u -> Collections.emptyList();
-            case InitMessage i -> Collections.emptyList();
-            case KeepAliveMessage k -> Collections.emptyList();
-            case GroupMembershipMessage g -> Collections.emptyList();
-            case HubResponseMessage h -> parseHubResponseMessageBody(h.result()).stream().toList();
-            case ClientMethodInvocationMessage c -> c.messageData().stream()
-                    .map(MessageDecoder::parseSingleMethodInvocationMessageBody)
-                    .flatMap(Optional::stream)
-                    .toList();
-        };
-    }
-
-    /// Parse a raw SignalR message into one of its basic message types. The parsed message can then be interrogated
-    /// further for content.
-    /// The returned message can be interrogated by using pattern matching to test the "type" of message.
-    ///
-    /// @param messageJson the raw SignalR message in Json format.
-    /// @return the message parsed into one of the basic `SignalRMessage` types.
-    /// @throws JacksonException if the input is not a valid json string.
-    public static SignalRMessage parseSignalRMessage(String messageJson) throws JacksonException {
-        Objects.requireNonNull(messageJson);
-
-        // Let's just shortcut if it is a keep alive message
-        if (messageJson.equalsIgnoreCase("{}")) return new KeepAliveMessage();
-
-        // Checking the other message types. We need to inspect the Json contents
-        JsonNode root = objectMapper.readTree(messageJson);
-
-        // Init messages contains "S" property
-        if (root.path("S").isIntegralNumber() && root.path("S").asInt() == 1) {
-            return new InitMessage(
-                    root.path("C").asString(""),
-                    root.path("S").asInt(),
-                    parseJsonObjectArray(root.path("M")));
+    public static List<? extends LiveTimingRecord> parseLiveTimingMessages(JsonElement messageJson) {
+        if (messageJson == null || messageJson.isJsonNull()) {
+            LOG.warnf("parseLiveTimingMessages() - Received a null object instead of the expected valid Json element");
+            return Collections.emptyList();
         }
 
-        // Group membership messages contains the "G" property
-        if (root.path("G").isString()) {
-            return new GroupMembershipMessage(
-                    root.path("C").asString(""),
-                    root.path("G").asString(""),
-                    parseJsonObjectArray(root.path("M")));
+        if (messageJson.isJsonObject()) {
+            return parseHubResponseMessage(messageJson).stream().toList();
+        } else {
+            return Collections.emptyList();
         }
-
-        // Hub reply messages (replies to client calling the hub) contains the "R" property
-        if (root.path("R").isObject()) {
-            return new HubResponseMessage(
-                    root.path("I").asString(""),
-                    root.path("R").toString());
-        }
-
-        // Client side hub method invocation carries the payload in an "M" property.
-        if (root.path("M").isArray()) {
-            return new ClientMethodInvocationMessage(
-                    root.path("C").asString(""),
-                    parseJsonObjectArray(root.path("M")));
-        }
-
-        // If we don't have a match with any of the known types, return the raw input as an unknown message type
-        return new UnknownMessage(messageJson);
-    }
-
-    private static List<String> parseJsonObjectArray(JsonNode node) {
-        List<String> objects = new ArrayList<>();
-
-        if (node instanceof ArrayNode array) {
-            for (JsonNode n : array) {
-                if (n.isObject()) objects.add(n.toString());
-            }
-        }
-        return objects;
     }
 
     /// Parses a single message body from a stream of live timing messages.
@@ -194,42 +93,46 @@ public class MessageDecoder {
     ///
     /// @param messageJson The JSON string from the "R" property of a hub response.
     /// @return A list of parsed [LiveTimingMessage]s.
-    private static Optional<LiveTimingHubResponseMessage> parseHubResponseMessageBody(String messageJson) {
+    private static Optional<LiveTimingHubResponseMessage> parseHubResponseMessage(JsonElement root) {
+        if (root == null || root.isJsonNull()) {
+            LOG.warnf("parseHubResponseMesasge() - Received a null object instead of the expected valid Json element");
+            return Optional.empty();
+        }
         Optional<LiveTimingHubResponseMessage> returnValue = Optional.empty();
 
-        try {
-            JsonNode root = objectMapper.readTree(messageJson);
+        if (root.isJsonObject()) {
             List<LiveTimingMessage> LiveTimingMessages = new ArrayList<>();
             Instant timeStamp;
+            JsonObject objectRoot = root.getAsJsonObject();
 
             // Check if we have timestamp data in the payload
-            if (root.path("ExtrapolatedClock").path("Utc").isString()) {
-                timeStamp = Instant.parse(root.path("ExtrapolatedClock").path("Utc").stringValue());
+            if (objectRoot.has("ExtrapolatedClock") && objectRoot.get("ExtrapolatedClock").isJsonObject()
+                    && objectRoot.get("ExtrapolatedClock").getAsJsonObject().has("Utc")) {
+                timeStamp = Instant.parse(objectRoot.get("ExtrapolatedClock").getAsJsonObject().get("Utc").getAsString());
             } else {
                 // Set a default timestamp
                 timeStamp = Instant.now();
             }
 
             // Iterate over all fields in the JSON object (e.g., "CarData.z", "SessionInfo").
-            root.properties().forEach(entry -> {
+            objectRoot.entrySet().forEach(entry -> {
+                String messageValue = entry.getValue().toString();
+                // Check if the message body is compressed
+                if (entry.getKey().endsWith(".z")) {
                     try {
-                        String messageValue = entry.getValue().toString();
-                        // Check if the message body is compressed
-                        if (entry.getKey().endsWith(".z")) {
-                                messageValue = inflate(entry.getValue().stringValue());
-                        }
-                        LiveTimingMessages.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp, false));
-
+                        messageValue = inflate(entry.getValue().getAsString());
                     } catch (DataFormatException e) {
                         LOG.warnf("Error while deflating data in message with category %s: %s",
                                 entry.getKey(),
                                 e.toString());
                     }
-            }
-            );
+                }
+
+                LiveTimingMessages.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp, false));
+            });
             returnValue = Optional.of(new LiveTimingHubResponseMessage(LiveTimingMessages, timeStamp));
-        } catch (Exception e) {
-            LOG.warnf("Error while parsing hub response message: %s", e.toString());
+        } else {
+            LOG.warnf("parseHubResponseMesasge() - The received hub response is not an expected Json object. Will skip parsing it.");
         }
 
         return returnValue;

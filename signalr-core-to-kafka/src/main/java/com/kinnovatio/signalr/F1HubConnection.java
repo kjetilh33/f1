@@ -206,6 +206,51 @@ public abstract class F1HubConnection {
         connectorOperationalState.set(operationalState.getStatusValue());
     }
 
+    /// Initiates or forces a reconnection to the SignalR hub.
+    ///
+    /// This is the internal implementation of the connection logic. It manages the entire
+    /// lifecycle of establishing a connection, including:
+    ///
+    ///   - Closing any existing WebSocket connection.
+    ///   - Performing the SignalR negotiation to obtain a connection token.
+    ///   - Establishing a new WebSocket connection.
+    ///   - Starting a background task ([#asyncKeepAliveLoop()]) to handle keep-alives
+    ///     and automatic reconnections.
+    ///
+    /// The `forceConnect` parameter allows this method to be used for both the initial
+    /// user-triggered connection and for internal reconnections when a connection is lost.
+    ///
+    /// @param forceConnect If `true`, forces a new connection even if the operational state
+    ///                     is already `OPEN`. If `false`, the method will return
+    ///                     without action if the connection is already considered open.
+    /// @return `true` if the connection was successfully initiated, `false` if the
+    ///         connection was already open and `forceConnect` was `false`.
+    /// @throws IOException if an I/O error occurs during negotiation or if the connection times out.
+    /// @throws InterruptedException if the thread is interrupted during the connection process.
+    private boolean connect(boolean forceConnect) throws IOException, InterruptedException {
+        String loggingPrefix = "connect() - ";
+
+        if (operationalState == OperationalState.OPEN  && !forceConnect) {
+            LOG.warn(loggingPrefix + "The connection is already open. Connect() has no effect.");
+            return true;
+        }
+
+        return true;
+    }
+
+
+    /// Gracefully closes the connection to the F1 SignalR hub and cleans up resources.
+    ///
+    /// This method signals the client to shut down by setting the operational state to `CLOSED`,
+    /// which prevents the background keep-alive task from attempting any new reconnections. It then
+    /// initiates an orderly shutdown of the scheduled executor service that manages the connection.
+    public void close() {
+        if (null != executorService) executorService.shutdown();
+        if (null != hubConnection) hubConnection.stop();
+
+        setOperationalState(OperationalState.CLOSED);
+    }
+
     private void connectSignalR(boolean forceConnect) {
         String wssConnect = "wss://livetiming.formula1.com/signalrcore";
         String negotiateUrl = "https://livetiming.formula1.com/signalrcore/negotiate";
@@ -302,54 +347,9 @@ public abstract class F1HubConnection {
 
         //recordReceivedCounter.labelValues(recordCategory).inc();
 
-        //notifySubscribers(message);
+        notifySubscribers(element);
 
         //args.forEach(message -> LOG.info("Message: {}", message));
-    }
-
-    /// Initiates or forces a reconnection to the SignalR hub.
-    ///
-    /// This is the internal implementation of the connection logic. It manages the entire
-    /// lifecycle of establishing a connection, including:
-    ///
-    ///   - Closing any existing WebSocket connection.
-    ///   - Performing the SignalR negotiation to obtain a connection token.
-    ///   - Establishing a new WebSocket connection.
-    ///   - Starting a background task ([#asyncKeepAliveLoop()]) to handle keep-alives
-    ///     and automatic reconnections.
-    ///
-    /// The `forceConnect` parameter allows this method to be used for both the initial
-    /// user-triggered connection and for internal reconnections when a connection is lost.
-    ///
-    /// @param forceConnect If `true`, forces a new connection even if the operational state
-    ///                     is already `OPEN`. If `false`, the method will return
-    ///                     without action if the connection is already considered open.
-    /// @return `true` if the connection was successfully initiated, `false` if the
-    ///         connection was already open and `forceConnect` was `false`.
-    /// @throws IOException if an I/O error occurs during negotiation or if the connection times out.
-    /// @throws InterruptedException if the thread is interrupted during the connection process.
-    private boolean connect(boolean forceConnect) throws IOException, InterruptedException {
-        String loggingPrefix = "connect() - ";
-
-        if (operationalState == OperationalState.OPEN  && !forceConnect) {
-            LOG.warn(loggingPrefix + "The connection is already open. Connect() has no effect.");
-            return true;
-        }
-
-        return true;
-    }
-
-
-    /// Gracefully closes the connection to the F1 SignalR hub and cleans up resources.
-    ///
-    /// This method signals the client to shut down by setting the operational state to `CLOSED`,
-    /// which prevents the background keep-alive task from attempting any new reconnections. It then
-    /// initiates an orderly shutdown of the scheduled executor service that manages the connection.
-    public void close() {
-        if (null != executorService) executorService.shutdown();
-        if (null != hubConnection) hubConnection.stop();
-
-        setOperationalState(OperationalState.CLOSED);
     }
 
     private void logMessage(String message) {
@@ -371,18 +371,15 @@ public abstract class F1HubConnection {
     /// through the parsed messages and passes each one to the consumer's `accept` method for processing.
     ///
     /// @param rawMessage The raw JSON string received from the WebSocket.
-    private void notifySubscribers(String rawMessage) {
+    private void notifySubscribers(JsonElement element) {
         String loggingPrefix = "notifySubscribers() - ";
-        LOG.debug(loggingPrefix + "Raw message: {}", rawMessage);
-        try {
-            // Need to make sure we have a registered consumer for the messages
-            if (null != getConsumer()) {
-                List<? extends LiveTimingRecord> messages = MessageDecoder.parseLiveTimingMessages(rawMessage);
-                LOG.debug(loggingPrefix + "Parsed raw message into {} live timing messages", messages.size());
-                messages.forEach(message -> getConsumer().accept(message));
-            }
-        } catch (JacksonException e) {
-            LOG.warn("Error when processing received signalR message: Raw message: '{}'. Error: {}", rawMessage, e.getMessage());
+        LOG.debug(loggingPrefix + "Raw Json message: {}", element);
+
+        // Need to make sure we have a registered consumer for the messages
+        if (null != getConsumer()) {
+            List<? extends LiveTimingRecord> messages = MessageDecoder.parseLiveTimingMessages(element);
+            LOG.debug(loggingPrefix + "Parsed raw message into {} live timing messages", messages.size());
+            messages.forEach(message -> getConsumer().accept(message));
         }
     }
 
