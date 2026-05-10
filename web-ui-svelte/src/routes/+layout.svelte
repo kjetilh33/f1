@@ -6,6 +6,8 @@
 	import { Navbar, NavBrand, NavLi, NavUl, NavHamburger } from "flowbite-svelte";
   import { Footer, FooterLinkGroup, FooterLink, FooterCopyright } from "flowbite-svelte";
 
+  import SessionStatus from './session-status.svelte';
+
   let activeUrl = $derived(page.url.pathname);
 
 	let { children } = $props();
@@ -25,6 +27,7 @@
 </Navbar>
 <div class="flex mx-auto px-4 py-0 border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
     <h3>Next Race</h3>
+    <SessionStatus />
 </div>
 
 {@render children()}
