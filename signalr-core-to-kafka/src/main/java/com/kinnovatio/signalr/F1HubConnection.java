@@ -86,7 +86,6 @@ public abstract class F1HubConnection {
     };
 
     // Internal state management
-    private State connectionState = State.READY;
     private OperationalState operationalState = OperationalState.CLOSED;
     private ScheduledExecutorService executorService = null;
 
@@ -99,11 +98,6 @@ public abstract class F1HubConnection {
             .name("livetiming_connector_websocket_record_received_total")
             .help("Total number of live timing records received")
             .labelNames("category")
-            .register();
-
-    static final Gauge connectorConnectionState = Gauge.builder()
-            .name("livetiming_connector_connection_state")
-            .help("Connector connection state")
             .register();
 
     static final Gauge connectorOperationalState = Gauge.builder()
@@ -180,7 +174,6 @@ public abstract class F1HubConnection {
     /// @throws IOException if something goes wrong at the network layer.
     /// @throws InterruptedException if the working thread gets interrupted.
     public boolean connect() throws IOException, InterruptedException {
-        //return connect(false);
         connectSignalR(false);
 
         return true;
@@ -202,16 +195,7 @@ public abstract class F1HubConnection {
     public String getOperationalState() {
         return operationalState.toString();
     }
-    
-    /// Gets the low-level connection state of the underlying WebSocket.
-    /// This provides a granular status of the connection process, such as whether it is
-    /// connecting, connected, or disconnected.
-    ///
-    /// @return The current connection state as a string (e.g., "READY", "CONNECTING", "CONNECTED").
-    /// @see State
-    public String getConnectionState() {
-        return connectionState.toString();
-    }
+
 
     /// Sets the high-level operational state of the client and updates the corresponding metric.
     ///
@@ -222,33 +206,27 @@ public abstract class F1HubConnection {
         connectorOperationalState.set(operationalState.getStatusValue());
     }
 
-    /// Sets the low-level connection state of the WebSocket and updates the corresponding metric.
-    ///
-    /// @param connectionState The new connection state.
-    private void setConnectionState(State connectionState) {
-        LOG.info("F1HubConnection - changing SignalR connection state from {} to {}", this.connectionState, connectionState);
-        this.connectionState = connectionState;
-        connectorConnectionState.set(connectionState.getStatusValue());
-    }
-
     private void connectSignalR(boolean forceConnect) {
-        setOperationalState(F1HubConnection.OperationalState.OPEN);
         String wssConnect = "wss://livetiming.formula1.com/signalrcore";
         String negotiateUrl = "https://livetiming.formula1.com/signalrcore/negotiate";
 
+        // Get the necessary cookie headers
         String cookie = getCookie(negotiateUrl).orElse("");
 
         hubConnection = HubConnectionBuilder.create(wssConnect)
                 .withHeader("Cookie", cookie)
                 .build();
 
-        hubConnection.onClosed(exception -> LOG.info("HubConnection - connection closed: {}", exception.getMessage()));
+        hubConnection.onClosed(exception -> {
+            LOG.warn("The hub closed the connection: {}", exception.getMessage());
+            setOperationalState(F1HubConnection.OperationalState.CLOSED);
+        });
 
+        // Register the main handler for the livetiming feed
         hubConnection.<JsonElement>on("feed",
                 (Action1<JsonElement>) (userList) -> onFeed(userList),
                 JsonElement.class);
 
-        setConnectionState(F1HubConnection.State.CONNECTING);
         hubConnection.start()
                 .blockingAwait();
         LOG.info("Connected to SignalR hub with connection id {}", hubConnection.getConnectionId());
@@ -261,7 +239,7 @@ public abstract class F1HubConnection {
         response.subscribeWith(new DisposableSingleObserver<JsonElement>() {
             @Override
             public void onStart() {
-                LOG.info("Hub invoke started");
+                LOG.info("Calling hub to start subscribing to messages...");
             }
 
             @Override
@@ -275,7 +253,7 @@ public abstract class F1HubConnection {
             }
         });
 
-        setConnectionState(F1HubConnection.State.CONNECTED);
+        setOperationalState(OperationalState.OPEN);
     }
 
     /// Obtain an Amazon load balancer cookie.
@@ -316,6 +294,15 @@ public abstract class F1HubConnection {
     private void onFeed(JsonElement element) {
         LOG.info("onFeed() - Received {} characters feed messages.", element.getAsString().length());
         LOG.info("onFeed() - Message: {}...", element.getAsString().substring(0, Math.min(200, element.getAsString().length())));
+
+        // Store the messages on disk if logging is enabled
+        if (isMessageLogEnabled()) {
+            logMessage(element.toString());
+        }
+
+        //recordReceivedCounter.labelValues(recordCategory).inc();
+
+        //notifySubscribers(message);
 
         //args.forEach(message -> LOG.info("Message: {}", message));
     }
@@ -359,134 +346,10 @@ public abstract class F1HubConnection {
     /// which prevents the background keep-alive task from attempting any new reconnections. It then
     /// initiates an orderly shutdown of the scheduled executor service that manages the connection.
     public void close() {
-        setOperationalState(OperationalState.CLOSED);
-
         if (null != executorService) executorService.shutdown();
         if (null != hubConnection) hubConnection.stop();
 
-        if (connectionState != State.READY) setConnectionState(State.READY);
-    }
-
-    /// A periodic task that runs in the background to monitor and maintain the hub connection.
-    /// This method is designed to be executed by a [ScheduledExecutorService].
-    ///
-    /// Its responsibilities include:
-    ///
-    ///
-    private void asyncKeepAliveLoop() {
-        String loggingPrefix = "Hub connection loop - ";
-        LOG.debug(loggingPrefix + "Operational state = {}", operationalState);
-        if (operationalState == OperationalState.CLOSED) {
-            LOG.warn(loggingPrefix + "Hub is struggling to close properly. Will try to force close...");
-            LOG.debug(loggingPrefix + "Hub executor service isShutdown: {}, isTerminated: {}",
-                    executorService.isShutdown(),
-                    executorService.isTerminated());
-            this.close();
-        } else {
-            // We _should_ be connected (or in the process of establishing a connection)
-
-        }
-    }
-
-    /// Performs the SignalR negotiation handshake and establishes a WebSocket connection.
-    ///
-    /// This method implements the two-step connection process required by the SignalR protocol.
-    /// <ol>
-    ///   - **Negotiation:** It sends an initial HTTP GET request to the hub's `/negotiate`
-    ///     endpoint. This request is used to agree on protocol details and obtain a unique
-    ///     `connectionToken` and a session cookie from the server.
-    ///   - **Connection:** If negotiation is successful, it uses the obtained token and cookie
-    ///     to construct a WebSocket URI (e.g., `wss://...`). It then establishes a persistent
-    ///     WebSocket connection to this URI.
-    /// </ol>
-    /// The method blocks execution until the WebSocket connection is fully established or an error occurs.
-    /// It also sets the internal [#connectionState] to `CONNECTING` during this process.
-    ///
-    /// @return The fully connected [WebSocket] instance.
-    /// @throws IOException if the negotiation request fails, the server returns an error, or the
-    ///         WebSocket connection cannot be established.
-    private WebSocket negotiateWebsocket() throws IOException {
-        return null;
-    }
-
-    /// Processes a raw message received from the WebSocket and directs it based on the current connection state.
-    ///
-    /// This method acts as the central router for all incoming SignalR messages. Its behavior changes
-    /// depending on whether the client is in the process of connecting or is fully connected:
-    ///
-    ///   - **Logging:** If message logging is enabled, it first writes the raw message to a file.
-    ///   - **Connecting State:** When in the `CONNECTING` state, it waits for a SignalR
-    ///     initialization message. Upon receiving it, the connection state is transitioned to `CONNECTED`.
-    ///   - **Connected State:** Once `CONNECTED`, it distinguishes between keep-alive pings (which
-    ///     [#notifySubscribers(String)] for parsing and distribution).
-    ///
-    /// Any unexpected messages or parsing failures will be logged as errors. A critical parsing failure
-    /// will result in a [RuntimeException], which will likely terminate the connection.
-    ///
-    /// @param message The complete, raw message string received from the WebSocket.
-    private void processMessage(String message) {
-        String loggingPrefix = "processMessage() - ";
-
-        // Capture statistics on the number of messages received
-        String recordCategory = "Unknown";
-        try {
-            recordCategory = switch (MessageDecoder.parseSignalRMessage(message)) {
-                case UnknownMessage u -> "Unknown";
-                case InitMessage i -> "Init";
-                case KeepAliveMessage k -> "KeepAlive";
-                case GroupMembershipMessage g -> "GroupMembership";
-                case HubResponseMessage h -> "HubResponse";
-                case ClientMethodInvocationMessage c -> "ClientMethodInvocation";
-            };
-        } catch (JacksonException e) {
-            LOG.warn(loggingPrefix + "Error when processing received signalR message: Raw message: '{}'. Error: {}",
-                    message, e.getMessage());;
-        }
-
-        recordReceivedCounter.labelValues(recordCategory).inc();
-
-        // Store the messages on disk if logging is enabled
-        if (isMessageLogEnabled()) {
-            logMessage(message);
-        }
-
-        // Process the message based on the current connection state
-        try {
-            switch (connectionState) {
-                case READY -> LOG.error(loggingPrefix + "Message received before connection has been set up. Should not happen. Message: {}",
-                        message);
-                case CONNECTING -> {
-                    if (MessageDecoder.isInitMessage(message)) {
-                        setConnectionState(State.CONNECTED);
-                        LOG.info(loggingPrefix + "SignalR hub connection established over websocket.");
-                    } else {
-                        LOG.warn("Unrecognized message received while waiting for a SignalR initialization message. Message: {}",
-                                message);
-                    }
-                }
-                case CONNECTED -> {
-                    if (MessageDecoder.isKeepAliveMessage(message)) {
-                        LOG.debug(loggingPrefix + "Client in state _connected_, received keep alive message.");
-
-                    } else {
-                        LOG.debug(loggingPrefix + "Client in state _connected_, received subscription message.");
-
-                        notifySubscribers(message);
-                    }
-                }
-                case DISCONNECTED -> LOG.error(loggingPrefix + "Message received while disconnected. Should not happen.");
-            }
-        } catch (JacksonException e) {
-            // This is a critical failure, as we can't understand the server.
-            LOG.error(loggingPrefix + "Failed to parse JSON message from the SignalR hub. Message: '{}'", message, e);
-            throw new RuntimeException("Unrecoverable JSON parsing error", e);
-        } catch (Exception e) {
-            // Catch any other unexpected errors.
-            LOG.error(loggingPrefix + "An unexpected error occurred while processing a message from the hub.", e);
-            throw new RuntimeException(e);
-        }
-
-        LOG.trace(loggingPrefix + "Received wss message:\n {}", message);
+        setOperationalState(OperationalState.CLOSED);
     }
 
     private void logMessage(String message) {
@@ -520,37 +383,6 @@ public abstract class F1HubConnection {
             }
         } catch (JacksonException e) {
             LOG.warn("Error when processing received signalR message: Raw message: '{}'. Error: {}", rawMessage, e.getMessage());
-        }
-    }
-
-    /// Represents the granular, low-level status of the underlying WebSocket connection.
-    /// This enum tracks the different phases of establishing and maintaining a connection
-    /// to the SignalR hub. It is managed internally and is distinct from
-    /// [OperationalState], which reflects the user's high-level intent for the client.
-    enum State {
-        /// The client is not connected but is ready to initiate a new connection.
-        /// This is the initial state, and also the state after a WebSocket is cleanly closed.
-        /// From this state, a new connection attempt can begin.
-        READY (0),
-        /// The client is in the process of establishing a connection. This includes
-        /// the HTTP negotiation phase and waiting for the WebSocket to become fully
-        /// open and receive the SignalR initialization message.
-        CONNECTING (1),
-        /// The WebSocket connection is established, and the SignalR protocol handshake
-        /// is complete. The client is now able to send and receive data messages.
-        CONNECTED (2),
-        /// The WebSocket connection has been lost due to an error. The background
-        /// keep-alive loop will attempt to reconnect when the client is in this state.
-        DISCONNECTED (3);
-
-        private final int statusValue;
-
-        public int getStatusValue() {
-            return statusValue;
-        }
-
-        State(int statusValue) {
-            this.statusValue = statusValue;
         }
     }
 

@@ -351,7 +351,6 @@ public class Client {
         Duration timeSinceLastMessage = Duration.between(lastMessageReceived, Instant.now());
         LOG.debug(loggingPrefix + "Connector state = {}", connectorState);
         LOG.debug(loggingPrefix + "Session info = {}", sessionInfo);
-        LOG.debug(loggingPrefix + "F1 connection hub connection state = {}", hubConnection.getConnectionState());
         LOG.debug(loggingPrefix + "F1 connection hub operational state = {}", hubConnection.getOperationalState());
 
         if (connectorState == State.UNKNOWN && Duration.between(lastSessionCheck, Instant.now()).compareTo(Duration.ofSeconds(60)) < 0) {
