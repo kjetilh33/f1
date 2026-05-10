@@ -16,7 +16,7 @@ target:
     enable: false
     clientId: "f1-livetiming-signalr-connector"
     bootstrapHost: "kafka-main-kafka-bootstrap.kafka:9092"
-    topic: "f1-live-raw"
+    topic: "f1-live-signalr-core"
 
 # Default configuration for metrics.
 metrics:
