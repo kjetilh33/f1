@@ -3,5 +3,5 @@
 </script>
 
 <div>
-    { JSON.stringify(page.data) }
+    { JSON.stringify(page.data.item) }
 </div>
