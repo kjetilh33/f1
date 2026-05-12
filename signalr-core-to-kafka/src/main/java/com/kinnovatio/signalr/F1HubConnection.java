@@ -171,10 +171,8 @@ public abstract class F1HubConnection {
     /// messages.
     ///
     /// @return `true` if the connection was set up successfully. `false` otherwise.
-    /// @throws IOException if something goes wrong at the network layer.
-    /// @throws InterruptedException if the working thread gets interrupted.
-    public boolean connect() throws IOException, InterruptedException {
-        connectSignalR(false);
+    public boolean connect() {
+        connect(false);
 
         return true;
     }
@@ -206,34 +204,16 @@ public abstract class F1HubConnection {
         connectorOperationalState.set(operationalState.getStatusValue());
     }
 
-    /// Initiates or forces a reconnection to the SignalR hub.
-    ///
-    /// This is the internal implementation of the connection logic. It manages the entire
-    /// lifecycle of establishing a connection, including:
-    ///
-    ///   - Closing any existing WebSocket connection.
-    ///   - Performing the SignalR negotiation to obtain a connection token.
-    ///   - Establishing a new WebSocket connection.
-    ///   - Starting a background task ([#asyncKeepAliveLoop()]) to handle keep-alives
-    ///     and automatic reconnections.
-    ///
-    /// The `forceConnect` parameter allows this method to be used for both the initial
-    /// user-triggered connection and for internal reconnections when a connection is lost.
-    ///
-    /// @param forceConnect If `true`, forces a new connection even if the operational state
-    ///                     is already `OPEN`. If `false`, the method will return
-    ///                     without action if the connection is already considered open.
-    /// @return `true` if the connection was successfully initiated, `false` if the
-    ///         connection was already open and `forceConnect` was `false`.
-    /// @throws IOException if an I/O error occurs during negotiation or if the connection times out.
-    /// @throws InterruptedException if the thread is interrupted during the connection process.
-    private boolean connect(boolean forceConnect) throws IOException, InterruptedException {
+
+    private boolean connect(boolean forceConnect) {
         String loggingPrefix = "connect() - ";
 
         if (operationalState == OperationalState.OPEN  && !forceConnect) {
             LOG.warn(loggingPrefix + "The connection is already open. Connect() has no effect.");
             return true;
         }
+
+        connectSignalR(forceConnect);
 
         return true;
     }
@@ -370,7 +350,7 @@ public abstract class F1HubConnection {
     /// If a consumer has been registered via [#withConsumer(Consumer)], this method iterates
     /// through the parsed messages and passes each one to the consumer's `accept` method for processing.
     ///
-    /// @param rawMessage The raw JSON string received from the WebSocket.
+    /// @param element The raw JSON string received from the WebSocket.
     private void notifySubscribers(JsonElement element) {
         String loggingPrefix = "notifySubscribers() - ";
         LOG.debug(loggingPrefix + "Raw Json message: {}", element);
