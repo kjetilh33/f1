@@ -6,6 +6,8 @@
 	import { Navbar, NavBrand, NavLi, NavUl, NavHamburger } from "flowbite-svelte";
   import { Footer, FooterLinkGroup, FooterLink, FooterCopyright } from "flowbite-svelte";
 
+  /** @type {{ data: import('./$types').PageData }} */
+
   import SessionStatus from './session-status.svelte';
 
   let activeUrl = $derived(page.url.pathname);
