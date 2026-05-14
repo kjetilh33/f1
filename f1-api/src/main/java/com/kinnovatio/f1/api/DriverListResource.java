@@ -37,7 +37,7 @@ public class DriverListResource {
                         throw new jakarta.ws.rs.ProcessingException("Error getting driver list");
                     }
                 })
-                .orElseThrow(() -> new NotFoundException("No driver list found"));
+                .orElse("{}");
     }
 
 }

@@ -37,7 +37,7 @@ public class WeatherDataResource {
                         throw new jakarta.ws.rs.ProcessingException("Error getting timing data");
                     }
                 })
-                .orElseThrow(() -> new NotFoundException("No timing data found"));
+                .orElse("{}");
     }
 
 }
