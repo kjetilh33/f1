@@ -3,12 +3,15 @@
     import { Card, Listgroup } from "flowbite-svelte";
     import { FlagOutline, TruckOutline } from "flowbite-svelte-icons";
 
+    import { page } from '$app/state';
+
      /**
      * @typedef {Object} RaceMessageItem
      * @property {number} id - message id
      * @property {Date} timestamp - The timestamp of the record
      * @property {string} category - message category
      * @property {string} message - message
+     * @property {string} [lap] - Lap number
      * @property {string} [flag] - Flag color
      * @property {string} [scope] - Scope of the message
      * @property {number} [sector] - Sector of the message
@@ -92,26 +95,26 @@
      * @param {LiveTimingRecord} message
     */
     function processMessage(message) {
-        /**
-		 * @type {RaceMessageItem[]}
-		 */
-        const RaceControlMessages = [];
+      /**
+       * @type {RaceMessageItem[]}
+       */
+      const RaceControlMessages = [];
 
-        // Check if there are more than one race control message in the event record
-        if (Array.isArray(message.message.Messages)) {
-            message.message.Messages.forEach((/** @type {any} */ element) => {
-                RaceControlMessages.push(parseRaceMessageItem(message, element, nextId++));
-            });
+      // Check if there are more than one race control message in the event record
+      if (Array.isArray(message.message.Messages)) {
+          message.message.Messages.forEach((/** @type {any} */ element) => {
+              RaceControlMessages.push(parseRaceMessageItem(message, element, nextId++));
+          });
 
-        } else {
-            Object.values(message.message.Messages).forEach((element) => {
-                RaceControlMessages.push(parseRaceMessageItem(message, element, nextId++));
-            });   
-        }
+      } else {
+          Object.values(message.message.Messages).forEach((element) => {
+              RaceControlMessages.push(parseRaceMessageItem(message, element, nextId++));
+          });   
+      }
 
-        RaceControlMessages.forEach(element => {
-            messageStore.push(element);
-        });
+      RaceControlMessages.forEach(element => {
+          messageStore.push(element);
+      });
     }
 
     /**
@@ -125,6 +128,7 @@
                 timestamp: messageContainer.timestamp,
                 category: element.category,
                 message: element,
+                lap: element.Lap,
                 id: index,
                 flag: element.flag,
                 scope: element.scope,

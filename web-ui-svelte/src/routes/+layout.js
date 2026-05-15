@@ -1,11 +1,9 @@
+import { getSessionStatus, getSessionInfo } from '$lib/live-api.js';
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ fetch }) {
-    const sessionRes = await fetch(`/../api/v1/live`);
-    const sessionStatus = await sessionRes.json();
-
-    const sessionInfoRes = await fetch(`/../api/v1/live/session-info`);
-    const sessionInfo = await sessionInfoRes.json();
+    const sessionStatus = await getSessionStatus(fetch); 
+    const sessionInfo = await getSessionInfo(fetch);
     
     return { sessionStatus, sessionInfo };
 }

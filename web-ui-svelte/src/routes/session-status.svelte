@@ -5,5 +5,5 @@
 </script>
 
 <div>
-    { JSON.stringify(page.data.sessionData) }
+    { JSON.stringify(page.data.sessionStatus) }
 </div>

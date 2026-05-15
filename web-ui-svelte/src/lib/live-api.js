@@ -18,6 +18,16 @@ async function handleResponse(response) {
     return response.json();
 }
 
+export async function getSessionStatus(customFech = fetch) {
+    const res = await customFech(`/../api/v1/live`);
+    return handleResponse(res);
+}
+
+export async function getSessionInfo(customFech = fetch) {
+    const res = await customFech(`/../api/v1/live/session-info`);
+    return handleResponse(res);
+}
+
 export async function getRaceControlMessages(customFech = fetch) {
     const res = await customFech(`/../api/v1/live/race-control-messages`);
     return handleResponse(res);
