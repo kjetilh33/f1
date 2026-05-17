@@ -1,7 +1,10 @@
 package com.kinnovatio.livetiming.processor;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.micrometer.core.instrument.Counter;
@@ -17,7 +20,10 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import org.jboss.logging.Logger;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /// Processor for F1 live timing messages from Kafka.
 @ApplicationScoped
@@ -26,6 +32,10 @@ public class KafkaLivetimingProcessor {
 
     private static final Set<String> excludeCategories = Set.of("Heartbeat");
     private static final Set<String> routingIncludeCategories = Set.of("SessionInfo", "DriverList", "TimingData");
+
+    // Regex matching underscores or hyphens followed by a lowercase letter/digit
+    private static final Pattern DELIMITER_PATTERN = Pattern.compile("[-_]([a-z0-9])");
+
 
     @Inject
     ObjectMapper objectMapper;
@@ -108,14 +118,15 @@ public class KafkaLivetimingProcessor {
             }
 
             if (message.isStreaming() || routingIncludeCategories.contains(message.category())) {
+                String cleanedPayload = cleanProperties(message.message());
                 // Route the message to appropriate per-category handlers
                 switch (message.category()) {
-                    case "TrackStatus" -> trackStatusEmitter.send(record.value());
-                    case "SessionInfo" -> sessionInfoEmitter.send(record.value());
-                    case "RaceControlMessages" -> raceControlMessageEmitter.send(record.value());
-                    case "WeatherData" -> weatherDataEmitter.send(record.value());
-                    case "DriverList" -> driverListEmitter.send(record.value());
-                    case "TimingData" -> timingDataEmitter.send(record.value());
+                    case "TrackStatus" -> trackStatusEmitter.send(cleanedPayload);
+                    case "SessionInfo" -> sessionInfoEmitter.send(cleanedPayload);
+                    case "RaceControlMessages" -> raceControlMessageEmitter.send(cleanedPayload);
+                    case "WeatherData" -> weatherDataEmitter.send(cleanedPayload);
+                    case "DriverList" -> driverListEmitter.send(cleanedPayload);
+                    case "TimingData" -> timingDataEmitter.send(cleanedPayload);
                     //case "SessionData" -> sessionDataEmitter.send(record.value());
                     //case "TimingAppData" -> timingAppDataEmitter.send(record.value());
                     //case "TimingStats" -> timingStatsEmitter.send(record.value());
@@ -129,4 +140,45 @@ public class KafkaLivetimingProcessor {
             LOG.warnf("Failed parsing livetiming record: %s. Record content: %s", e, record.value());
         }
     }
+
+    public String cleanProperties(String json) throws Exception {
+        JsonNode root = objectMapper.readTree(json);
+        JsonNode processedRoot = toCamelCaseTree(root);
+        return objectMapper.writeValueAsString(processedRoot);
+    }
+
+    private JsonNode toCamelCaseTree(JsonNode node) {
+        if (node.isObject()) {
+            ObjectNode cleanNode = objectMapper.createObjectNode();
+            Iterator<Map.Entry<String, JsonNode>> fields = node.properties().iterator();
+
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> field = fields.next();
+                // 1. Sanitize the key format safely
+                String camelKey = formatKeyToCamelCase(field.getKey());
+                // 2. Recursively populate downstream children
+                cleanNode.set(camelKey, toCamelCaseTree(field.getValue()));
+            }
+            return cleanNode;
+        } else if (node.isArray()) {
+            ArrayNode cleanArray = objectMapper.createArrayNode();
+            for (JsonNode element : node) {
+                cleanArray.add(toCamelCaseTree(element));
+            }
+            return cleanArray;
+        }
+        return node; // Value nodes (text, numbers, booleans) pass straight through
+    }
+
+    private String formatKeyToCamelCase(String key) {
+        if (key == null || key.isEmpty()) return key;
+
+        // Handle PascalCase (lowercase the very first character)
+        String workingKey = Character.toLowerCase(key.charAt(0)) + key.substring(1);
+
+        // Convert any snake_case or kebab-case delimiters cleanly
+        return DELIMITER_PATTERN.matcher(workingKey)
+                .replaceAll(match -> match.group(1).toUpperCase());
+    }
+
 }
