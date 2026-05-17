@@ -118,15 +118,14 @@ public class KafkaLivetimingProcessor {
             }
 
             if (message.isStreaming() || routingIncludeCategories.contains(message.category())) {
-                String cleanedPayload = cleanProperties(message.message());
                 // Route the message to appropriate per-category handlers
                 switch (message.category()) {
-                    case "TrackStatus" -> trackStatusEmitter.send(cleanedPayload);
-                    case "SessionInfo" -> sessionInfoEmitter.send(cleanedPayload);
-                    case "RaceControlMessages" -> raceControlMessageEmitter.send(cleanedPayload);
-                    case "WeatherData" -> weatherDataEmitter.send(cleanedPayload);
-                    case "DriverList" -> driverListEmitter.send(cleanedPayload);
-                    case "TimingData" -> timingDataEmitter.send(cleanedPayload);
+                    case "TrackStatus" -> trackStatusEmitter.send(record.value());
+                    case "SessionInfo" -> sessionInfoEmitter.send(record.value());
+                    case "RaceControlMessages" -> raceControlMessageEmitter.send(record.value());
+                    case "WeatherData" -> weatherDataEmitter.send(record.value());
+                    case "DriverList" -> driverListEmitter.send(record.value());
+                    case "TimingData" -> timingDataEmitter.send(record.value());
                     //case "SessionData" -> sessionDataEmitter.send(record.value());
                     //case "TimingAppData" -> timingAppDataEmitter.send(record.value());
                     //case "TimingStats" -> timingStatsEmitter.send(record.value());
