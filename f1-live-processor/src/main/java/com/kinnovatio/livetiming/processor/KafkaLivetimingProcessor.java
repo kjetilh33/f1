@@ -111,6 +111,10 @@ public class KafkaLivetimingProcessor {
                 return;
             }
 
+            // Convert message properties to camel case
+            String processedMessage = cleanProperties(message.message());
+            message = new LiveTimingMessage(message.category(), processedMessage, message.timestamp(), message.isStreaming());
+
             if (message.isStreaming()) {
                 // The message should be forwarded to the live-streaming channel.
                 livetimingOutEmitter.send(record);
