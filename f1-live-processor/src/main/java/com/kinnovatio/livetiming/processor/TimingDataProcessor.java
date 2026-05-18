@@ -109,9 +109,9 @@ public class TimingDataProcessor {
             // This is an offline (non-live) update to the timing data. Check if it is a valid init message.
             // There should always be a driver with nr "1". Probe this first.
             JsonNode root = objectMapper.readTree(message.message());
-            JsonNode driver1 = root.path("Lines").path("1");
-            if (driver1.isObject() && driver1.path("BestLapTime").isObject()
-                    && driver1.path("BestLapTime").path("Value").asText("").isBlank()) {
+            JsonNode driver1 = root.path("lines").path("1");
+            if (driver1.isObject() && driver1.path("bestLapTime").isObject()
+                    && driver1.path("bestLapTime").path("value").asText("").isBlank()) {
                 LOG.infof("Received a valid baseline timing data message. Will use this as a new baseline.");
                 storeBaselineTimingData(processBaselineMessage(message));
             } else {
@@ -125,13 +125,13 @@ public class TimingDataProcessor {
     private LiveTimingMessage processBaselineMessage(LiveTimingMessage message) {
         try {
             JsonNode root = objectMapper.readTree(message.message());
-            if (root.path("Lines").isObject()) {
-                Set<Map.Entry<String, JsonNode>> lines = root.path("Lines").properties();
+            if (root.path("lines").isObject()) {
+                Set<Map.Entry<String, JsonNode>> lines = root.path("lines").properties();
                 for (Map.Entry<String, JsonNode> line : lines) {
-                    if (line.getValue().path("Sectors").isArray()) {
+                    if (line.getValue().path("sectors").isArray()) {
                         // We have a sectors array. Convert it and its content to object notation
                         ObjectNode lineObject = (ObjectNode) line.getValue();
-                        ArrayNode sectorsArray = (ArrayNode) lineObject.path("Sectors");
+                        ArrayNode sectorsArray = (ArrayNode) lineObject.path("sectors");
                         ObjectNode sectors = objectMapper.createObjectNode();
                         int counter = 0;
                         for (JsonNode sector : sectorsArray) {
@@ -139,7 +139,7 @@ public class TimingDataProcessor {
                             sectors.set(String.valueOf(counter), sector);
                             counter++;
                         }
-                        lineObject.set("Sectors", sectors);
+                        lineObject.set("sectors", sectors);
                     } else {
                         LOG.warnf("processBaselineMessage() - The Lines.%s property does not contain the expected sectors array.",
                                 line.getKey());
@@ -159,15 +159,15 @@ public class TimingDataProcessor {
 
     /// Check if the sector node contains a segment array, and convert it to object notation
     private void processSectorNode(ObjectNode sectorNode) throws JsonProcessingException {
-        if (sectorNode.path("Segments").isArray()) {
-            ArrayNode segmentsArray = (ArrayNode) sectorNode.path("Segments");
+        if (sectorNode.path("segments").isArray()) {
+            ArrayNode segmentsArray = (ArrayNode) sectorNode.path("segments");
             ObjectNode segments = objectMapper.createObjectNode();
             int counter = 0;
             for (JsonNode segment : segmentsArray) {
                 segments.set(String.valueOf(counter), segment);
                 counter++;
             }
-            sectorNode.set("Segments", segments);
+            sectorNode.set("segments", segments);
         } else {
             LOG.warnf("processSectorNode() - The Sector property does not contain the expected Segments array.");
         }

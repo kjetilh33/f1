@@ -100,12 +100,21 @@ public class SessionInfoProcessor {
         }
 
         // Check for updated session status
+        // Use the default camel case property naming scheme
         JsonNode root = objectMapper.readTree(message.message());
-        String sessionStatus = root.path("SessionStatus").asText(defaultStatus);
-        String archiveStatus = root.path("ArchiveStatus").path("Status").asText(defaultStatus);
-        String meetingName = root.path("Meeting").path("Name").asText(defaultStatus);
-        String sessionName = root.path("Name").asText(defaultStatus);
-        int sessionKey = root.path("Key").asInt(-1);
+        String sessionStatus = root.path("sessionStatus").asText(defaultStatus);
+        String archiveStatus = root.path("archiveStatus").path("status").asText(defaultStatus);
+        String meetingName = root.path("meeting").path("name").asText(defaultStatus);
+        String sessionName = root.path("name").asText(defaultStatus);
+        int sessionKey = root.path("key").asInt(-1);
+        if (root.path("SessionStatus").isTextual()) {
+            // Activate the fallback property naming scheme
+            sessionStatus = root.path("SessionStatus").asText(defaultStatus);
+            archiveStatus = root.path("ArchiveStatus").path("Status").asText(defaultStatus);
+            meetingName = root.path("Meeting").path("Name").asText(defaultStatus);
+            sessionName = root.path("Name").asText(defaultStatus);
+            sessionKey = root.path("Key").asInt(-1);
+        }
 
         stateManager.setSessionKey(sessionKey);
         LOG.infof("Received session information about %s, %s, with session id %d, status %s.",
