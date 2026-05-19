@@ -118,7 +118,7 @@ public class KafkaLivetimingProcessor {
             if (message.isStreaming()) {
                 // The message should be forwarded to the live-streaming channel.
                 livetimingOutEmitter.send(record);
-                LOG.tracef("Livetiming message publisched to livetiming-out channel. Message category: %s", message.category());
+                LOG.tracef("Livetiming message published to the livetiming-out channel. Message category: %s", message.category());
             }
 
             if (message.isStreaming() || routingIncludeCategories.contains(message.category())) {
