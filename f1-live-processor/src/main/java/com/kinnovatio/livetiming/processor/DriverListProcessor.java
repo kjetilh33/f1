@@ -40,9 +40,6 @@ public class DriverListProcessor {
     @Inject
     ObjectMapper objectMapper;
 
-    @Inject
-    AgroalDataSource storageDataSource;
-
     /// The database table name where driver list data is stored, sourced from configuration.
     @ConfigProperty(name = "app.driver-list.table")
     String driverListTable;
