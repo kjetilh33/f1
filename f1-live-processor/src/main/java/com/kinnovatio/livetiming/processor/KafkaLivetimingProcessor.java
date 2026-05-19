@@ -146,12 +146,18 @@ public class KafkaLivetimingProcessor {
         }
     }
 
+    /// Parses a JSON string and returns it with all property keys converted to camelCase.
+    ///
+    /// @param json The raw JSON string to process.
+    /// @return A JSON string with normalized keys.
+    /// @throws Exception If JSON parsing or serialization fails.
     public String cleanProperties(String json) throws Exception {
         JsonNode root = objectMapper.readTree(json);
         JsonNode processedRoot = toCamelCaseTree(root);
         return objectMapper.writeValueAsString(processedRoot);
     }
 
+    /// Recursively traverses a JSON tree to normalize all object keys to camelCase.
     private JsonNode toCamelCaseTree(JsonNode node) {
         if (node.isObject()) {
             ObjectNode cleanNode = objectMapper.createObjectNode();
@@ -175,6 +181,11 @@ public class KafkaLivetimingProcessor {
         return node; // Value nodes (text, numbers, booleans) pass straight through
     }
 
+    /// Formats a specific string key into camelCase.
+    ///
+    /// Supports conversion from PascalCase, snake_case, and kebab-case.
+    ///
+    /// @param key The original property key.
     private String formatKeyToCamelCase(String key) {
         if (key == null || key.isEmpty()) return key;
 
