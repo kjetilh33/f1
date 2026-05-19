@@ -109,6 +109,7 @@ public class SessionInfoProcessor {
         int sessionKey = root.path("key").asInt(-1);
         if (root.path("SessionStatus").isTextual()) {
             // Activate the fallback property naming scheme
+            LOG.warnf("Looks like the Json payload contains the pascal case properties--not the camel case.");
             sessionStatus = root.path("SessionStatus").asText(defaultStatus);
             archiveStatus = root.path("ArchiveStatus").path("Status").asText(defaultStatus);
             meetingName = root.path("Meeting").path("Name").asText(defaultStatus);

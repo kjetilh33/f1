@@ -145,6 +145,9 @@ public class TimingDataProcessor {
                                 line.getKey());
                     }
                 }
+            } else {
+                LOG.warnf("Could not find the expected _lines_ property in the Json payload: %s",
+                        message.message().substring(0, Math.min(200, message.message().length() - 1)));
             }
 
             return new LiveTimingMessage(message.category(),
@@ -169,7 +172,8 @@ public class TimingDataProcessor {
             }
             sectorNode.set("segments", segments);
         } else {
-            LOG.warnf("processSectorNode() - The Sector property does not contain the expected Segments array.");
+            LOG.warnf("processSectorNode() - The Sector property does not contain the expected Segments array: %s",
+                    sectorNode.toString().substring(0, Math.min(200, sectorNode.toString().length() - 1)));
         }
     }
 
