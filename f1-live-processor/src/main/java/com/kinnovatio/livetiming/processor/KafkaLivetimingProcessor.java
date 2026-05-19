@@ -114,25 +114,27 @@ public class KafkaLivetimingProcessor {
             // Convert message properties to camel case
             String processedMessage = cleanProperties(message.message());
             message = new LiveTimingMessage(message.category(), processedMessage, message.timestamp(), message.isStreaming());
+            Record<String, String> processedRecord = Record.of(record.key(), objectMapper.writeValueAsString(message));
+
 
             if (message.isStreaming()) {
                 // The message should be forwarded to the live-streaming channel.
-                livetimingOutEmitter.send(record);
+                livetimingOutEmitter.send(processedRecord);
                 LOG.tracef("Livetiming message published to the livetiming-out channel. Message category: %s", message.category());
             }
 
             if (message.isStreaming() || routingIncludeCategories.contains(message.category())) {
                 // Route the message to appropriate per-category handlers
                 switch (message.category()) {
-                    case "TrackStatus" -> trackStatusEmitter.send(record.value());
-                    case "SessionInfo" -> sessionInfoEmitter.send(record.value());
-                    case "RaceControlMessages" -> raceControlMessageEmitter.send(record.value());
-                    case "WeatherData" -> weatherDataEmitter.send(record.value());
-                    case "DriverList" -> driverListEmitter.send(record.value());
-                    case "TimingData" -> timingDataEmitter.send(record.value());
-                    //case "SessionData" -> sessionDataEmitter.send(record.value());
-                    //case "TimingAppData" -> timingAppDataEmitter.send(record.value());
-                    //case "TimingStats" -> timingStatsEmitter.send(record.value());
+                    case "TrackStatus" -> trackStatusEmitter.send(processedRecord.value());
+                    case "SessionInfo" -> sessionInfoEmitter.send(processedRecord.value());
+                    case "RaceControlMessages" -> raceControlMessageEmitter.send(processedRecord.value());
+                    case "WeatherData" -> weatherDataEmitter.send(processedRecord.value());
+                    case "DriverList" -> driverListEmitter.send(processedRecord.value());
+                    case "TimingData" -> timingDataEmitter.send(processedRecord.value());
+                    //case "SessionData" -> sessionDataEmitter.send(processedRecord.value());
+                    //case "TimingAppData" -> timingAppDataEmitter.send(processedRecord.value());
+                    //case "TimingStats" -> timingStatsEmitter.send(processedRecord.value());
                     default -> {
                         LOG.debugf("Message router: unknown message category received: %s", message.category());
                     }
