@@ -67,8 +67,8 @@ public class RaceControlMessageProcessor {
         // Extract the race control message from the payload
         JsonNode root = objectMapper.readTree(message.message());
         List<String> raceControlMessages = new ArrayList<>();
-        if (root.path("Messages").isObject() || root.path("Messages").isArray()) {
-            root.path("Messages").elements().forEachRemaining(node -> {
+        if (root.path("messages").isObject() || root.path("messages").isArray()) {
+            root.path("messages").elements().forEachRemaining(node -> {
                 try {
                     raceControlMessages.add(objectMapper.writeValueAsString(node));
                 } catch (JsonProcessingException e) {
