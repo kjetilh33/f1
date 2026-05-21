@@ -74,11 +74,11 @@ public class KafkaLivetimingProcessor {
     @Channel("timing-data")
     Emitter<String> timingDataEmitter;
 
-    /*
     @Inject
     @Channel("timing-app-data")
     Emitter<String> timingAppDataEmitter;
 
+    /*
     @Inject
     @Channel("timing-stats")
     Emitter<String> timingStatsEmitter;
@@ -133,7 +133,7 @@ public class KafkaLivetimingProcessor {
                     case "DriverList" -> driverListEmitter.send(processedRecord.value());
                     case "TimingData" -> timingDataEmitter.send(processedRecord.value());
                     //case "SessionData" -> sessionDataEmitter.send(processedRecord.value());
-                    //case "TimingAppData" -> timingAppDataEmitter.send(processedRecord.value());
+                    case "TimingAppData" -> timingAppDataEmitter.send(processedRecord.value());
                     //case "TimingStats" -> timingStatsEmitter.send(processedRecord.value());
                     default -> {
                         LOG.debugf("Message router: unknown message category received: %s", message.category());
