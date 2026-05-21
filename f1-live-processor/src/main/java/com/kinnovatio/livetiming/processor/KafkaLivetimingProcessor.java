@@ -190,7 +190,8 @@ public class KafkaLivetimingProcessor {
         if (key == null || key.isEmpty()) return key;
 
         // Handle special case where we have properties representing labels with all caps acronyms
-        if (key.equals(key.toUpperCase())) return key;
+        // or where the name starts with underscore
+        if (key.equals(key.toUpperCase()) || key.startsWith("_")) return key;
 
         // Handle PascalCase (lowercase the very first character)
         String workingKey = Character.toLowerCase(key.charAt(0)) + key.substring(1);
