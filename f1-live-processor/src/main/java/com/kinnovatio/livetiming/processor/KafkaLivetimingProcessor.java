@@ -189,6 +189,9 @@ public class KafkaLivetimingProcessor {
     private String formatKeyToCamelCase(String key) {
         if (key == null || key.isEmpty()) return key;
 
+        // Handle special case where we have properties representing labels with all caps acronyms
+        if (key.equals(key.toUpperCase())) return key;
+
         // Handle PascalCase (lowercase the very first character)
         String workingKey = Character.toLowerCase(key.charAt(0)) + key.substring(1);
 
