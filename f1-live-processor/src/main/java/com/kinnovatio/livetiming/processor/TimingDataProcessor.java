@@ -45,7 +45,7 @@ public class TimingDataProcessor {
     @Inject
     AgroalDataSource storageDataSource;
 
-    /// The database table name where timing data data is stored, sourced from configuration.
+    /// The database table name where timing data is stored, sourced from configuration.
     @ConfigProperty(name = "app.timing-data.table")
     String timingDataTable;
 
