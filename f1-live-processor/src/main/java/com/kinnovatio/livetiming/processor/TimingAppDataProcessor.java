@@ -87,10 +87,13 @@ public class TimingAppDataProcessor {
     public void processTimingData(String recordValue) throws Exception {
         LiveTimingMessage message = objectMapper.readValue(recordValue, LiveTimingMessage.class);
 
+        // Convert array notation to object notation
+        message = processMessage(message);
+
         if (message.isStreaming()) {
             // This is a live-streaming timing app data update. Merge with the in-memory state.
             // The in-memory state will be written to storage by a separate scheduled task.
-            JsonNode update = objectMapper.readTree(processMessage(message).message());
+            JsonNode update = objectMapper.readTree(message.message());
             LOG.debugf("Received timing app data message: %s", message.message());
 
             dataRoot.updateAndGet(current -> {
