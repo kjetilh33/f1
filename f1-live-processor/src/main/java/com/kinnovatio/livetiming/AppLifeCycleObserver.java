@@ -48,6 +48,12 @@ public class AppLifeCycleObserver {
     @ConfigProperty(name = "app.timing-data.table")
     String timingDataTable;
 
+    @ConfigProperty(name = "app.timing-app-data.table")
+    String timingAppDataTable;
+
+    @ConfigProperty(name = "app.timing-stats.table")
+    String timingStatsTable;
+
     void onStart(@Observes StartupEvent ev) {
         // This runs when the application is starting.
         LOG.infof("Starting the live timing processor...");
@@ -56,17 +62,17 @@ public class AppLifeCycleObserver {
         createLiveTimingDbTableIfNotExists(livetimingTable);
         createSessionInfoDbTableIfNotExists(sessionInfoTable); // cannot use repositoryUtils because of session key field
 
-
         try {
             repositoryUtilities.createMultiMessageDbTableIfNotExists(trackStatusTable);
             repositoryUtilities.createMultiMessageDbTableIfNotExists(raceControlMessageTable);
             repositoryUtilities.createKeyedMessageDbTableIfNotExists(weatherDataTable);
             repositoryUtilities.createKeyedMessageDbTableIfNotExists(driverListTable);
             repositoryUtilities.createKeyedMessageDbTableIfNotExists(timingDataTable);
+            repositoryUtilities.createKeyedMessageDbTableIfNotExists(timingAppDataTable);
+            repositoryUtilities.createKeyedMessageDbTableIfNotExists(timingStatsTable);
         } catch (SQLException e) {
             LOG.errorf("Error when bootstrapping the DB tables. Error: %s", e.getMessage());
         }
-
 
         LOG.infof("The processor is ready. Waiting for live timing messages...");
     }
