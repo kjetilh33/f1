@@ -1,11 +1,9 @@
 # Project Roadmap
 
 ## 🚀 High Priority
-- [x] <!-- TODO: --> Have "inactive" session status mark the start of a new session
-- [x] <!-- TODO: --> Capture driver list w/names
-- [ ] <!-- TODO: --> TimingAppData with stint array/object notation handling
-- [x] <!-- TODO: --> Different filter for livetiming to SSE vs routing
-- [x] <!-- TODO: --> State change w/ from - to states
+- [ ] <!-- TODO: --> Timing stats data with array/object notation handling
+- [ ] <!-- TODO: --> Identify laps and laps stats
+- [ ] <!-- TODO: --> SignalR refactoring
 
 ## 🛠️ Features
 - [ ] ...
