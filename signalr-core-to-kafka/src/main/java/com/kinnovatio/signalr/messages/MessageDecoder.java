@@ -2,18 +2,11 @@ package com.kinnovatio.signalr.messages;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
 import io.prometheus.metrics.core.metrics.Counter;
 import org.jboss.logging.Logger;
 
-import com.kinnovatio.signalr.messages.transport.*;
-
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.*;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
@@ -25,7 +18,6 @@ import java.util.zip.Inflater;
 /// decompression of gzipped message payloads, which are common in the F1 live timing feed.
 public class MessageDecoder {
     private static final Logger LOG = Logger.getLogger(MessageDecoder.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     // Metrics fields
     static final Counter deflatedMessageCounter = Counter.builder()
@@ -41,7 +33,6 @@ public class MessageDecoder {
     /// @param messageJson The raw SignalR message as a JSON string.
     /// @return A list of [LiveTimingMessage]s contained in the envelope. The list will be empty if the
     ///         message is not a data-carrying message (e.g., keep-alive).
-    /// @throws JacksonException if the JSON is malformed.
     public static List<? extends LiveTimingRecord> parseLiveTimingMessages(JsonElement messageJson) {
         if (messageJson == null || messageJson.isJsonNull()) {
             LOG.warnf("parseLiveTimingMessages() - Received a null object instead of the expected valid Json element");
@@ -60,40 +51,57 @@ public class MessageDecoder {
     ///
     /// @param messageJson The JSON string for a single message within the "M" array.
     /// @return An [Optional] containing the parsed [LiveTimingMessage], or empty if parsing fails.
-    private static Optional<LiveTimingMessage> parseSingleMethodInvocationMessageBody(String messageJson) {
-        Optional<LiveTimingMessage> returnValue = Optional.empty();
-        try {
-            JsonNode root = objectMapper.readTree(messageJson);
-            
-            // If the message is a streaming feed, unpack the envelope and extract the message data.
-            if (root.path("H").asString().equalsIgnoreCase("Streaming")
-                    && root.path("M").asString().equalsIgnoreCase("feed")
-                    && root.path("A") instanceof ArrayNode array) {
+    public static Optional<LiveTimingMessage> parseMessageFeed(JsonElement categoryJson, JsonElement messageJson, JsonElement timeStampJson) {
+        String category = "";
+        String messageValue = "";
+        Instant timeStamp = Instant.now();
 
-                // The arguments array has a fixed structure: [Category, Data, Timestamp]
-                String category = array.get(0).asString();
-                String messageValue = array.get(1).toString();
-                Instant timeStamp = Instant.parse(array.get(2).asString());
-
-                // Check if the message body is compressed
-                if (category.endsWith(".z")) {
-                    messageValue = inflate(array.get(1).stringValue());
-                }
-
-                returnValue = Optional.of(new LiveTimingMessage(category, messageValue, timeStamp, true));
-            }
-        } catch (Exception e) {
-            LOG.warnf("Error while parsing streaming message: %s", e.toString());
+        // Check input data types
+        if (categoryJson == null || categoryJson.isJsonNull()) {
+            LOG.warnf("parseMessageFeed() - Received a null object instead of the expected valid message category");
+            return Optional.empty();
+        }
+        if (messageJson == null || messageJson.isJsonNull()) {
+            LOG.warnf("parseMessageFeed() - Received a null object instead of the expected valid message");
+            return Optional.empty();
         }
 
-        return returnValue;
+        // Start parsing
+        if (categoryJson.isJsonPrimitive()) {
+            category = categoryJson.getAsString();
+        } else {
+            LOG.warnf("parseMessageFeed() - The message category is not the expected string. Will skip parsing it. Received data: %s", categoryJson.toString());
+        }
+
+        if (messageJson.isJsonObject()) {
+            messageValue = messageJson.toString();
+        } else {
+            LOG.warnf("parseMessageFeed() - The message is not the expected Json object. Will skip parsing it. Received data: %s", messageJson.toString());
+        }
+
+        if (timeStampJson.isJsonPrimitive()) {
+            timeStamp = Instant.parse(timeStampJson.getAsString());
+        } else {
+            LOG.warnf("parseMessageFeed() - The timestamp is not the expected string. Will skip parsing it. Received data: %s", timeStampJson.toString());
+        }
+
+        // Check if the message body is compressed
+        if (category.endsWith(".z")) {
+            try {
+                messageValue = inflate(messageValue);
+            } catch (DataFormatException ex) {
+                LOG.warnf("Error while deflating data in message with category %s. Error message: %s", category, ex.toString());
+            }
+        }
+
+        return Optional.of(new LiveTimingMessage(category, messageValue, timeStamp, true));
     }
 
     /// Parses the body of a hub response message, which can contain multiple data categories.
     ///
-    /// @param messageJson The JSON string from the "R" property of a hub response.
+    /// @param root The JSON root element of a hub response.
     /// @return A list of parsed [LiveTimingMessage]s.
-    private static Optional<LiveTimingHubResponseMessage> parseHubResponseMessage(JsonElement root) {
+    public static Optional<LiveTimingHubResponseMessage> parseHubResponseMessage(JsonElement root) {
         if (root == null || root.isJsonNull()) {
             LOG.warnf("parseHubResponseMesasge() - Received a null object instead of the expected valid Json element");
             return Optional.empty();

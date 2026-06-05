@@ -1,5 +1,9 @@
 package com.kinnovatio.signalr;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
+import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.MessageDecoder;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -7,6 +11,26 @@ import org.slf4j.LoggerFactory;
 
 public class MessageDecoderIntegrationTest {
     final Logger LOG = LoggerFactory.getLogger(this.getClass());
+
+    @Test
+    void messageDecoderTest() throws Exception {
+        final JsonElement category = new JsonPrimitive("TimingData");
+        final JsonElement message = JsonParser.parseString("""
+                {
+                    "4":{"Line":7},
+                    "11":{"Line":8},
+                    "22":{"Line":6},
+                    "31":{"Line":4},
+                    "44":{"Line":3},
+                    "55":{"Line":5}
+                }
+                """);
+        final JsonElement timeStamp = new JsonPrimitive("2025-11-17T10:35:24.588Z");
+
+        LiveTimingMessage messageObject = MessageDecoder.parseMessageFeed(category, message, timeStamp).get();
+
+        LOG.info("Parsed message: \n {}", messageObject);
+    }
 
     @Test
     void unzipTest() throws Exception {
