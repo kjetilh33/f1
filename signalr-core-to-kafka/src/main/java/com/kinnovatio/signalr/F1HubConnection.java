@@ -248,9 +248,16 @@ public abstract class F1HubConnection {
         });
 
         // Register the main handler for the livetiming feed
+        /*
         hubConnection.<JsonElement>on("feed",
                 (Action1<JsonElement>) (userList) -> onFeed(userList),
                 JsonElement.class);
+
+         */
+
+        hubConnection.<JsonElement, JsonElement, JsonElement>on("feed",
+                (element1, element2, element3) -> onFeed(element1, element2, element3),
+                JsonElement.class, JsonElement.class, JsonElement.class);
 
         hubConnection.start()
                 .blockingAwait();
@@ -328,6 +335,25 @@ public abstract class F1HubConnection {
         //recordReceivedCounter.labelValues(recordCategory).inc();
 
         notifySubscribers(element);
+
+        //args.forEach(message -> LOG.info("Message: {}", message));
+    }
+
+    private void onFeed(JsonElement element1, JsonElement element2, JsonElement element3) {
+        LOG.info("onFeed() - Received {} characters feed messages.", element1.getAsString().length());
+        LOG.info("onFeed() -  1: {}...", element1.toString().substring(0, Math.min(200, element1.toString().length())));
+        LOG.info("onFeed() -  2: {}...", element2.toString().substring(0, Math.min(200, element2.toString().length())));
+        LOG.info("onFeed() -  3: {}...", element3.toString().substring(0, Math.min(200, element3.toString().length())));
+
+
+        // Store the messages on disk if logging is enabled
+        if (isMessageLogEnabled()) {
+            logMessage(element1.toString());
+        }
+
+        //recordReceivedCounter.labelValues(recordCategory).inc();
+
+        //notifySubscribers(element);
 
         //args.forEach(message -> LOG.info("Message: {}", message));
     }
