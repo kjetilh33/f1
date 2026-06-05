@@ -38,6 +38,7 @@
 	},
 	"dependencies": {
 		"@flowbite-svelte-plugins/chart": "^0.2.4",
-		"flowbite-svelte-icons": "^3.1.0"
+		"flowbite-svelte-icons": "^3.1.0",
+		"tailwind-merge": "^3.6.0"
 	}
 }
