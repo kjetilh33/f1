@@ -161,7 +161,7 @@ public class Client {
     /// [#processMessage(LiveTimingRecord)] as the consumer for incoming data.
     /// @throws Exception if the connection cannot be established.
     private static void useSignalrCustomClient() throws Exception {
-        hubConnection = F1HubConnection.of(signalRBaseUrl) //.of(signalRBaseUrl) of(testBaseUrl)
+        hubConnection = F1HubConnection.create()
                 //.enableMessageLogging(true)
                 .withConsumer(Client::processMessage)
                 ;

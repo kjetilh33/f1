@@ -1,11 +1,15 @@
 package com.kinnovatio.signalr;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.kinnovatio.signalr.messages.LiveTimingHubResponseMessage;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
+import com.microsoft.signalr.HubConnectionState;
+import com.microsoft.signalr.Subscription;
+import com.sun.tools.jconsole.JConsoleContext;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.observers.DisposableSingleObserver;
-import tools.jackson.databind.ObjectMapper;
 import com.google.auto.value.AutoValue;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
@@ -36,7 +40,7 @@ import java.util.function.Consumer;
 /// over WebSockets. It manages the connection lifecycle, including keep-alive messages and
 /// automatic reconnection.
 ///
-/// Use the static factory methods [#create()] or [#of(String)] to instantiate.
+/// Use the static factory methods [#create()] to instantiate.
 /// Once created, configure it using methods like [#withConsumer(Consumer)] and then
 /// call [#connect()] to establish the connection. After connecting, call
 /// This class is designed to be immutable through the use of AutoValue. Configuration methods
@@ -44,14 +48,11 @@ import java.util.function.Consumer;
 @AutoValue
 public abstract class F1HubConnection {
     private static final Logger LOG = LoggerFactory.getLogger(F1HubConnection.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Path defaultPathMessageLog = Path.of("./received-messages.log");
 
     // Constants for the F1 SignalR service
-    private static final String baseUrl = "https://livetiming.formula1.com/signalr/";
-    private static final String connectionData = """
-                [{"name": "streaming"}]
-                """;
+    private static final String wssConnect = "wss://livetiming.formula1.com/signalrcore";
+    private static final String negotiateUrl = "https://livetiming.formula1.com/signalrcore/negotiate";
 
     /// The data streams to subscribe to for receiving all live timing data.
     private static final String[] dataStreams = {"Heartbeat",
@@ -69,17 +70,21 @@ public abstract class F1HubConnection {
 
     // Internal state management
     private OperationalState operationalState = OperationalState.CLOSED;
-    private ScheduledExecutorService executorService = null;
 
     // Signalr connection management
     private final HttpClient httpClient = HttpClient.newBuilder().build();
-    private HubConnection hubConnection;
+    private HubConnection hubConnection = null;
 
     // Metrics fields
     static final Counter recordReceivedCounter = Counter.builder()
             .name("livetiming_connector_websocket_record_received_total")
             .help("Total number of live timing records received")
             .labelNames("category")
+            .register();
+
+    static final Counter invalidRecordReceivedCounter = Counter.builder()
+            .name("livetiming_connector_websocket_record_received_invalid_total")
+            .help("Total number of live timing records received")
             .register();
 
     static final Gauge connectorOperationalState = Gauge.builder()
@@ -97,36 +102,11 @@ public abstract class F1HubConnection {
     /// @return a new instance of [F1HubConnection].
     /// @throws RuntimeException if the default base URL is invalid.
     public static F1HubConnection create() {
-        try {
-            return F1HubConnection.of(baseUrl);
-        } catch (URISyntaxException e) {
-            LOG.error("Unable to create connection to the default base URL: {}", e.toString());
-            throw new RuntimeException(e);
-        }
-    }
-
-    /// Creates a new F1HubConnection with a specified base URI.
-    ///
-    /// @param baseUri The base URI string for the SignalR service.
-    /// @return a new instance of [F1HubConnection].
-    /// @throws URISyntaxException if the provided baseUri string is not a valid URI.
-    public static F1HubConnection of(String baseUri) throws URISyntaxException {
-        return F1HubConnection.of(new URI(baseUri));
-    }
-
-    /// Creates a new F1HubConnection with a specified base URI.
-    ///
-    /// @param baseUri The base URI for the SignalR service.
-    /// @return a new instance of [F1HubConnection].
-    public static F1HubConnection of(URI baseUri) {
         return F1HubConnection.builder()
-                .setBaseUri(baseUri)
                 .build();
     }
 
     protected abstract Builder toBuilder();
-
-    public abstract URI getBaseUri();
 
     @Nullable
     public abstract Consumer<LiveTimingRecord> getConsumer();
@@ -163,7 +143,9 @@ public abstract class F1HubConnection {
     ///
     /// @return `true` if the connection state is `false` otherwise.
     public boolean isConnected() {
-        return operationalState == OperationalState.OPEN;
+        if (hubConnection == null) return false;
+
+        return hubConnection.getConnectionState() == HubConnectionState.CONNECTED;
     }
 
     /// Gets the high-level operational state of the client.
@@ -207,16 +189,12 @@ public abstract class F1HubConnection {
     /// which prevents the background keep-alive task from attempting any new reconnections. It then
     /// initiates an orderly shutdown of the scheduled executor service that manages the connection.
     public void close() {
-        if (null != executorService) executorService.shutdown();
         if (null != hubConnection) hubConnection.stop();
 
         setOperationalState(OperationalState.CLOSED);
     }
 
     private void connectSignalR(boolean forceConnect) {
-        String wssConnect = "wss://livetiming.formula1.com/signalrcore";
-        String negotiateUrl = "https://livetiming.formula1.com/signalrcore/negotiate";
-
         // Get the necessary cookie headers
         String cookie = getCookie(negotiateUrl).orElse("");
 
@@ -230,24 +208,13 @@ public abstract class F1HubConnection {
         });
 
         // Register the main handler for the livetiming feed
-        /*
-        hubConnection.<JsonElement>on("feed",
-                (Action1<JsonElement>) (userList) -> onFeed(userList),
-                JsonElement.class);
-
-         */
-
         hubConnection.<JsonElement, JsonElement, JsonElement>on("feed",
-                (element1, element2, element3) -> onFeed(element1, element2, element3),
+                this::onFeed,
                 JsonElement.class, JsonElement.class, JsonElement.class);
 
         hubConnection.start()
                 .blockingAwait();
         LOG.info("Connected to SignalR hub with connection id {}", hubConnection.getConnectionId());
-
-        //Observable<String> subscription = hubConnection.stream(String.class, "Subscribe", List.of(List.of(dataStreams)));
-        //subscription.subscribe(message -> LOG.info("Received signalR message: {}", message));
-        //hubConnection.send("Subscribe", List.of(dataStreams));
 
         Single<JsonElement> response =  hubConnection.invoke(JsonElement.class, "Subscribe", List.of(dataStreams));
         response.subscribeWith(new DisposableSingleObserver<JsonElement>() {
@@ -258,12 +225,14 @@ public abstract class F1HubConnection {
 
             @Override
             public void onSuccess(JsonElement value) {
-                LOG.info("Hub invoke success. Response: " + value.toString());
+                LOG.info("Hub invoke success.");
+                onHubResponse(value);
             }
 
             @Override
             public void onError(Throwable error) {
                 LOG.error(error.toString());
+                close();
             }
         });
 
@@ -305,39 +274,41 @@ public abstract class F1HubConnection {
         }
     }
 
-    private void onFeed(JsonElement element) {
-        LOG.info("onFeed() - Received {} characters feed messages.", element.getAsString().length());
-        LOG.info("onFeed() - Message: {}...", element.getAsString().substring(0, Math.min(200, element.getAsString().length())));
-
-        // Store the messages on disk if logging is enabled
-        if (isMessageLogEnabled()) {
-            logMessage(element.toString());
+    private void onHubResponse(JsonElement response) {
+        Optional<LiveTimingHubResponseMessage> liveTimingHubResponseMessage = MessageDecoder.parseHubResponseMessage(response);
+        if (liveTimingHubResponseMessage.isPresent()) {
+            liveTimingHubResponseMessage.get().messages().forEach(message -> {
+                recordReceivedCounter.labelValues(message.category()).inc();
+                notifySubscribers(message);
+            });
+        } else {
+            invalidRecordReceivedCounter.inc();
         }
-
-        //recordReceivedCounter.labelValues(recordCategory).inc();
-
-        notifySubscribers(element);
-
-        //args.forEach(message -> LOG.info("Message: {}", message));
     }
 
-    private void onFeed(JsonElement element1, JsonElement element2, JsonElement element3) {
-        LOG.info("onFeed() - Received {} characters feed messages.", element1.getAsString().length());
-        LOG.info("onFeed() -  1: {}...", element1.toString().substring(0, Math.min(200, element1.toString().length())));
-        LOG.info("onFeed() -  2: {}...", element2.toString().substring(0, Math.min(200, element2.toString().length())));
-        LOG.info("onFeed() -  3: {}...", element3.toString().substring(0, Math.min(200, element3.toString().length())));
+    private void onFeed(JsonElement category, JsonElement message, JsonElement timeStamp) {
+        LOG.debug("onFeed() - Received {} characters feed messages.", message.toString().length());
+        LOG.debug("onFeed() -  1: {}...", category.toString().substring(0, Math.min(200, category.toString().length())));
+        LOG.debug("onFeed() -  2: {}...", message.toString().substring(0, Math.min(200, message.toString().length())));
+        LOG.debug("onFeed() -  3: {}...", timeStamp.toString().substring(0, Math.min(200, timeStamp.toString().length())));
 
 
         // Store the messages on disk if logging is enabled
         if (isMessageLogEnabled()) {
-            logMessage(element1.toString());
+            JsonArray jsonArray = new JsonArray();
+            jsonArray.add(category);
+            jsonArray.add(message);
+            jsonArray.add(timeStamp);
+            logMessage(jsonArray.toString());
         }
 
-        //recordReceivedCounter.labelValues(recordCategory).inc();
-
-        //notifySubscribers(element);
-
-        //args.forEach(message -> LOG.info("Message: {}", message));
+        Optional<LiveTimingMessage> liveTimingMessage = MessageDecoder.parseMessageFeed(category, message, timeStamp);
+        if (liveTimingMessage.isPresent()) {
+            recordReceivedCounter.labelValues(liveTimingMessage.get().category()).inc();
+            notifySubscribers(liveTimingMessage.get());
+        } else {
+            invalidRecordReceivedCounter.inc();
+        }
     }
 
     private void logMessage(String message) {
@@ -358,16 +329,11 @@ public abstract class F1HubConnection {
     /// If a consumer has been registered via [#withConsumer(Consumer)], this method iterates
     /// through the parsed messages and passes each one to the consumer's `accept` method for processing.
     ///
-    /// @param element The raw JSON string received from the WebSocket.
-    private void notifySubscribers(JsonElement element) {
-        String loggingPrefix = "notifySubscribers() - ";
-        LOG.debug(loggingPrefix + "Raw Json message: {}", element);
-
+    /// @param record The live timing record received from signalR.
+    private void notifySubscribers(LiveTimingRecord record) {
         // Need to make sure we have a registered consumer for the messages
         if (null != getConsumer()) {
-            List<? extends LiveTimingRecord> messages = MessageDecoder.parseLiveTimingMessages(element);
-            LOG.debug(loggingPrefix + "Parsed raw message into {} live timing messages", messages.size());
-            messages.forEach(message -> getConsumer().accept(message));
+            getConsumer().accept(record);
         }
     }
 
@@ -399,7 +365,6 @@ public abstract class F1HubConnection {
     @AutoValue.Builder
     abstract static class Builder {
         abstract Builder setMessageLogEnabled(boolean value);
-        abstract Builder setBaseUri(URI value);
         abstract Builder setConsumer(Consumer<LiveTimingRecord> value);
 
         abstract F1HubConnection build();
