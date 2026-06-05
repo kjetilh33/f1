@@ -189,7 +189,7 @@ public abstract class F1HubConnection {
     /// which prevents the background keep-alive task from attempting any new reconnections. It then
     /// initiates an orderly shutdown of the scheduled executor service that manages the connection.
     public void close() {
-        if (null != hubConnection) hubConnection.stop();
+        if (null != hubConnection) hubConnection.stop().blockingAwait();
 
         setOperationalState(OperationalState.CLOSED);
     }
@@ -225,13 +225,13 @@ public abstract class F1HubConnection {
 
             @Override
             public void onSuccess(JsonElement value) {
-                LOG.info("Hub invoke success.");
+                LOG.info("Successfully started subscribing to messages from the hub.");
                 onHubResponse(value);
             }
 
             @Override
             public void onError(Throwable error) {
-                LOG.error(error.toString());
+                LOG.error("Error while subscribing to messages from the hub: " + error.toString());
                 close();
             }
         });
@@ -275,6 +275,11 @@ public abstract class F1HubConnection {
     }
 
     private void onHubResponse(JsonElement response) {
+        // Store the messages on disk if logging is enabled
+        if (isMessageLogEnabled()) {
+            logMessage(response.toString());
+        }
+
         Optional<LiveTimingHubResponseMessage> liveTimingHubResponseMessage = MessageDecoder.parseHubResponseMessage(response);
         if (liveTimingHubResponseMessage.isPresent()) {
             liveTimingHubResponseMessage.get().messages().forEach(message -> {
