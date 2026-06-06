@@ -203,9 +203,11 @@ public abstract class F1HubConnection {
                 .build();
 
         hubConnection.onClosed(exception -> {
-            String exceptionMessage = "Closed by the server.";
-            if (exception != null) exceptionMessage = exception.getMessage();
-            LOG.warn("The hub closed the connection: {}", exceptionMessage);
+            if (exception != null) {
+                LOG.warn("The hub closed the connection: {}", exception.getMessage());
+            } else {
+                LOG.info("Closed the connection to the hub.");
+            }
             setOperationalState(F1HubConnection.OperationalState.CLOSED);
         });
 
