@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -78,10 +79,13 @@ public class ConnectorStatusHttpServer {
     /// this method has no effect.
     ///
     /// @throws IOException if an I/O error occurs when creating or starting the server.
-    /// @throws URISyntaxException if there is an error parsing the static resource path.
-    public void start() throws IOException, URISyntaxException {
+    public void start() throws IOException {
         if (server == null) {
             Path staticResourceRoot = Paths.get("/static");
+            if (!Files.exists(staticResourceRoot)) {
+                LOG.warn("Cannot find resources found for path: {}.",  staticResourceRoot);
+                throw new IOException("Cannot find resources found for path: " + staticResourceRoot);
+            }
             HttpHandler fileHandler = SimpleFileServer.createFileHandler(staticResourceRoot);
             server = HttpServer.create(serverAddress, port);
             server.createContext("/", fileHandler);

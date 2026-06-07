@@ -14,6 +14,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -139,8 +140,13 @@ public class Client {
 
         // Start the F1 hub connection
         useSignalrCustomClient();
-        // Start the connector status http server
-        ConnectorStatusHttpServer.create().start();
+        // Start the connector status http
+        try {
+            ConnectorStatusHttpServer.create().start();
+        } catch (IOException e) {
+            LOG.warn("Cannot start HTTP status server. Will skip it: {}", e.toString());
+        }
+
 
         // Start the metrics http server
         if (enableMetrics) {
