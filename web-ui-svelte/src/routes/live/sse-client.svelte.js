@@ -58,10 +58,18 @@ function parseEvent(event) {
 
 /**
  * @param {function (LiveTimingRecord) : void } listener
+ * @returns {() => void}
  */
 export function subscribeSSE(listener) {
     eventListeners.push(listener);
     console.log("Added SSE listener");
+    return () => {
+        const index = eventListeners.indexOf(listener);
+        if (index !== -1) {
+            eventListeners.splice(index, 1);
+            console.log("Removed SSE listener");
+        }
+    };
 }
 
 

@@ -3,7 +3,7 @@
     import { Toast, ToastContainer } from "flowbite-svelte";
     import { BellRingOutline } from "flowbite-svelte-icons";
     import { fly } from "svelte/transition";
-    import { onDestroy } from "svelte";
+    import { onDestroy, onMount } from "svelte";
 
     /*
     * Race control messages
@@ -58,12 +58,15 @@
     /*
     * Subscribe to SSE messages
     */
-    subscribeSSE((message) => {
-        if (message.category === "RaceControlMessages"
-            && message.isStreaming
-        ) {
-            processMessage(message);
-        }        
+    onMount(() => {
+        const unsubscribe = subscribeSSE((message) => {
+            if (message.category === "RaceControlMessages"
+                && message.isStreaming
+            ) {
+                processMessage(message);
+            }        
+        });
+        return unsubscribe;
     });
 
     /**

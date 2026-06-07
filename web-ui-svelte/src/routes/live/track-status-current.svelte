@@ -2,6 +2,7 @@
     import { subscribeSSE } from "./sse-client.svelte";
     import { Badge } from "flowbite-svelte";
     import { FlagOutline, TruckOutline } from "flowbite-svelte-icons";
+    import { onMount } from "svelte";
     
     /** @import { BadgeProps  } from "flowbite-svelte" */
 
@@ -78,12 +79,15 @@
     /*
     * Subscribe to SSE messages
     */
-    subscribeSSE((message) => {
-        if (message.category === "TrackStatus"
-            && message.isStreaming
-        ) {
-            processMessage(message);
-        }        
+    onMount(() => {
+        const unsubscribe = subscribeSSE((message) => {
+            if (message.category === "TrackStatus"
+                && message.isStreaming
+            ) {
+                processMessage(message);
+            }        
+        });
+        return unsubscribe;
     });
 
     /**

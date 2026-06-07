@@ -3,6 +3,7 @@
     import { Badge, Popover } from "flowbite-svelte";
     import { DownloadSolid } from "flowbite-svelte-icons";
     import { Chart } from "@flowbite-svelte-plugins/chart";
+    import { onMount } from "svelte";
 
 
     /** @import { BadgeProps  } from "flowbite-svelte" */
@@ -140,12 +141,7 @@
         }
     }
 
-    /*
-    * Subscribe to SSE messages
-    */
-    subscribeSSE((message) => {
-        messageCounter++;
-    });
+    // SSE subscription is managed inside onMount at the bottom of the script
 
     function updateChartData() {
         /**
@@ -177,13 +173,24 @@
     }
 
     /*
-    * Log number of messages per second
+    * Manage life cycle events and prevent memory leaks
     */
-    setInterval(() => {
-        logMessagesPerSecond(messageCounter);
-        messageCounter = 0; // Reset for the next second
-        updateChartData();
-    }, 1000);
+    onMount(() => {
+        const unsubscribe = subscribeSSE((message) => {
+            messageCounter++;
+        });
+
+        const interval = setInterval(() => {
+            logMessagesPerSecond(messageCounter);
+            messageCounter = 0; // Reset for the next second
+            updateChartData();
+        }, 1000);
+
+        return () => {
+            unsubscribe();
+            clearInterval(interval);
+        };
+    });
 
 </script>
 
