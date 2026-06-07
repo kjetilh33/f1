@@ -86,6 +86,7 @@ public class ConnectorStatusHttpServer {
             server = HttpServer.create(serverAddress, port);
             server.createContext("/", fileHandler);
             server.createContext("/status", new StatusDataHandler());
+            server.createContext("/healthz", new HealthCheckHandler());
             LOG.info("HTTP server: Ready to serve files from {}", staticResourceRoot);
         }
         server.start();
@@ -188,6 +189,24 @@ public class ConnectorStatusHttpServer {
             } catch (IOException e) {
                 LOG.warn("Error when updating connector status: {}", e.toString());
                 throw e;
+            }
+        }
+    }
+
+    /// An [HttpHandler] that provides a simple health check endpoint for Kubernetes liveness/readiness probes.
+    private static class HealthCheckHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            try (exchange) {
+                if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                    exchange.sendResponseHeaders(405, -1);
+                    return;
+                }
+                String jsonResponse = "{\"status\":\"UP\"}";
+                byte[] responseBytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, responseBytes.length);
+                exchange.getResponseBody().write(responseBytes);
             }
         }
     }

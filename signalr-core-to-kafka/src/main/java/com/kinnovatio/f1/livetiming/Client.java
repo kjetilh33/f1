@@ -140,7 +140,7 @@ public class Client {
         // Start the F1 hub connection
         useSignalrCustomClient();
         // Start the connector status http server
-        //ConnectorStatusHttpServer.create().start();
+        ConnectorStatusHttpServer.create().start();
 
         // Start the metrics http server
         if (enableMetrics) {

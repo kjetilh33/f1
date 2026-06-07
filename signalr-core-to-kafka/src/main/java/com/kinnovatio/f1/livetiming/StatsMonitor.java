@@ -127,6 +127,7 @@ public abstract class StatsMonitor {
     public void stop() {
         if (executorService != null) {
             executorService.shutdown();
+            executorService = null;
         }
     }
 

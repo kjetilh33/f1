@@ -6,34 +6,29 @@ import com.kinnovatio.signalr.messages.LiveTimingHubResponseMessage;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
 import com.microsoft.signalr.HubConnectionState;
-import com.microsoft.signalr.Subscription;
-import com.sun.tools.jconsole.JConsoleContext;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.observers.DisposableSingleObserver;
-import com.google.auto.value.AutoValue;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
 import com.kinnovatio.signalr.messages.MessageDecoder;
 import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.core.metrics.Gauge;
-import io.smallrye.common.constraint.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-
 
 /// Represents a connection to the Formula 1 SignalR live timing hub.
 /// This class handles the negotiation, connection, and communication with the F1 SignalR service
@@ -42,11 +37,8 @@ import java.util.function.Consumer;
 ///
 /// Use the static factory methods [#create()] to instantiate.
 /// Once created, configure it using methods like [#withConsumer(Consumer)] and then
-/// call [#connect()] to establish the connection. After connecting, call
-/// This class is designed to be immutable through the use of AutoValue. Configuration methods
-/// return a new instance with the updated configuration.
-@AutoValue
-public abstract class F1HubConnection {
+/// call [#connect()] to establish the connection.
+public final class F1HubConnection {
     private static final Logger LOG = LoggerFactory.getLogger(F1HubConnection.class);
     private static final Path defaultPathMessageLog = Path.of("./received-messages.log");
 
@@ -62,9 +54,7 @@ public abstract class F1HubConnection {
             "RaceControlMessages", "SessionInfo", "SessionStatus",
             "SessionData", "LapCount", "TimingData",
             "PitLaneTimeCollection",
-            // subscription only?
             "CarData.z", "Position.z", "ChampionshipPrediction",
-            // Not sure if these work now?
             "PitStopSeries", "PitStop"
     };
 
@@ -74,6 +64,9 @@ public abstract class F1HubConnection {
     // Signalr connection management
     private final HttpClient httpClient = HttpClient.newBuilder().build();
     private HubConnection hubConnection = null;
+
+    private final Consumer<LiveTimingRecord> consumer;
+    private final boolean messageLogEnabled;
 
     // Metrics fields
     static final Counter recordReceivedCounter = Counter.builder()
@@ -92,32 +85,32 @@ public abstract class F1HubConnection {
             .help("Connector operational state")
             .register();
 
-    private static F1HubConnection.Builder builder() {
-        return new AutoValue_F1HubConnection.Builder()
-                .setMessageLogEnabled(false);
+    private F1HubConnection(Consumer<LiveTimingRecord> consumer, boolean messageLogEnabled) {
+        this.consumer = consumer;
+        this.messageLogEnabled = messageLogEnabled;
     }
 
-    /// Creates a new F1HubConnection with the default base URL.
+    /// Creates a new F1HubConnection with default settings.
     ///
     /// @return a new instance of [F1HubConnection].
-    /// @throws RuntimeException if the default base URL is invalid.
     public static F1HubConnection create() {
-        return F1HubConnection.builder()
-                .build();
+        return new F1HubConnection(null, false);
     }
 
-    protected abstract Builder toBuilder();
+    public Consumer<LiveTimingRecord> getConsumer() {
+        return consumer;
+    }
 
-    @Nullable
-    public abstract Consumer<LiveTimingRecord> getConsumer();
-    public abstract boolean isMessageLogEnabled();
+    public boolean isMessageLogEnabled() {
+        return messageLogEnabled;
+    }
 
     /// Enables or disables logging of all received raw messages to a file.
     ///
     /// @param enable `true` to enable logging, `false` to disable.
     /// @return a new instance with the updated setting.
     public F1HubConnection enableMessageLogging(boolean enable) {
-        return toBuilder().setMessageLogEnabled(enable).build();
+        return new F1HubConnection(this.consumer, enable);
     }
 
     /// Sets the consumer that will receive [LiveTimingRecord]s.
@@ -125,26 +118,22 @@ public abstract class F1HubConnection {
     /// @param consumer The consumer to process incoming messages.
     /// @return a new instance with the updated consumer.
     public F1HubConnection withConsumer(Consumer<LiveTimingRecord> consumer) {
-        return toBuilder().setConsumer(consumer).build();
+        return new F1HubConnection(consumer, this.messageLogEnabled);
     }
 
-    /// Initiate a SignalR connection. This method will try to set up a connection over websocket. Once the
-    /// connection is ready, you have to call
-    /// messages.
+    /// Initiate a SignalR connection. This method will try to set up a connection over websocket.
     ///
     /// @return `true` if the connection was set up successfully. `false` otherwise.
     public boolean connect() {
         connect(false);
-
         return true;
     }
 
     /// Checks if the client is currently connected to the SignalR hub.
     ///
-    /// @return `true` if the connection state is `false` otherwise.
+    /// @return `true` if the connection state is CONNECTED. `false` otherwise.
     public boolean isConnected() {
         if (hubConnection == null) return false;
-
         return hubConnection.getConnectionState() == HubConnectionState.CONNECTED;
     }
 
@@ -153,11 +142,9 @@ public abstract class F1HubConnection {
     /// (`OPEN`) or has been shut down (`CLOSED`).
     ///
     /// @return The current operational state as a string (e.g., "OPEN", "CLOSED").
-    /// @see OperationalState
     public String getOperationalState() {
         return operationalState.toString();
     }
-
 
     /// Sets the high-level operational state of the client and updates the corresponding metric.
     ///
@@ -168,33 +155,41 @@ public abstract class F1HubConnection {
         connectorOperationalState.set(operationalState.getStatusValue());
     }
 
-
-    private boolean connect(boolean forceConnect) {
+    private synchronized boolean connect(boolean forceConnect) {
         String loggingPrefix = "connect() - ";
 
-        if (operationalState == OperationalState.OPEN  && !forceConnect) {
+        if (operationalState == OperationalState.OPEN && !forceConnect) {
             LOG.warn(loggingPrefix + "The connection is already open. Connect() has no effect.");
             return true;
         }
 
         connectSignalR(forceConnect);
-
         return true;
     }
-
 
     /// Gracefully closes the connection to the F1 SignalR hub and cleans up resources.
     ///
     /// This method signals the client to shut down by setting the operational state to `CLOSED`,
-    /// which prevents the background keep-alive task from attempting any new reconnections. It then
-    /// initiates an orderly shutdown of the scheduled executor service that manages the connection.
-    public void close() {
-        if (null != hubConnection) hubConnection.stop().blockingAwait();
-
+    /// which prevents the background keep-alive task from attempting any new reconnections.
+    public synchronized void close() {
+        if (null != hubConnection) {
+            hubConnection.stop().blockingAwait();
+            hubConnection = null;
+        }
         setOperationalState(OperationalState.CLOSED);
     }
 
     private void connectSignalR(boolean forceConnect) {
+        // Fix for potential leak: close any existing connection before opening a new one
+        if (hubConnection != null && forceConnect) {
+            try {
+                LOG.info("Closing existing connection before initializing new one.");
+                hubConnection.stop().blockingAwait();
+            } catch (Exception e) {
+                LOG.warn("Failed to stop previous hub connection: {}", e.toString());
+            }
+        }
+
         // Get the necessary cookie headers
         String cookie = getCookie(negotiateUrl).orElse("");
 
@@ -220,7 +215,7 @@ public abstract class F1HubConnection {
                 .blockingAwait();
         LOG.info("Connected to SignalR hub with connection id {}", hubConnection.getConnectionId());
 
-        Single<JsonElement> response =  hubConnection.invoke(JsonElement.class, "Subscribe", List.of(dataStreams));
+        Single<JsonElement> response = hubConnection.invoke(JsonElement.class, "Subscribe", List.of(dataStreams));
         response.subscribeWith(new DisposableSingleObserver<JsonElement>() {
             @Override
             public void onStart() {
@@ -329,35 +324,15 @@ public abstract class F1HubConnection {
         }
     }
 
-    /// Parses a raw message string from the SignalR hub and notifies the registered consumer.
-    ///
-    /// This method takes the raw JSON payload from the WebSocket, which can contain an array of
-    /// different data updates (e.g., TimingData, TimingAppData), and uses the [MessageDecoder]
-    /// to parse it into a list of [LiveTimingMessage] objects.
-    ///
-    /// If a consumer has been registered via [#withConsumer(Consumer)], this method iterates
-    /// through the parsed messages and passes each one to the consumer's `accept` method for processing.
-    ///
-    /// @param record The live timing record received from signalR.
     private void notifySubscribers(LiveTimingRecord record) {
-        // Need to make sure we have a registered consumer for the messages
         if (null != getConsumer()) {
             getConsumer().accept(record);
         }
     }
 
     /// Defines the high-level operational state of the F1HubConnection client.
-    /// This state determines whether the client is actively trying to maintain a connection
-    /// or if it has been shut down. It is distinct from the [State] enum, which
-    /// tracks the more granular status of the underlying WebSocket connection.
     enum OperationalState {
-        /// The client is shut down. In this state, no new connections will be attempted,
-        /// and the background keep-alive and reconnection tasks will not run. This is the
-        /// initial state and the state after [#close()] is called.
         CLOSED(0),
-        /// The client is active. It will attempt to establish and maintain a connection
-        /// to the SignalR hub. The background keep-alive and reconnection logic is active
-        /// in this state. This state is set by a call to [#connect()].
         OPEN(1);
 
         private final int statusValue;
@@ -369,13 +344,5 @@ public abstract class F1HubConnection {
         OperationalState(int statusValue) {
             this.statusValue = statusValue;
         }
-    }
-
-    @AutoValue.Builder
-    abstract static class Builder {
-        abstract Builder setMessageLogEnabled(boolean value);
-        abstract Builder setConsumer(Consumer<LiveTimingRecord> value);
-
-        abstract F1HubConnection build();
     }
 }

@@ -7,7 +7,12 @@ spec:
   selector:
     app.kubernetes.io/name: signalr-core-to-kafka
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 8080
       targetPort: 8080
       nodePort: 30000
+    - name: metrics
+      protocol: TCP
+      port: 9400
+      targetPort: 9400
