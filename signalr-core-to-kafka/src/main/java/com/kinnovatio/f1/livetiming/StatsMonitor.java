@@ -1,6 +1,5 @@
 package com.kinnovatio.f1.livetiming;
 
-import com.google.auto.value.AutoValue;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +8,7 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -19,61 +19,51 @@ import java.util.concurrent.atomic.AtomicInteger;
 /// This class tracks the rate of incoming messages per second and per minute,
 /// and maintains a queue of the most recent messages.
 /// It is designed to be thread-safe.
-///
-/// Use the [#create()] method for a default instance or the builder
-/// for a customized one. The monitor must be started with [#start()]
-/// to begin collecting statistics.
-@AutoValue
-public abstract class StatsMonitor {
-    private static final Logger LOG = LoggerFactory.getLogger(StatsMonitor.class);
-    /// The default maximum number of time units (seconds or minutes) to store in the history.
-    /// Set to 120, meaning it will store 120 seconds (2 minutes) of per-second rates and 120 minutes (2 hours) of per-minute rates.
+public final class StatsMonitor {
     private static final int DEFAULT_MAX_TIME_UNITS = 120;
-    /// The default size of the message queue which stores the most recent messages.
     private static final int DEFAULT_MESSAGE_QUEUE_SIZE = 20;
 
-    private final Deque<LiveTimingMessage> messageQueue = new ArrayDeque<>(DEFAULT_MESSAGE_QUEUE_SIZE);
+    private final int maxTimeUnits;
+    private final int messageQueueSize;
+
+    private final Deque<LiveTimingMessage> messageQueue;
+    private final Deque<RateTuple> messageCounterHistorySeconds;
+    private final Deque<RateTuple> messageCounterHistoryMinutes;
 
     private final AtomicInteger messageCounterPerSecond = new AtomicInteger(0);
     private final AtomicInteger messageCounterPerMinute = new AtomicInteger(0);
-    private final Deque<RateTuple> messageCounterHistorySeconds = new ArrayDeque<>(DEFAULT_MAX_TIME_UNITS);
-    private final Deque<RateTuple> messageCounterHistoryMinutes = new ArrayDeque<>(DEFAULT_MAX_TIME_UNITS);
 
     private ScheduledExecutorService executorService = null;
 
-    /// Returns a builder for [StatsMonitor] initialized with default values.
-    ///
-    /// @return a new [Builder] instance.
-    private static StatsMonitor.Builder builder() {
-        return new AutoValue_StatsMonitor.Builder()
-                .setMaxTimeUnits(DEFAULT_MAX_TIME_UNITS)
-                .setMessageQueueSize(DEFAULT_MESSAGE_QUEUE_SIZE);
+    private StatsMonitor(int maxTimeUnits, int messageQueueSize) {
+        this.maxTimeUnits = maxTimeUnits;
+        this.messageQueueSize = messageQueueSize;
+        this.messageQueue = new ArrayDeque<>(messageQueueSize);
+        this.messageCounterHistorySeconds = new ConcurrentLinkedDeque<>();
+        this.messageCounterHistoryMinutes = new ConcurrentLinkedDeque<>();
     }
 
     /// Creates a new [StatsMonitor] with default settings.
     ///
     /// @return a new [StatsMonitor] instance.
     public static StatsMonitor create() {
-        return builder().build();
+        return new StatsMonitor(DEFAULT_MAX_TIME_UNITS, DEFAULT_MESSAGE_QUEUE_SIZE);
     }
 
-    /// Creates a builder for a [StatsMonitor] instance, initialized with the values of this instance.
-    /// @return a new [Builder] instance.
-    public abstract Builder toBuilder();
+    public int getMaxTimeUnits() {
+        return maxTimeUnits;
+    }
 
-    /// Gets the maximum number of time units (seconds or minutes) to store in the rate history.
-    /// @return the maximum number of time units.
-    public abstract int getMaxTimeUnits();
-    /// Gets the maximum size of the recent messages queue.
-    /// @return the message queue size.
-    public abstract int getMessageQueueSize();
+    public int getMessageQueueSize() {
+        return messageQueueSize;
+    }
 
     /// Creates a new [StatsMonitor] instance with the specified maximum number of time units for history.
     ///
     /// @param noUnits the maximum number of time units.
     /// @return a new [StatsMonitor] instance.
     public StatsMonitor withMaxTimeUnits(int noUnits) {
-        return toBuilder().setMaxTimeUnits(noUnits).build();
+        return new StatsMonitor(noUnits, this.messageQueueSize);
     }
 
     /// Creates a new [StatsMonitor] instance with the specified message queue size.
@@ -81,7 +71,7 @@ public abstract class StatsMonitor {
     /// @param size the size of the message queue.
     /// @return a new [StatsMonitor] instance.
     public StatsMonitor withMessageQueueSize(int size) {
-        return toBuilder().setMessageQueueSize(size).build();
+        return new StatsMonitor(this.maxTimeUnits, size);
     }
 
     /// Starts the statistics monitoring.
@@ -90,7 +80,7 @@ public abstract class StatsMonitor {
     /// If the monitor is already running, this method does nothing.
     ///
     /// @return this [StatsMonitor] instance.
-    public StatsMonitor start() {
+    public synchronized StatsMonitor start() {
         if (executorService != null) {
             // the stats monitor is already running. Just return
             return this;
@@ -124,7 +114,7 @@ public abstract class StatsMonitor {
     ///
     /// This method shuts down the scheduled tasks. It should be called to clean up resources
     /// when the monitor is no longer needed.
-    public void stop() {
+    public synchronized void stop() {
         if (executorService != null) {
             executorService.shutdown();
             executorService = null;
@@ -173,22 +163,5 @@ public abstract class StatsMonitor {
     /// @return a [List] of [RateTuple].
     public List<RateTuple> getMessageRatePerMinute() {
         return List.copyOf(messageCounterHistoryMinutes);
-    }
-
-    /// A builder for creating [StatsMonitor] instances.
-    @AutoValue.Builder
-    abstract static class Builder {
-        /// Sets the maximum number of time units (seconds or minutes) to store in the rate history.
-        /// @param value the maximum number of time units.
-        /// @return this builder.
-        abstract Builder setMaxTimeUnits(int value);
-        /// Sets the maximum size of the recent messages queue.
-        /// @param value the message queue size.
-        /// @return this builder.
-        abstract Builder setMessageQueueSize(int value);
-
-        /// Builds and returns a [StatsMonitor] with the configured properties.
-        /// @return a new [StatsMonitor] instance.
-        abstract StatsMonitor build();
     }
 }
