@@ -1,0 +1,15 @@
+name: package-signalr-core-to-kafka
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "signalr-core-to-kafka/**"
+      
+jobs:
+  package-signalr-core-to-kafka:
+    uses: "kjetilh33/utilities/.github/workflows/java-maven-skaffold-build-push-ghcr.yml@main"
+    with:
+      repositoryFolder: "./signalr-core-to-kafka/"
+    secrets: inherit

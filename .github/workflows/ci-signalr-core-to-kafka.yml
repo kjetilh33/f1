@@ -1,0 +1,12 @@
+name: ci-signalr-core-to-kafka
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "signalr-core-to-kafka/**"
+      
+jobs:
+  build-signalr-core-to-kafka:
+    uses: "kjetilh33/utilities/.github/workflows/java-maven-skaffold-build.yml@main"
+    with:
+      repositoryFolder: "./signalr-core-to-kafka/"
