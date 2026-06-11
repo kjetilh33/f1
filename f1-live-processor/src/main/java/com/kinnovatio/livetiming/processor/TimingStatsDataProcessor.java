@@ -9,7 +9,6 @@ import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.livetiming.model.SessionStateUpdate;
 import com.kinnovatio.livetiming.repository.RepositoryUtilities;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
-import io.agroal.api.AgroalDataSource;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.annotation.PostConstruct;
@@ -33,17 +32,17 @@ import java.util.concurrent.atomic.AtomicReference;
 /// and periodically persists that state to the database. It also handles cleanup
 /// when the session status changes.
 @ApplicationScoped
-public class TimingAppDataProcessor {
-    private static final Logger LOG = Logger.getLogger(TimingAppDataProcessor.class);
-    private static final String timingAppDataLiveKey = "timingAppDataLive";
-    private static final String timingAppDataBaselineKey = "timingAppDataBaseline";
+public class TimingStatsDataProcessor {
+    private static final Logger LOG = Logger.getLogger(TimingStatsDataProcessor.class);
+    private static final String timingStatsLiveKey = "timingStatsLive";
+    private static final String timingStatsBaselineKey = "timingStatsBaseline";
 
     @Inject
     ObjectMapper objectMapper;
 
     /// The database table name where timing app data is stored, sourced from configuration.
-    @ConfigProperty(name = "app.timing-app-data.table")
-    String timingAppDataTable;
+    @ConfigProperty(name = "app.timing-stats.table")
+    String timingStatsTable;
 
     @Inject
     GlobalStateManager stateManager;
@@ -56,14 +55,14 @@ public class TimingAppDataProcessor {
     private final AtomicReference<JsonNode> dataRoot = new AtomicReference<>();
 
     /// The timestamp from the most recent timing data message received.
-    private final AtomicReference<Instant> timingAppDataMessageTimestamp = new AtomicReference<>(Instant.now());
+    private final AtomicReference<Instant> timingStatsMessageTimestamp = new AtomicReference<>(Instant.now());
 
     /// The timestamp of the most recent update received from the live timing stream.
-    private final AtomicReference<Instant> timingAppDataUpdateTimestamp = new AtomicReference<>(Instant.now());
+    private final AtomicReference<Instant> timingStatsUpdateTimestamp = new AtomicReference<>(Instant.now());
 
     /// The timestamp of the last successful database persistence operation.
     /// Used to determine if a new write is necessary.
-    private final AtomicReference<Instant> timingAppDataStorageTimestamp = new AtomicReference<>(Instant.now());
+    private final AtomicReference<Instant> timingStatsStorageTimestamp = new AtomicReference<>(Instant.now());
 
     // This runs AFTER 'objectMapper' is injected
     @PostConstruct
@@ -78,7 +77,7 @@ public class TimingAppDataProcessor {
     ///
     /// @param recordValue The raw JSON message containing timing data updates.
     /// @throws Exception if message parsing fails.
-    @Incoming("timing-app-data")
+    @Incoming("timing-stats")
     @Retry(delay = 500, maxRetries = 5)
     @RunOnVirtualThread
     public void processTimingData(String recordValue) throws Exception {
@@ -102,19 +101,20 @@ public class TimingAppDataProcessor {
                 }
             });
 
-            timingAppDataUpdateTimestamp.set(Instant.now());
-            timingAppDataMessageTimestamp.set(message.timestamp());
+            timingStatsUpdateTimestamp.set(Instant.now());
+            timingStatsMessageTimestamp.set(message.timestamp());
         } else {
-            // This is an offline (non-live) update to the timing app data. Check if it is a valid init message.
+            // This is an offline (non-live) update to the timing stats. Check if it is a valid init message.
             // There should always be a driver with nr "1". Probe this first.
             JsonNode root = objectMapper.readTree(message.message());
             JsonNode driver1 = root.path("lines").path("1");
-            if (driver1.isObject() && driver1.path("gridPos").isValueNode()
-                    && driver1.path("line").isValueNode()) {
-                LOG.infof("Received a valid baseline timing app data message. Will use this as a new baseline.");
-                storeBaselineTimingAppData(message);
+            if (driver1.isObject() && driver1.path("personalBestLapTime").isObject()
+                    && driver1.path("PersonalBestLapTime").path("value").isValueNode()
+                    && driver1.path("PersonalBestLapTime").path("value").textValue().isBlank()) {
+                LOG.infof("Received a valid baseline timing stats message. Will use this as a new baseline.");
+                storeBaselineTimingStats(message);
             } else {
-                LOG.infof("TimingAppDataProcessor: Received non-streaming message. Message did not validate as a baseline. "
+                LOG.infof("TimingStatsProcessor: Received non-streaming message. Message did not validate as a baseline. "
                         + "Message excerpt: %s",message.message().substring(0, Math.min(200, message.message().length() - 1)));
             }
         }
@@ -127,17 +127,17 @@ public class TimingAppDataProcessor {
             if (root.path("lines").isObject()) {
                 Set<Map.Entry<String, JsonNode>> lines = root.path("lines").properties();
                 for (Map.Entry<String, JsonNode> line : lines) {
-                    if (line.getValue().path("stints").isArray()) {
+                    if (line.getValue().path("bestSectors").isArray()) {
                         // We have a sectors array. Convert it and its content to object notation
                         ObjectNode lineObject = (ObjectNode) line.getValue();
-                        ArrayNode stintsArray = (ArrayNode) lineObject.path("stints");
-                        ObjectNode stints = objectMapper.createObjectNode();
+                        ArrayNode bestSectorsArray = (ArrayNode) lineObject.path("bestSectors");
+                        ObjectNode bestSectors = objectMapper.createObjectNode();
                         int counter = 0;
-                        for (JsonNode stint : stintsArray) {
-                            stints.set(String.valueOf(counter), stint);
+                        for (JsonNode sector : bestSectorsArray) {
+                            bestSectors.set(String.valueOf(counter), sector);
                             counter++;
                         }
-                        lineObject.set("stints", stints);
+                        lineObject.set("bestSectors", bestSectors);
                     }
                 }
             } else {
@@ -157,30 +157,30 @@ public class TimingAppDataProcessor {
 
     /// Periodically persists the current timing data state to the database.
     ///
-    /// The operation is only performed if [timingAppDataUpdateTimestamp] is newer than
-    /// [timingAppDataStorageTimestamp], indicating there is unsaved data.
+    /// The operation is only performed if [timingStatsUpdateTimestamp] is newer than
+    /// [timingStatsStorageTimestamp], indicating there is unsaved data.
     @RunOnVirtualThread
     @Scheduled(every = "5s", delayed = "5s")
     @Transactional
     public void storeLiveTimingData() {
         LOG.debugf("Running storeLiveTimingData task. Timing data update time: %s, storage time: %s",
-                timingAppDataUpdateTimestamp.get(), timingAppDataStorageTimestamp.get());
+                timingStatsUpdateTimestamp.get(), timingStatsStorageTimestamp.get());
 
-        if (timingAppDataUpdateTimestamp.get().isAfter(timingAppDataStorageTimestamp.get())) {
+        if (timingStatsUpdateTimestamp.get().isAfter(timingStatsStorageTimestamp.get())) {
             LOG.debugf("Updating timing app data to storage: %s", dataRoot.get().toString());
 
             try {
                 repositoryUtilities.storeIntoKeyedMessageTable(
-                        timingAppDataTable,
-                        timingAppDataLiveKey,
+                        timingStatsTable,
+                        timingStatsLiveKey,
                         stateManager.getSessionKey(),
                         objectMapper.writeValueAsString(dataRoot.get()),
-                        timingAppDataMessageTimestamp.get());
+                        timingStatsMessageTimestamp.get());
             } catch (Exception e) {
                 LOG.warnf("Error when trying to store timing app data. Error: %s", e.getMessage());
             }
 
-            timingAppDataStorageTimestamp.set(Instant.now());
+            timingStatsStorageTimestamp.set(Instant.now());
         }
     }
 
@@ -190,13 +190,13 @@ public class TimingAppDataProcessor {
     /// stable snapshot of the timing data, serving as a baseline for subsequent updates.
     ///
     /// @param message The baseline live timing message containing the timing data state.
-    private void storeBaselineTimingAppData(LiveTimingMessage message) {
+    private void storeBaselineTimingStats(LiveTimingMessage message) {
         LOG.debugf("Updating baseline timing app data to storage: %s", dataRoot.get().toString());
 
         try {
             repositoryUtilities.storeIntoKeyedMessageTable(
-                    timingAppDataTable,
-                    timingAppDataBaselineKey,
+                    timingStatsTable,
+                    timingStatsBaselineKey,
                     stateManager.getSessionKey(),
                     message.message(),
                     message.timestamp());
@@ -228,13 +228,13 @@ public class TimingAppDataProcessor {
                 || (sessionStateUpdate.newState() == GlobalStateManager.SessionState.LIVE_SESSION
                         && sessionStateUpdate.oldState() != GlobalStateManager.SessionState.INACTIVE)) {
             LOG.infof("Session state changed from %s to %s. Will clear the live timing app data from the %s table.",
-                    sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus(), timingAppDataTable);
+                    sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus(), timingStatsTable);
             initializeDataRoot();
-            int rowsAffected = repositoryUtilities.clearRowFromKeyedTable(timingAppDataTable, timingAppDataLiveKey);
-            LOG.infof("%d rows deleted from the %s table.", rowsAffected, timingAppDataTable);
+            int rowsAffected = repositoryUtilities.clearRowFromKeyedTable(timingStatsTable, timingStatsLiveKey);
+            LOG.infof("%d rows deleted from the %s table.", rowsAffected, timingStatsTable);
         } else {
             LOG.infof("Session state changed from %s to %s. Will not clear the %s table.",
-                    sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus(), timingAppDataTable);
+                    sessionStateUpdate.oldState().getStatus(), sessionStateUpdate.newState().getStatus(), timingStatsTable);
         }
     }
 }

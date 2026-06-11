@@ -3,7 +3,7 @@
 ## 🚀 High Priority
 - [ ] <!-- TODO: --> Timing stats data with array/object notation handling
 - [ ] <!-- TODO: --> Identify laps and laps stats
-- [ ] <!-- TODO: --> SignalR refactoring
+- [x] <!-- TODO: --> SignalR refactoring
 
 ## 🛠️ Features
 - [ ] ...

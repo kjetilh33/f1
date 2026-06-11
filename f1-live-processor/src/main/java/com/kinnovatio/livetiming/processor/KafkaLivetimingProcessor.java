@@ -78,12 +78,9 @@ public class KafkaLivetimingProcessor {
     @Channel("timing-app-data")
     Emitter<String> timingAppDataEmitter;
 
-    /*
     @Inject
     @Channel("timing-stats")
     Emitter<String> timingStatsEmitter;
-
-     */
 
     /// Processes a batch of Kafka records.
     ///
@@ -134,7 +131,7 @@ public class KafkaLivetimingProcessor {
                     case "TimingData" -> timingDataEmitter.send(processedRecord.value());
                     //case "SessionData" -> sessionDataEmitter.send(processedRecord.value());
                     case "TimingAppData" -> timingAppDataEmitter.send(processedRecord.value());
-                    //case "TimingStats" -> timingStatsEmitter.send(processedRecord.value());
+                    case "TimingStats" -> timingStatsEmitter.send(processedRecord.value());
                     default -> {
                         LOG.debugf("Message router: unknown message category received: %s", message.category());
                     }
