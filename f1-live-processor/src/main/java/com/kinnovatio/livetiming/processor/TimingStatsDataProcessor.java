@@ -94,7 +94,7 @@ public class TimingStatsDataProcessor {
 
             dataRoot.updateAndGet(current -> {
                 try {
-                    // readerForUpdating modifies 'current' in-place or returns updated version
+                    // readerForUpdating modifies 'current' in-place and returns updated version
                     return objectMapper.readerForUpdating(current).readValue(update);
                 } catch (IOException e) {
                     return current; // Fallback on error
