@@ -39,22 +39,21 @@ public class RaceControlMessagesRepository {
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
+                while (resultSet.next()) {
                     int id = resultSet.getInt("id");
                     int sessionId = resultSet.getInt("session_id");
                     String message = resultSet.getString("message");
                     Instant messageTimestamp = resultSet.getObject("message_timestamp", OffsetDateTime.class).toInstant();
                     Instant updatedTimestamp = resultSet.getObject("updated_timestamp", OffsetDateTime.class).toInstant();
                     returnList.add(new SessionMessage(id, sessionId, message, messageTimestamp, updatedTimestamp));
+
+                    // Check if we are close to the limit on number of results
+                    if (returnList.size() == limit) {
+                        LOG.warnf("Number of results from table %s is at the limit of %d items. Please check the database",
+                                raceControlMessageTable, limit);
+                    }
                 }
             }
-
-            // Check if we are close to the limit on number of results
-            if (returnList.size() == limit) {
-                LOG.warnf("Number of results from table %s is at the limit of %d items. Please check the database",
-                        raceControlMessageTable, limit);
-            }
-
         } catch (Exception e) {
             LOG.warnf("Error when trying to read race control messages. Error: %s", e.getMessage());
             throw new RuntimeException("Database error fetching race control messages", e);
