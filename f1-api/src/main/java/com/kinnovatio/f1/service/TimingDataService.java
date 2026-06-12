@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kinnovatio.f1.model.SessionKeyedMessage;
-import com.kinnovatio.f1.repository.DriverListRepository;
 import com.kinnovatio.f1.repository.TimingDataRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -29,17 +28,17 @@ public class TimingDataService {
 
         return timingDataRepository.getTimingDataLive().map(sessionKeyedMessage -> {
             try {
-                JsonNode baselineDriverList = objectMapper.readTree(baselineTimingDataJson);
+                JsonNode baselineTimingData = objectMapper.readTree(baselineTimingDataJson);
                 JsonNode update = objectMapper.readTree(sessionKeyedMessage.message());
                 // readerForUpdating modifies 'current' in-place and returns updated version
-                JsonNode merged = objectMapper.readerForUpdating(baselineDriverList).readValue(update);
+                JsonNode merged = objectMapper.readerForUpdating(baselineTimingData).readValue(update);
 
                 return objectMapper.createObjectNode()
                         .put("updatedTimestamp", sessionKeyedMessage.updatedTimestamp().toString())
                         .put("sessionId", sessionKeyedMessage.sessionId())
                         .set("message", merged);
             } catch (Exception e) {
-                LOG.warnf("Error parsing the raw driver list message into a Json tree structure. Error: %s",
+                LOG.warnf("Error parsing the raw timing data message into a Json tree structure. Error: %s",
                         e.getMessage());
                 throw new RuntimeException(e);
             }
