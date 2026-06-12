@@ -5,19 +5,12 @@ import io.agroal.api.AgroalDataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.Optional;
 
 @ApplicationScoped
 public class DriverListRepository {
-    private static final Logger LOG = Logger.getLogger(DriverListRepository.class);
     private static final String driverListLiveKey = "driverListLive";
     private static final String driverListBaselineKey = "driverListBaseline";
 
