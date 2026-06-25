@@ -7,6 +7,7 @@ import org.jboss.logging.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
@@ -80,7 +81,11 @@ public class MessageDecoder {
         }
 
         if (timeStampJson.isJsonPrimitive()) {
-            timeStamp = Instant.parse(timeStampJson.getAsString());
+            try {
+                timeStamp = Instant.parse(timeStampJson.getAsString());
+            } catch (DateTimeParseException e) {
+                LOG.warnf("parseMessageFeed() - The message timestamp is not in a valid format: %s. Will use current clock time.");
+            }
         } else {
             LOG.warnf("parseMessageFeed() - The timestamp is not the expected string. Will skip parsing it. Received data: %s", timeStampJson.toString());
         }
@@ -110,16 +115,19 @@ public class MessageDecoder {
 
         if (root.isJsonObject()) {
             List<LiveTimingMessage> LiveTimingMessages = new ArrayList<>();
-            Instant timeStamp;
+            Instant timeStamp = Instant.now();
             JsonObject objectRoot = root.getAsJsonObject();
 
             // Check if we have timestamp data in the payload
             if (objectRoot.has("ExtrapolatedClock") && objectRoot.get("ExtrapolatedClock").isJsonObject()
                     && objectRoot.get("ExtrapolatedClock").getAsJsonObject().has("Utc")) {
-                timeStamp = Instant.parse(objectRoot.get("ExtrapolatedClock").getAsJsonObject().get("Utc").getAsString());
+                try {
+                    timeStamp = Instant.parse(objectRoot.get("ExtrapolatedClock").getAsJsonObject().get("Utc").getAsString());
+                } catch (DateTimeParseException e) {
+                    LOG.warnf("parseHubResponseMessage() - The message timestamp is not in a valid format: %s. Will use current clock time.");
+                }
             } else {
-                // Set a default timestamp
-                timeStamp = Instant.now();
+                LOG.warnf("parseHubResponseMessage() - Could not find a valid timestamp. Will use current clock time.");
             }
 
             // Iterate over all fields in the JSON object (e.g., "CarData.z", "SessionInfo").
