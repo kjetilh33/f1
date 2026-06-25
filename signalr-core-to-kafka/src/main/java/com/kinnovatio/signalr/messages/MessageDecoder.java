@@ -84,7 +84,8 @@ public class MessageDecoder {
             try {
                 timeStamp = Instant.parse(timeStampJson.getAsString());
             } catch (DateTimeParseException e) {
-                LOG.warnf("parseMessageFeed() - The message timestamp is not in a valid format: %s. Will use current clock time.");
+                LOG.warnf("parseMessageFeed() - The message timestamp is not in a valid format: %s. Will use current clock time.",
+                        timeStampJson.getAsString());
             }
         } else {
             LOG.warnf("parseMessageFeed() - The timestamp is not the expected string. Will skip parsing it. Received data: %s", timeStampJson.toString());
@@ -124,7 +125,8 @@ public class MessageDecoder {
                 try {
                     timeStamp = Instant.parse(objectRoot.get("ExtrapolatedClock").getAsJsonObject().get("Utc").getAsString());
                 } catch (DateTimeParseException e) {
-                    LOG.warnf("parseHubResponseMessage() - The message timestamp is not in a valid format: %s. Will use current clock time.");
+                    LOG.warnf("parseHubResponseMessage() - The message timestamp is not in a valid format: %s. Will use current clock time.",
+                            objectRoot.get("ExtrapolatedClock").getAsJsonObject().get("Utc").getAsString());
                 }
             } else {
                 LOG.warnf("parseHubResponseMessage() - Could not find a valid timestamp. Will use current clock time.");
