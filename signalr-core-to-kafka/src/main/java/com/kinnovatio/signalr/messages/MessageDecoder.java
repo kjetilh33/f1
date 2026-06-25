@@ -131,6 +131,7 @@ public class MessageDecoder {
             }
 
             // Iterate over all fields in the JSON object (e.g., "CarData.z", "SessionInfo").
+            Instant finalTimeStamp = timeStamp; // must do this stupid copy to satisfy "effectively final" requirement
             objectRoot.entrySet().forEach(entry -> {
                 String messageValue = entry.getValue().toString();
                 // Check if the message body is compressed
@@ -144,7 +145,7 @@ public class MessageDecoder {
                     }
                 }
 
-                LiveTimingMessages.add(new LiveTimingMessage(entry.getKey(), messageValue, timeStamp, false));
+                LiveTimingMessages.add(new LiveTimingMessage(entry.getKey(), messageValue, finalTimeStamp, false));
             });
             returnValue = Optional.of(new LiveTimingHubResponseMessage(LiveTimingMessages, timeStamp));
         } else {
