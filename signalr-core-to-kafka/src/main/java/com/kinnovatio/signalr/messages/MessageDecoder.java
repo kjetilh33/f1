@@ -86,8 +86,8 @@ public class MessageDecoder {
             } catch (DateTimeParseException e) {
                 LOG.warnf("parseMessageFeed() - The message timestamp is not in a valid format: %s. Will use current clock time. Message category: %s. Message summary: %s",
                         timeStampJson.getAsString(),
-                        categoryJson.getAsString(),
-                        messageJson.toString().substring(0, Math.min(400, messageJson.toString().length() - 1)));
+                        category,
+                        messageJson.toString().substring(0, Math.min(400, messageJson.toString().length())));
             }
         } else {
             LOG.warnf("parseMessageFeed() - The timestamp is not the expected string. Will skip parsing it. Received data: %s", timeStampJson.toString());
