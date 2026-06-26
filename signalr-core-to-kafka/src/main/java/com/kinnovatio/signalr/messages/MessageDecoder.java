@@ -84,10 +84,10 @@ public class MessageDecoder {
             try {
                 timeStamp = Instant.parse(timeStampJson.getAsString());
             } catch (DateTimeParseException e) {
-                LOG.warnf("parseMessageFeed() - The message timestamp is not in a valid format: %s. Will use current clock time. Message category: %s %nMessage summary: %s",
+                LOG.warnf("parseMessageFeed() - The message timestamp is not in a valid format: %s. Will use current clock time. Message category: %s. Message summary: %s",
                         timeStampJson.getAsString(),
                         categoryJson.getAsString(),
-                        messageJson.toString().substring(0, Math.min(300, messageJson.toString().length() - 1)));
+                        messageJson.toString().substring(0, Math.min(400, messageJson.toString().length() - 1)));
             }
         } else {
             LOG.warnf("parseMessageFeed() - The timestamp is not the expected string. Will skip parsing it. Received data: %s", timeStampJson.toString());
@@ -153,7 +153,7 @@ public class MessageDecoder {
             });
             returnValue = Optional.of(new LiveTimingHubResponseMessage(LiveTimingMessages, timeStamp));
         } else {
-            LOG.warnf("parseHubResponseMesasge() - The received hub response is not an expected Json object. Will skip parsing it.");
+            LOG.warnf("parseHubResponseMessage() - The received hub response is not an expected Json object. Will skip parsing it.");
         }
 
         return returnValue;
