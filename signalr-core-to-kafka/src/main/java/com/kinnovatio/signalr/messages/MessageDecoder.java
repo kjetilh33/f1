@@ -84,10 +84,25 @@ public class MessageDecoder {
             try {
                 timeStamp = Instant.parse(timeStampJson.getAsString());
             } catch (DateTimeParseException e) {
-                LOG.warnf("parseMessageFeed() - The message timestamp is not in a valid format: %s. Will use current clock time. Message category: %s. Message summary: %s",
-                        timeStampJson.getAsString(),
-                        category,
-                        messageJson.toString().substring(0, Math.min(400, messageJson.toString().length())));
+                // special handling of heartbeats
+                if (category.equalsIgnoreCase("Heartbeat")
+                        && messageJson.isJsonObject()
+                        && messageJson.getAsJsonObject().has("Utc")
+                        && messageJson.getAsJsonObject().get("Utc").isJsonPrimitive()) {
+                    try {
+                        timeStamp = Instant.parse(messageJson.getAsJsonObject().get("Utc").getAsString());
+                    } catch (DateTimeParseException ex) {
+                        LOG.warnf("parseMessageFeed() - The message timestamp is not in a valid format: %s. Will use current clock time. Message category: %s. Message summary: %s",
+                                timeStampJson.getAsString(),
+                                category,
+                                messageJson.toString().substring(0, Math.min(400, messageJson.toString().length())));
+                    }
+                } else {
+                    LOG.warnf("parseMessageFeed() - The message timestamp is not in a valid format: %s. Will use current clock time. Message category: %s. Message summary: %s",
+                            timeStampJson.getAsString(),
+                            category,
+                            messageJson.toString().substring(0, Math.min(400, messageJson.toString().length())));
+                }
             }
         } else {
             LOG.warnf("parseMessageFeed() - The timestamp is not the expected string. Will skip parsing it. Received data: %s", timeStampJson.toString());
