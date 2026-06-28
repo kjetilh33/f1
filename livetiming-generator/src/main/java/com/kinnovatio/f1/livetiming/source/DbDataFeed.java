@@ -25,33 +25,33 @@ import java.util.function.Consumer;
 public class DbDataFeed implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(DbDataFeed.class);
 
-    private static final String japaneseGP = """
+    private static final String austrianGPPractice1 = """
             SELECT id, category, is_streaming, message, message_timestamp
             FROM public.live_timing_messages
             where
-            created_timestamp > '2026-03-29 04:00:00'
+            created_timestamp > '2026-06-26 11:00:00'
             and
-            created_timestamp < '2026-03-29 07:15:00'
+            created_timestamp < '2026-06-26 13:10:00'
             order by 1 asc
             """;
 
-    private static final String miamiGP = """
+    private static final String austrianGPQalifying = """
             SELECT id, category, is_streaming, message, message_timestamp
             FROM public.live_timing_messages
             where
-            created_timestamp > '2026-05-03 15:59:00'
+            created_timestamp > '2026-06-27 13:40:00'
             and
-            created_timestamp < '2026-05-03 19:30:00'
+            created_timestamp < '2026-06-27 15:40:00'
             order by 1 asc
             """;
 
-    private static final String canadaGP = """
+    private static final String austrianGP = """
             SELECT id, category, is_streaming, message, message_timestamp
             FROM public.live_timing_messages
             where
-            created_timestamp > '2026-05-24 18:50:00'
+            created_timestamp > '2026-06-28 12:00:00'
             and
-            created_timestamp < '2026-05-24 22:20:00'
+            created_timestamp < '2026-06-28 14:40:00'
             order by 1 asc
             """;
 
@@ -107,7 +107,7 @@ public class DbDataFeed implements Runnable {
 
     @Override
     public void run() {
-        List<String> queryList = List.of(japaneseGP, miamiGP, canadaGP);
+        List<String> queryList = List.of(austrianGPPractice1, austrianGPQalifying, austrianGP);
         String query = queryList.get(ThreadLocalRandom.current().nextInt(0, queryList.size()));
         LOG.info("Connecting to database...");
 
