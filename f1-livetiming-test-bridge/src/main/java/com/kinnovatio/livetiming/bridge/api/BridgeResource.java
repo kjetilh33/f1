@@ -9,7 +9,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
+
+import java.util.Map;
 
 @ApplicationScoped
 @RunOnVirtualThread
@@ -21,23 +24,25 @@ public class BridgeResource {
     GlobalStateManager stateManager;
 
     @GET
-    public boolean getRootStatus() {
-        return stateManager.isBrideEnabled();
+    public Response getRootStatus() {
+        return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBrideEnabled())).build();
+
     }
 
     @GET
     @Path("enable")
-    public boolean setEnabled() {
+    public Response setEnabled() {
         stateManager.setEnableBridge(true);
         LOG.infof("Enabling bridge.");
-        return stateManager.isBrideEnabled();
+        return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBrideEnabled())).build();
     }
 
     @GET
     @Path("disable")
-    public boolean setDisabled() {
+    public Response setDisabled() {
         stateManager.setEnableBridge(false);
         LOG.infof("Disabling bridge.");
-        return stateManager.isBrideEnabled();
+        return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBrideEnabled())).build();
+
     }
 }
