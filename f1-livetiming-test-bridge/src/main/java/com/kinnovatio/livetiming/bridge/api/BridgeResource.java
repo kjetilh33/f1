@@ -25,7 +25,7 @@ public class BridgeResource {
 
     @GET
     public Response getRootStatus() {
-        return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBrideEnabled())).build();
+        return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBridgeEnabled())).build();
 
     }
 
@@ -34,7 +34,7 @@ public class BridgeResource {
     public Response setEnabled() {
         stateManager.setEnableBridge(true);
         LOG.infof("Enabling bridge.");
-        return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBrideEnabled())).build();
+        return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBridgeEnabled())).build();
     }
 
     @GET
@@ -42,7 +42,7 @@ public class BridgeResource {
     public Response setDisabled() {
         stateManager.setEnableBridge(false);
         LOG.infof("Disabling bridge.");
-        return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBrideEnabled())).build();
+        return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBridgeEnabled())).build();
 
     }
 }

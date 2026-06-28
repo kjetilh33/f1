@@ -1,9 +1,8 @@
 package com.kinnovatio.livetiming.bridge;
 
 import io.quarkus.scheduler.Scheduled;
-import io.quarkus.scheduler.Scheduler;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import java.time.Duration;
@@ -26,27 +25,25 @@ public class GlobalStateManager {
 
     private final Duration maxDuration = Duration.ofHours(5);
 
-    public boolean isBrideEnabled() {
+    public boolean isBridgeEnabled() {
         return enableBridge.get();
     }
 
     public void setEnableBridge(boolean enable) {
-        enableBridge.set(enable);
+        setEnableBridge(enable, maxDuration);
+    }
 
-        if (!enable) {
+    public void setEnableBridge(boolean enable, Duration ttlDuration) {
+        setEnableBridge(enable);
+
+        if (enable) {
+            setTimer(ttlDuration);
+        } else {
             enableTimer.set(false);
         }
     }
 
-    public void setEnableBridge(boolean enableBridge, Duration ttlDuration) {
-        setEnableBridge(enableBridge);
-
-        if (enableBridge) {
-            setTimer(ttlDuration);
-        }
-    }
-
-    public void setTimer(Duration duration) {
+    public Instant setTimer(Duration duration) {
         Duration ttlDuration = duration;
         if (ttlDuration.compareTo(maxDuration) > 0) {
             ttlDuration = maxDuration;
@@ -59,10 +56,16 @@ public class GlobalStateManager {
         ttl.set(newTtl);
 
         LOG.infof("Setting new timer with a time to live of %s", ttlDuration);
+        return newTtl;
     }
 
     @Scheduled(every = "2s", delay = 5, delayUnit = TimeUnit.SECONDS)
+    @RunOnVirtualThread
     void checkTtl() {
+        if (enableTimer.get() && ttl.get().isAfter(Instant.now())) {
+            setEnableBridge(false);
+            LOG.infof("Bridge timer expired. Disabling bridge.");
+        }
 
     }
 }

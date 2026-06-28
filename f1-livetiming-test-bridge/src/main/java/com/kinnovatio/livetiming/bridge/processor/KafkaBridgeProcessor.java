@@ -31,7 +31,7 @@ public class KafkaBridgeProcessor {
     @Retry(delay = 100, maxRetries = 5)
     @RunOnVirtualThread
     public void process(Record<String, String> record) throws Exception {
-        if (stateManager.isBrideEnabled()) {
+        if (stateManager.isBridgeEnabled()) {
             testChannelEmitter.send(record);
         }
     }

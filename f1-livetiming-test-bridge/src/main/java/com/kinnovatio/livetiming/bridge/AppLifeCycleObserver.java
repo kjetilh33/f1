@@ -18,10 +18,10 @@ public class AppLifeCycleObserver {
     void onStart(@Observes StartupEvent ev) {
         // This runs when the application is starting.
         LOG.infof("Starting the livetiming test bridge processor...");
-        if (stateManager.isBrideEnabled()) {
-            LOG.infof("When ready, the bride is enabled and will start forwarding messages.");
+        if (stateManager.isBridgeEnabled()) {
+            LOG.infof("When ready, the bridge is enabled and will start forwarding messages.");
         } else {
-            LOG.infof("When ready, the bride is disabled and will not forward messages.");
+            LOG.infof("When ready, the bridge is disabled and will not forward messages.");
         }
 
         LOG.infof("The processor is ready. Waiting for live timing messages...");
