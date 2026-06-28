@@ -1,6 +1,5 @@
 package com.kinnovatio.livetiming.config;
 
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import jakarta.enterprise.context.ApplicationScoped;
