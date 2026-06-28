@@ -1,0 +1,35 @@
+# Custom configuration options should be added to this file. It will be mapped into the
+# application pod and made available to the container as /config/application.yaml
+
+mp:
+  messaging:
+    incoming:
+      f1-live-raw-in:
+        topic: f1-live-raw
+        connector: smallrye-kafka
+        "auto.offset.reset": earliest
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    outgoing:
+      test-f1-raw-out:
+        topic: test-f1-live-raw
+        connector: smallrye-kafka
+        value:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+
+smallrye:
+  messaging:
+    observation:
+      enabled: true
+
+quarkus:
+  log:
+    level: INFO
+
+kafka:
+  bootstrap:
+    servers: kafka-main-kafka-bootstrap:9092
+
+app:
+  log:
+    source: "External config file."
