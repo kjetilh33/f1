@@ -6,7 +6,7 @@ on:
       - "f1-live-processor/**"
       
 jobs:
-  build-signalr-to-kakfka:
+  build-f1-live-processor:
     uses: "kjetilh33/utilities/.github/workflows/java-maven-skaffold-build.yml@main"
     with:
       repositoryFolder: "./f1-live-processor/" 

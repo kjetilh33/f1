@@ -8,7 +8,7 @@ on:
       - "f1-live-processor/**"
       
 jobs:
-  package-signalr-to-kafka:
+  package-f1-live-processor:
     uses: "kjetilh33/utilities/.github/workflows/java-maven-skaffold-build-push-ghcr.yml@main"
     with:
       repositoryFolder: "./f1-live-processor/"

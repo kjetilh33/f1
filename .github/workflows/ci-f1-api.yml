@@ -6,7 +6,7 @@ on:
       - "f1-api/**"
       
 jobs:
-  build-signalr-to-kakfka:
+  build-f1-api:
     uses: "kjetilh33/utilities/.github/workflows/java-maven-skaffold-build.yml@main"
     with:
       repositoryFolder: "./f1-api/" 
