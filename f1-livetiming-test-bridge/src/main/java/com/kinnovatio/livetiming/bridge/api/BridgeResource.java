@@ -1,6 +1,7 @@
 package com.kinnovatio.livetiming.bridge.api;
 
 import com.kinnovatio.livetiming.bridge.GlobalStateManager;
+import com.kinnovatio.livetiming.bridge.model.BridgeStatus;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -24,25 +25,24 @@ public class BridgeResource {
     GlobalStateManager stateManager;
 
     @GET
-    public Response getRootStatus() {
-        return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBridgeEnabled())).build();
+    public BridgeStatus getRootStatus() {
+        return new BridgeStatus(stateManager.isBridgeEnabled(), stateManager.getTtl());
 
     }
 
     @GET
     @Path("enable")
-    public Response setEnabled() {
+    public BridgeStatus setEnabled() {
         stateManager.enableBridge();
         LOG.infof("Enabling bridge.");
-        return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBridgeEnabled())).build();
+        return new BridgeStatus(stateManager.isBridgeEnabled(), stateManager.getTtl());
     }
 
     @GET
     @Path("disable")
-    public Response setDisabled() {
+    public BridgeStatus setDisabled() {
         stateManager.disableBridge();
         LOG.infof("Disabling bridge.");
-        return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBridgeEnabled())).build();
-
+        return new BridgeStatus(stateManager.isBridgeEnabled(), stateManager.getTtl());
     }
 }

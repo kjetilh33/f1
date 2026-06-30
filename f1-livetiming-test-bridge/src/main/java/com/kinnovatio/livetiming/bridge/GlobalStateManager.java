@@ -80,6 +80,10 @@ public class GlobalStateManager {
         return newTtl;
     }
 
+    public Instant getTtl() {
+        return ttl.get();
+    }
+
     @Scheduled(every = "2s", delay = 5, delayUnit = TimeUnit.SECONDS)
     @RunOnVirtualThread
     void checkTtl() {
