@@ -1,8 +1,14 @@
 package com.kinnovatio.livetiming.bridge;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import java.time.Duration;
@@ -25,22 +31,37 @@ public class GlobalStateManager {
 
     private final Duration maxDuration = Duration.ofHours(5);
 
+    @Inject
+    MeterRegistry registry;
+
+    // Lifecycle hook triggers automatically on application startup
+    void onStart(@Observes StartupEvent ev) {
+        Gauge.builder("livetiming_test_bridge_enabled", enableBridge, bol -> bol.get() ? 1 : 0)
+                .description("Tracks if the bridge enabled or disabled")
+                .register(registry);
+    }
+
+
     public boolean isBridgeEnabled() {
         return enableBridge.get();
     }
 
-    public void setEnableBridge(boolean enable) {
-        setEnableBridge(enable, maxDuration);
+    public void enableBridge() {
+        enableBridge(maxDuration);
     }
 
-    public void setEnableBridge(boolean enable, Duration ttlDuration) {
-        setEnableBridge(enable);
+    public void enableBridge(Duration ttlDuration) {
+        setEnableBridge(true);
+        setTimer(ttlDuration);
+    }
 
-        if (enable) {
-            setTimer(ttlDuration);
-        } else {
-            enableTimer.set(false);
-        }
+    public void disableBridge() {
+        setEnableBridge(false);
+        enableTimer.set(false);
+    }
+
+    private void setEnableBridge(boolean enable) {
+        enableBridge.set(enable);
     }
 
     public Instant setTimer(Duration duration) {

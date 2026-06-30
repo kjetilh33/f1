@@ -32,7 +32,7 @@ public class BridgeResource {
     @GET
     @Path("enable")
     public Response setEnabled() {
-        stateManager.setEnableBridge(true);
+        stateManager.enableBridge();
         LOG.infof("Enabling bridge.");
         return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBridgeEnabled())).build();
     }
@@ -40,7 +40,7 @@ public class BridgeResource {
     @GET
     @Path("disable")
     public Response setDisabled() {
-        stateManager.setEnableBridge(false);
+        stateManager.disableBridge();
         LOG.infof("Disabling bridge.");
         return Response.ok(Map.of("message", "Bridge enabled: " + stateManager.isBridgeEnabled())).build();
 
