@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bridge Controller</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 300px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 1rem 0;
+            text-transform: uppercase;
+        }
+        .enabled { background-color: #d4edda; color: #155724; }
+        .disabled { background-color: #f8d7da; color: #721c24; }
+
+        .ttl-display {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            color: #666;
+        }
+        .btn-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        button {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        .btn-enable { background-color: #28a745; color: white; }
+        .btn-disable { background-color: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Bridge Controller</h2>
+
+    <div id="statusBadge" class="status-badge disabled">Loading...</div>
+    <div class="ttl-display">TTL: <span id="ttlValue">-</span>s</div>
+
+    <div class="btn-container">
+        <button class="btn-enable" onclick="callApi('/enable')">Enable</button>
+        <button class="btn-disable" onclick="callApi('/disable')">Disable</button>
+    </div>
+</div>
+
+<script>
+    // Adjust this base path if your resource has a @Path context root (e.g., '/bridge')
+    const BASE_URL = '';
+
+    // Helper to update the UI based on the BridgeStatus JSON response
+    function updateUI(data) {
+        const badge = document.getElementById('statusBadge');
+        const ttlSpan = document.getElementById('ttlValue');
+
+        if (data.status) { // handling camelCase variations
+            badge.textContent = "Enabled";
+            badge.className = "status-badge enabled";
+        } else {
+            badge.textContent = "Disabled";
+            badge.className = "status-badge disabled";
+        }
+
+        ttlSpan.textContent = data.ttl !== undefined ? data.ttl : '-';
+    }
+
+    // Fetch current status
+    async function getStatus() {
+        try {
+            const response = await fetch(`${BASE_URL}/`);
+            if (response.ok) {
+                const data = await response.json();
+                updateUI(data);
+            }
+        } catch (error) {
+            console.error("Error fetching status:", error);
+        }
+    }
+
+    // Trigger enable/disable actions
+    async function callApi(endpoint) {
+        try {
+            const response = await fetch(`${BASE_URL}${endpoint}`);
+            if (response.ok) {
+                const data = await response.json();
+                updateUI(data);
+            }
+        } catch (error) {
+            console.error(`Error calling ${endpoint}:`, error);
+        }
+    }
+
+    // Poll the status every 1 second to catch the TTL ticking down / expiring
+    setInterval(getStatus, 1000);
+
+    // Initial load
+    getStatus();
+</script>
+
+</body>
+</html>
