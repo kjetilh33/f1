@@ -95,7 +95,7 @@
     // Fetch current status
     async function getStatus() {
         try {
-            const response = await fetch(`${BASE_URL}/`);
+            const response = await fetch(`${BASE_URL}/status`);
             if (response.ok) {
                 const data = await response.json();
                 updateUI(data);

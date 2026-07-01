@@ -25,6 +25,7 @@ public class BridgeResource {
     GlobalStateManager stateManager;
 
     @GET
+    @Path("status")
     public BridgeStatus getRootStatus() {
         return new BridgeStatus(stateManager.isBridgeEnabled(), stateManager.getTtl());
 
