@@ -77,6 +77,7 @@ public class GlobalStateManager {
         ttl.set(newTtl);
 
         LOG.infof("Setting new timer with a time to live of %s", ttlDuration);
+        LOG.infof("The bridge will be disabled at %s", newTtl.toString());
         return newTtl;
     }
 
@@ -84,11 +85,11 @@ public class GlobalStateManager {
         return ttl.get();
     }
 
-    @Scheduled(every = "2s", delay = 5, delayUnit = TimeUnit.SECONDS)
+    @Scheduled(every = "5s", delay = 5, delayUnit = TimeUnit.SECONDS)
     @RunOnVirtualThread
     void checkTtl() {
-        if (enableTimer.get() && ttl.get().isAfter(Instant.now())) {
-            setEnableBridge(false);
+        if (enableTimer.get() && Instant.now().isAfter(ttl.get())) {
+            disableBridge();
             LOG.infof("Bridge timer expired. Disabling bridge.");
         }
 
