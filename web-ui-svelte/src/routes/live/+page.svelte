@@ -2,10 +2,10 @@
   import { Tabs, TabItem, Table } from "flowbite-svelte";
   import { connectSSE, disconnectSSE } from "./sse-client.svelte";
   import { onMount } from 'svelte';
-  import SseStatus from "./sse-status.svelte";
-  import LivetimingMessages from "./livetiming-messages.svelte";
-  import RaceMessageUpdates from "./race-message-updates.svelte";
-  import RaceMessages from "./race-messages.svelte";
+  import SseStatus from "./SseStatus.svelte";
+  import LivetimingMessages from "./LivetimingMessages.svelte";
+  import RaceMessageUpdates from "./RaceMessageUpdates.svelte";
+  import RaceMessages from "./RaceMessages.svelte";
 
   let { data } = $props();
 

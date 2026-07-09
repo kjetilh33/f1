@@ -117,7 +117,7 @@ class F1LiveData {
         if (message.category === "RaceControlMessages" && message.isStreaming) {
                 //processMessage(message);
         }
-  }    
+    }    
 }
 
 export const f1LiveData = new F1LiveData();
