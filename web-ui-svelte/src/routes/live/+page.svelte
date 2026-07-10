@@ -1,7 +1,8 @@
 <script>
-  import { Tabs, TabItem, Table } from "flowbite-svelte";
+  import { Tabs, TabItem } from "flowbite-svelte";
   import { connectSSE, disconnectSSE } from "./sse-client.svelte";
   import { onMount } from 'svelte';
+  import { f1LiveData } from "$lib/f1LiveData.svelte.js";
   import SseStatus from "./SseStatus.svelte";
   import LivetimingMessages from "./LivetimingMessages.svelte";
   import RaceMessageUpdates from "./RaceMessageUpdates.svelte";
@@ -12,10 +13,12 @@
   onMount(() => {
     // EventSource is a browser API and runs only on the client
     connectSSE("/../api/v1/live/livetiming"); 
+    f1LiveData.initialize(); // Initialize the f1LiveData store
     
     // Cleanup function for when the component is destroyed
     return () => {
       disconnectSSE();
+      f1LiveData.cleanup(); // Cleanup the f1LiveData store
     };
   });
     
