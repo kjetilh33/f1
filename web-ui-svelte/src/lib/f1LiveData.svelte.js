@@ -169,19 +169,19 @@ class F1LiveData {
         // 2. Main data-routing junction tree based on feed categories
         switch (message.category) {
             case "RaceControlMessages":
-                this.#updateRaceMessages(message.message);
+                this.#updateRaceMessages(message);
                 break;
 /*
             case "TrackStatus":
-                this.#updateTrackStatus(message.message);
+                this.#updateTrackStatus(message);
                 break;
 
             case "TimingData":
-                this.#updateTimingData(message.message);
+                this.#updateTimingData(message);
                 break;
 
             case "SessionStatus":
-                this.#updateSessionStatus(message.message);
+                this.#updateSessionStatus(message);
                 break;
 */
             default:
