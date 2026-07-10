@@ -132,9 +132,31 @@ class F1LiveData {
      * @param {LiveTimingRecord} message
      */
     #routeIncomingData(message) {
+        // 1. Guard clause: Ignore keep-alives or records without streaming context
+        if (!message || !message.category) return;
+
         // Direct fine-grained mutation updates to correct data slots
-        if (message.category === "RaceControlMessages" && message.isStreaming) {
-                //processMessage(message);
+        // 2. Main data-routing junction tree based on feed categories
+        switch (message.category) {
+            case "RaceControlMessages":
+                this.#updateRaceMessages(message.message);
+                break;
+
+            case "TrackStatus":
+                this.#updateTrackStatus(message.message);
+                break;
+
+            case "TimingData":
+                this.#updateTimingData(message.message);
+                break;
+
+            case "SessionStatus":
+                this.#updateSessionStatus(message.message);
+                break;
+
+            default:
+                // Gracefully ignore unknown or unimplemented categories
+                break;
         }
     }
 
