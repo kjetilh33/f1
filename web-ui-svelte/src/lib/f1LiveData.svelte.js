@@ -29,6 +29,10 @@ class F1LiveData {
     /** @type {(() => void) | null} */
     #sseUnsubscribe = null;
 
+    constructor() {
+
+    }
+
     // SSE stream health metrics
     get sseConnectionStatus() {
         return this.#sse.status;
@@ -127,39 +131,6 @@ class F1LiveData {
         await this.initialize();
     }
 
-    
-    /**
-     * @param {LiveTimingRecord} message
-     */
-    #routeIncomingData(message) {
-        // 1. Guard clause: Ignore keep-alives or records without streaming context
-        if (!message || !message.category) return;
-
-        // Direct fine-grained mutation updates to correct data slots
-        // 2. Main data-routing junction tree based on feed categories
-        switch (message.category) {
-            case "RaceControlMessages":
-                this.#updateRaceMessages(message.message);
-                break;
-
-            case "TrackStatus":
-                this.#updateTrackStatus(message.message);
-                break;
-
-            case "TimingData":
-                this.#updateTimingData(message.message);
-                break;
-
-            case "SessionStatus":
-                this.#updateSessionStatus(message.message);
-                break;
-
-            default:
-                // Gracefully ignore unknown or unimplemented categories
-                break;
-        }
-    }
-
     /**
      * 
      * @param {String} url 
@@ -185,6 +156,46 @@ class F1LiveData {
             }
         }
         return await response.json();
+    }
+
+     /**
+     * @param {LiveTimingRecord} message
+     */
+    #routeIncomingData(message) {
+        // 1. Guard clause: Ignore keep-alives or records without streaming context
+        if (!message || !message.category) return;
+
+        // Direct fine-grained mutation updates to correct data slots
+        // 2. Main data-routing junction tree based on feed categories
+        switch (message.category) {
+            case "RaceControlMessages":
+                this.#updateRaceMessages(message.message);
+                break;
+/*
+            case "TrackStatus":
+                this.#updateTrackStatus(message.message);
+                break;
+
+            case "TimingData":
+                this.#updateTimingData(message.message);
+                break;
+
+            case "SessionStatus":
+                this.#updateSessionStatus(message.message);
+                break;
+*/
+            default:
+                // Gracefully ignore unknown or unimplemented categories
+                break;
+        }
+    }
+
+    /**
+     * 
+     * @param {LiveTimingRecord} message 
+     */
+    #updateRaceMessages(message) {
+
     }
 }
 

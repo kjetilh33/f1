@@ -1,5 +1,6 @@
 <script>
     import { sseStore } from "./sse-client.svelte";
+    import { f1LiveData } from "$lib/f1LiveData.svelte";
     import { Table } from "flowbite-svelte";  
 
     // Formatter defined outside the map for performance
@@ -15,14 +16,14 @@
         timeZone: 'UTC'
     });
 
-    let tableData = $derived(sseStore.messages.map(element => (
-    {
-        //id: messageIndex++,
-        timeStamp: formatter.format(element.timestamp),
-        category: element.category,
-        message: JSON.stringify(element.message),
-        isStreaming: element.isStreaming
-    }))
+    let tableData = $derived(f1LiveData.sseMessages.map(element => (
+        {
+            //id: messageIndex++,
+            timeStamp: formatter.format(element.timestamp),
+            category: element.category,
+            message: JSON.stringify(element.message),
+            isStreaming: element.isStreaming
+        }))
     );
 
 </script>
