@@ -1,11 +1,12 @@
 import { SseStreamHandler } from './sseStreamHandler.svelte.js';
+import { RaceControlMessages } from './models/RaceControlMessages.svelte.js';
 
 class F1LiveData {
     // main data structures
     #sessionStatus = $state({});
     #sessionData = $state({});
     #driverList = $state({});
-    #raceMessages = $state({});
+    #raceControlMessages = new RaceControlMessages();
     #trackStatus = $state({});    
     #timingData = $state({});
     #timingAppData = $state({});
@@ -55,8 +56,8 @@ class F1LiveData {
         return this.#driverList;
     }
 
-    get raceMessages() {
-        return this.#raceMessages;
+    get raceControlMessages() {
+        return this.#raceControlMessages.raceControlMessages;
     }
 
     get trackStatus() {
@@ -85,7 +86,7 @@ class F1LiveData {
             this.#sessionStatus = await this.#getLiveTimingData(this.#sessionStatusUrl);
             this.#sessionData = await this.#getLiveTimingData(this.#sessionInfoUrl);
             this.#driverList = await this.#getLiveTimingData(this.#driverListUrl);
-            this.#raceMessages = await this.#getLiveTimingData(this.#raceMessagesUrl);
+            this.#raceControlMessages.initializeData(await this.#getLiveTimingData(this.#raceMessagesUrl));
             this.#weatherData = await this.#getLiveTimingData(this.#weatherDataUrl);
             this.#timingData = await this.#getLiveTimingData(this.#timingDataUrl);
 
@@ -114,7 +115,7 @@ class F1LiveData {
         this.#sessionStatus = {};
         this.#sessionData = {};
         this.#driverList = {};
-        this.#raceMessages = {};
+        this.#raceControlMessages.clear();
         this.#trackStatus = {};    
         this.#timingData = {};
         this.#timingAppData = {};
@@ -136,15 +137,7 @@ class F1LiveData {
      * @param {String} url 
      */
     async #getLiveTimingData(url) {
-        const res = await fetch(url);
-        return this.#handleResponse(res);
-    }
-
-    /**
-     * Helper function to handle response status and parsing
-     * @param {Response} response
-     */
-    async #handleResponse(response) {
+        const response = await fetch(url);
         if (!response.ok) {
             // Attempt to parse server-provided error message, fallback to status text
             //const errorBody = await response.json().catch(() => ({}));
@@ -169,7 +162,7 @@ class F1LiveData {
         // 2. Main data-routing junction tree based on feed categories
         switch (message.category) {
             case "RaceControlMessages":
-                this.#updateRaceMessages(message);
+                this.#raceControlMessages.update(message);
                 break;
 /*
             case "TrackStatus":
@@ -188,14 +181,6 @@ class F1LiveData {
                 // Gracefully ignore unknown or unimplemented categories
                 break;
         }
-    }
-
-    /**
-     * 
-     * @param {LiveTimingRecord} message 
-     */
-    #updateRaceMessages(message) {
-
     }
 }
 
