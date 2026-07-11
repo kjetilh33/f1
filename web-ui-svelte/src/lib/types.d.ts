@@ -6,7 +6,7 @@ interface LiveTimingRecord {
 }
 
 interface RaceMessageRecord {
-    id: number;
+    //id: number;
     timestamp: Date;
     category: string;
     message: string;
