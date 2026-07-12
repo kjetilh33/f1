@@ -17,6 +17,7 @@ Stints:
 ### Data mining query
 Query to investigate message content
 
+Austrian GP
 ```sql
 SELECT *
 --category, count(*)
@@ -26,14 +27,15 @@ category IN ('TrackStatus')
 --and 
 --is_streaming = true
 and 
-created_timestamp > '2026-03-29 04:00:00'
+created_timestamp > '2026-06-28 11:50:00'
 and 
-created_timestamp < '2026-03-29 07:15:00'
+created_timestamp < '2026-06-28 15:10:00'
 --group by category
 order by 1 desc
 limit 5000
 ```
 
+Silverstone GP
 ```sql
 SELECT *
 --category, count(*)
@@ -43,26 +45,9 @@ category IN ('TrackStatus')
 --and 
 --is_streaming = true
 and 
-created_timestamp > '2026-05-03 15:59:00'
+created_timestamp > '2026-06-28 11:50:00'
 and 
-created_timestamp < '2026-05-03 19:30:00'
---group by category
-order by 1 desc
-limit 5000
-```
-
-```sql
-SELECT *
---category, count(*)
-FROM public.live_timing_messages
-where 
-category IN ('TrackStatus')
---and 
---is_streaming = true
-and 
-created_timestamp > '2026-05-24 18:50:00'
-and 
-created_timestamp < '2026-05-24 22:20:00'
+created_timestamp < '2026-06-28 15:10:00'
 --group by category
 order by 1 desc
 limit 5000

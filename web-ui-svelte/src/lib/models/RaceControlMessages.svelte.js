@@ -1,4 +1,9 @@
+import { error } from "node:console";
+
 export class RaceControlMessages {
+    /**
+     * @type {RaceMessageRecord[]}
+     */
     #raceControlMessages = $state([]);
 
     get raceControlMessages() {
@@ -14,53 +19,58 @@ export class RaceControlMessages {
 
     /**
      * 
-     * @param {Object} initialData 
+     * @param {Object<string, any>} initialData 
      */
     initializeData(initialData) {
+        if (!initialData) {
+            console.error("No initial data for the race control messages.");
+            return;            
+        }
+
+        if (Array.isArray(initialData.messages)) {
+            initialData.messages.forEach((/** @type {Object<string, any>} */ element) => {
+                this.#raceControlMessages.push(this.#parseInitialRaceMessageRecord(element));
+            });
+        }
+
         //this.#raceControlMessages = initialData;
     }
 
     /**
      * Update the collection with a new race message
      * 
-     * @param {LiveTimingRecord} message 
+     * @param {LiveTimingRecord} messageContainer 
      */
-    update (message) {
-        if (message.category === "RaceControlMessages" && message.isStreaming) {
-            /**
-             * @type {RaceMessageRecord[]}
-             */
-            const RaceControlMessages = [];
+    update (messageContainer) {
+        if (messageContainer.category === "RaceControlMessages" && messageContainer.isStreaming) {
 
-            // Check if there are more than one race control message in the event record
-            if (Array.isArray(message.message.messages)) {
-                message.message.Messages.forEach((/** @type {any} */ element) => {
-                    RaceControlMessages.push(this.#parseLiveRaceMessageRecord(message, element));
+            // Check if there are more than one race control message in the event record.
+            // Typically these will be presented in object notation, but we need to handle both
+            // array and object notation.
+            if (Array.isArray(messageContainer.message.messages)) {
+                messageContainer.message.Messages.forEach((/** @type {Object<string, any>} */ element) => {
+                    this.#raceControlMessages.push(this.#parseLiveRaceMessageRecord(messageContainer, element));
                 });
 
             } else {
-                Object.values(message.message.messages).forEach((element) => {
-                    RaceControlMessages.push(this.#parseLiveRaceMessageRecord(message, element));
+                Object.values(messageContainer.message.messages).forEach((/** @type {Object<string, any>} */ element) => {
+                    this.#raceControlMessages.push(this.#parseLiveRaceMessageRecord(messageContainer, element));
                 });   
             }
-
-            RaceControlMessages.forEach(element => {
-                this.#raceControlMessages.push(element);
-            });
         }      
     }
 
     /**
     * @param {LiveTimingRecord} messageContainer
-    * @param {any} element
+    * @param {Object<string, any>} element
     * @returns {RaceMessageRecord}
     */
     #parseLiveRaceMessageRecord(messageContainer, element) {
       return {
                 timestamp: element.utc ? element.utc : messageContainer.timestamp,
                 category: element.category,
-                message: element,
-                lap: element.Lap,
+                message: element.message,
+                lap: element.lap,
                 flag: element.flag,
                 scope: element.scope,
                 sector: element.sector,
@@ -69,6 +79,23 @@ export class RaceControlMessages {
               };
     }
 
+    /**
+    * @param {Object<string, any>} element
+    * @returns {RaceMessageRecord}
+    */
+    #parseInitialRaceMessageRecord(element) {
+      return {
+                timestamp: element.utc ? element.utc : new Date().toISOString(),
+                category: element.category,
+                message: element.message,
+                lap: element.lap,
+                flag: element.flag,
+                scope: element.scope,
+                sector: element.sector,
+                mode: element.mode,
+                status: element.status
+              };
+    }
 }
 
 /*

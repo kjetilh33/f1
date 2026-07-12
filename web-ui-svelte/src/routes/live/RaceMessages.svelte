@@ -1,38 +1,13 @@
 <script>
-    import { subscribeSSE } from "./sse-client.svelte";
+    import { f1LiveData } from "$lib/f1LiveData.svelte";
     import { Card, Listgroup } from "flowbite-svelte";
     import { FlagOutline, TruckOutline } from "flowbite-svelte-icons";
-    import { onMount } from "svelte";
-
-    import { page } from '$app/state';
-
-     /**
-     * @typedef {Object} RaceMessageItem
-     * @property {number} id - message id
-     * @property {Date} timestamp - The timestamp of the record
-     * @property {string} category - message category
-     * @property {string} message - message
-     * @property {string} [lap] - Lap number
-     * @property {string} [flag] - Flag color
-     * @property {string} [scope] - Scope of the message
-     * @property {number} [sector] - Sector of the message
-     * @property {string} [mode] - Mode of safety car (VSC, etc.)
-     * @property {string} [status] - Status of the safety car (deployed, ect.)
-     * 
-     */
 
     /**
-	  * @type {RaceMessageItem[]}
+	  * @type {RaceMessageRecord[]}
 	  */
-    const messageStore = $state([]);
-
-    /**
-	  * @type {RaceMessageItem[]}
-	  */
-    let reversedMessageStore = $derived(messageStore.toReversed());
+    let reversedMessageStore = $derived(f1LiveData.raceControlMessages.toReversed());
     
-    let nextId = $state(1);
-
     // Formatter defined outside the map for performance
     const formatter = new Intl.DateTimeFormat('en-US', {
         month: 'short',
@@ -44,105 +19,6 @@
         timeZoneName: 'short',
         timeZone: 'UTC'
     });
-
-    /*
-    * Add some test data
-    */
-    const testData = [
-      {
-        timestamp: new Date("2026-02-13T16:56:58Z"),
-        category: "Flag",
-        message: "YELLOW IN TRACK SECTOR 15",
-        id: 9999,
-        flag: "YELLOW",
-        scope: "Sector",
-        sector: 15
-      },
-      {
-        timestamp: new Date("2026-02-13T16:57:00Z"),
-        category: "Flag",
-        message: "DOUBLE YELLOW IN TRACK SECTOR 16",
-        id: 9999,
-        flag: "DOUBLE YELLOW",
-        scope: "Sector",
-        sector: 16
-      },
-      {
-        timestamp: new Date("2026-02-13T16:57:39Z"),
-        category: "Flag",
-        message: "CLEAR IN TRACK SECTOR 15",
-        id: 9999,
-        flag: "CLEAR",
-        scope: "Sector",
-        sector: 15
-      }
-
-    ]
-    
-    messageStore.push(...testData);
-    
-    /*
-    * Subscribe to SSE messages
-    */
-    onMount(() => {
-        const unsubscribe = subscribeSSE((message) => {
-            if (message.category === "RaceControlMessages"
-                && message.isStreaming
-            ) {
-                processMessage(message);
-            }        
-        });
-        return unsubscribe;
-    });
-
-    /**
-     * @param {LiveTimingRecord} message
-    */
-    function processMessage(message) {
-      /**
-       * @type {RaceMessageItem[]}
-       */
-      const RaceControlMessages = [];
-
-      // Check if there are more than one race control message in the event record
-      if (Array.isArray(message.message.Messages)) {
-          message.message.Messages.forEach((/** @type {any} */ element) => {
-              RaceControlMessages.push(parseRaceMessageItem(message, element, nextId++));
-          });
-
-      } else {
-          Object.values(message.message.Messages).forEach((element) => {
-              RaceControlMessages.push(parseRaceMessageItem(message, element, nextId++));
-          });   
-      }
-
-      RaceControlMessages.forEach(element => {
-          messageStore.push(element);
-      });
-    }
-
-    /**
-    * @param {LiveTimingRecord} messageContainer
-    * @param {any} element
-    * @param {number} index
-    * @returns {RaceMessageItem}
-    */
-    function parseRaceMessageItem(messageContainer, element, index) {
-      return {
-                timestamp: messageContainer.timestamp,
-                category: element.category,
-                message: element,
-                lap: element.Lap,
-                id: index,
-                flag: element.flag,
-                scope: element.scope,
-                sector: element.sector,
-                mode: element.mode,
-                status: element.status
-              };
-    }
-
-  
 </script>
 
 <Card class="p-4 sm:p-8 md:p-10" size="md">
@@ -153,7 +29,7 @@
   <Listgroup items={reversedMessageStore} class="border-0 dark:bg-transparent!">
     {#snippet children(item)}
       <div class="flex items-center space-x-4 py-2 rtl:space-x-reverse">
-        {#if typeof item === "object" }
+        {#if item && typeof item === "object" }
           {#if item.category === "SafetyCar"}
             <TruckOutline />
           {:else}
