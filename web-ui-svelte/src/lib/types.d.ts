@@ -18,3 +18,7 @@ interface RaceMessageRecord {
     status?: string;
 }
 
+interface TrackStatusRecord {
+    status: string;
+    message: string;
+}
