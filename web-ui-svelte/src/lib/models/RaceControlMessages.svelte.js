@@ -64,7 +64,7 @@ export class RaceControlMessages {
     */
     #parseLiveRaceMessageRecord(messageContainer, element) {
       return {
-                timestamp: element.utc ? element.utc : messageContainer.timestamp,
+                timestamp: element.utc ? new Date(element.utc) : new Date(messageContainer.timestamp),
                 category: element.category,
                 message: element.message,
                 lap: element.lap,
@@ -82,7 +82,7 @@ export class RaceControlMessages {
     */
     #parseInitialRaceMessageRecord(element) {
       return {
-                timestamp: element.utc ? element.utc : new Date().toISOString(),
+                timestamp: element.utc ? new Date(element.utc) : new Date(),
                 category: element.category,
                 message: element.message,
                 lap: element.lap,

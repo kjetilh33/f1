@@ -1,5 +1,4 @@
 <script>
-    import { sseStore } from "./sse-client.svelte";
     import { f1LiveData } from "$lib/f1LiveData.svelte";
     import { Table } from "flowbite-svelte";  
 
