@@ -31,8 +31,9 @@ export class RaceControlMessages {
             initialData.messages.forEach((/** @type {Object<string, any>} */ element) => {
                 this.#raceControlMessages.push(this.#parseInitialRaceMessageRecord(element));
             });
+        } else {
+            console.error("Initial data for race control messages is not in the expected format: ", initialData);
         }
-
         //this.#raceControlMessages = initialData;
     }
 
