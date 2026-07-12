@@ -1,5 +1,3 @@
-import { error } from "node:console";
-
 export class RaceControlMessages {
     /**
      * @type {RaceMessageRecord[]}
@@ -28,9 +26,7 @@ export class RaceControlMessages {
         }
 
         if (Array.isArray(initialData.messages)) {
-            initialData.messages.forEach((/** @type {Object<string, any>} */ element) => {
-                this.#raceControlMessages.push(this.#parseInitialRaceMessageRecord(element));
-            });
+            this.#raceControlMessages = initialData.messages.map(element => this.#parseInitialRaceMessageRecord(element));
         } else {
             console.error("Initial data for race control messages is not in the expected format: ", initialData);
         }
@@ -49,7 +45,7 @@ export class RaceControlMessages {
             // Typically these will be presented in object notation, but we need to handle both
             // array and object notation.
             if (Array.isArray(messageContainer.message.messages)) {
-                messageContainer.message.Messages.forEach((/** @type {Object<string, any>} */ element) => {
+                messageContainer.message.messages.forEach((/** @type {Object<string, any>} */ element) => {
                     this.#raceControlMessages.push(this.#parseLiveRaceMessageRecord(messageContainer, element));
                 });
 
