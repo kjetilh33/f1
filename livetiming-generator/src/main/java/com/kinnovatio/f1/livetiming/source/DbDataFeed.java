@@ -55,6 +55,16 @@ public class DbDataFeed implements Runnable {
             order by 1 asc
             """;
 
+    private static final String britishGP = """
+            SELECT id, category, is_streaming, message, message_timestamp
+            FROM public.live_timing_messages
+            where
+            created_timestamp > '2026-07-05 13:10:00'
+            and
+            created_timestamp < '2026-07-05 16:20:00'
+            order by 1 asc
+            """;
+
     // Config parameters
     private final String jdbcUrl =
             ConfigProvider.getConfig().getValue("source.jdbc.url", String.class);
@@ -107,7 +117,7 @@ public class DbDataFeed implements Runnable {
 
     @Override
     public void run() {
-        List<String> queryList = List.of(austrianGPPractice1, austrianGPQalifying, austrianGP);
+        List<String> queryList = List.of(austrianGPPractice1, austrianGPQalifying, austrianGP, britishGP);
         String query = queryList.get(ThreadLocalRandom.current().nextInt(0, queryList.size()));
         LOG.info("Connecting to database...");
 

@@ -45,9 +45,9 @@ category IN ('TrackStatus')
 --and 
 --is_streaming = true
 and 
-created_timestamp > '2026-06-28 11:50:00'
+created_timestamp > '2026-07-05 13:10:00'
 and 
-created_timestamp < '2026-06-28 15:10:00'
+created_timestamp < '2026-07-05 16:20:00'
 --group by category
 order by 1 desc
 limit 5000
