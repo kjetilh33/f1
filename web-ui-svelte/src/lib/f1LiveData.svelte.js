@@ -1,5 +1,6 @@
 import { SseStreamHandler } from './sseStreamHandler.svelte.js';
 import { RaceControlMessages } from './models/RaceControlMessages.svelte.js';
+import { TrackStatus } from './models/TrackStatus.svelte.js';
 
 class F1LiveData {
     // main data structures
@@ -7,7 +8,7 @@ class F1LiveData {
     #sessionData = $state({});
     #driverList = $state({});
     #raceControlMessages = new RaceControlMessages();
-    #trackStatus = $state({});    
+    #trackStatus = new TrackStatus();    
     #timingData = $state({});
     #timingAppData = $state({});
     #timingStats = $state({});
@@ -61,7 +62,7 @@ class F1LiveData {
     }
 
     get trackStatus() {
-        return this.#trackStatus;
+        return this.#trackStatus.trackStatus;
     }
 
     get timingData() {
@@ -89,6 +90,7 @@ class F1LiveData {
             this.#raceControlMessages.initializeData(await this.#getLiveTimingData(this.#raceMessagesUrl));
             this.#weatherData = await this.#getLiveTimingData(this.#weatherDataUrl);
             this.#timingData = await this.#getLiveTimingData(this.#timingDataUrl);
+            // TODO TrackStatus
 
             // Setup the event dispatcher intercept hook *before* opening the stream
             this.#sseUnsubscribe = this.#sse.subscribe((message) => {
@@ -116,7 +118,7 @@ class F1LiveData {
         this.#sessionData = {};
         this.#driverList = {};
         this.#raceControlMessages.clear();
-        this.#trackStatus = {};    
+        this.#trackStatus.clear();    
         this.#timingData = {};
         this.#timingAppData = {};
         this.#timingStats = {};
@@ -164,11 +166,11 @@ class F1LiveData {
             case "RaceControlMessages":
                 this.#raceControlMessages.update(message);
                 break;
-/*
-            case "TrackStatus":
-                this.#updateTrackStatus(message);
-                break;
 
+            case "TrackStatus":
+                this.#trackStatus.update(message);
+                break;
+/*
             case "TimingData":
                 this.#updateTimingData(message);
                 break;

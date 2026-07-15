@@ -30,7 +30,6 @@ export class RaceControlMessages {
         } else {
             console.error("Initial data for race control messages is not in the expected format: ", initialData);
         }
-        //this.#raceControlMessages = initialData;
     }
 
     /**

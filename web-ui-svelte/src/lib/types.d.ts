@@ -19,6 +19,7 @@ interface RaceMessageRecord {
 }
 
 interface TrackStatusRecord {
+    timestamp: Date;
     status: string;
     message: string;
 }
