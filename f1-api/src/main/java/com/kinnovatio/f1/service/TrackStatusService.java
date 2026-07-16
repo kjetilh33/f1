@@ -1,6 +1,7 @@
 package com.kinnovatio.f1.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -35,9 +36,9 @@ public class TrackStatusService {
                         .put("status", -1)
                         .put("message", "Unknown"));
 
-        return trackStatusRepository.getTrackStatus().map(sessionMessage -> {
+        return trackStatusRepository.getTrackStatus().<ObjectNode>map(sessionMessage -> {
             try {
-                return (ObjectNode) objectMapper.createObjectNode()
+                return objectMapper.createObjectNode()
                         .put("updatedTimestamp", sessionMessage.updatedTimestamp().toString())
                         .put("sessionId", sessionMessage.sessionId())
                         .set("message", objectMapper.readTree(sessionMessage.message()));
