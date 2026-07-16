@@ -37,7 +37,7 @@ public class TrackStatusService {
 
         return trackStatusRepository.getTrackStatus().map(sessionMessage -> {
             try {
-                return objectMapper.createObjectNode()
+                return (ObjectNode) objectMapper.createObjectNode()
                         .put("updatedTimestamp", sessionMessage.updatedTimestamp().toString())
                         .put("sessionId", sessionMessage.sessionId())
                         .set("message", objectMapper.readTree(sessionMessage.message()));
