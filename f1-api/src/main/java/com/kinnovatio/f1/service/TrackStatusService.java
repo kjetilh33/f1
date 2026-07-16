@@ -11,6 +11,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +27,14 @@ public class TrackStatusService {
     @Inject
     ObjectMapper objectMapper;
 
-    public Optional<ObjectNode> getTrackStatus() {
+    public ObjectNode getTrackStatus() {
+        ObjectNode fallback = objectMapper.createObjectNode()
+                .put("updatedTimestamp", Instant.now().toString())
+                .put("sessionId", -1)
+                .set("message", objectMapper.createObjectNode()
+                        .put("status", -1)
+                        .put("message", "Unknown"));
+
         return trackStatusRepository.getTrackStatus().map(sessionMessage -> {
             try {
                 return objectMapper.createObjectNode()
@@ -38,7 +46,7 @@ public class TrackStatusService {
                         e.getMessage());
                 throw new RuntimeException(e);
             }
-        });
+        }).orElse(fallback);
     }
 
     public ObjectNode getTrackStatusHistory() {

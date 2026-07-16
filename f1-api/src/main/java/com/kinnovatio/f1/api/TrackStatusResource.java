@@ -27,12 +27,23 @@ public class TrackStatusResource {
     TrackStatusService trackStatusService;
 
     @GET
-    public String getRaceControlMessages() {
+    public String getTrackStatus() {
+        try {
+            return objectMapper.writeValueAsString(trackStatusService.getTrackStatus());
+        } catch (JsonProcessingException e) {
+            LOG.warnf("Error getting track status messages: %s", e.getMessage());
+            throw new jakarta.ws.rs.ProcessingException("Error getting track status.");
+        }
+    }
+
+    @GET
+    @Path("history")
+    public String getTrackStatusHistory() {
         try {
             return objectMapper.writeValueAsString(trackStatusService.getTrackStatusHistory());
         } catch (JsonProcessingException e) {
             LOG.warnf("Error getting track status messages: %s", e.getMessage());
-            throw new jakarta.ws.rs.ProcessingException("Error getting track status messages");
+            throw new jakarta.ws.rs.ProcessingException("Error getting track status messages.");
         }
     }
 }
