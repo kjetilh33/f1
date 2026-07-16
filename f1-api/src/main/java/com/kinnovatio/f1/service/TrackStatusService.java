@@ -40,7 +40,7 @@ public class TrackStatusService {
                 return objectMapper.createObjectNode()
                         .put("updatedTimestamp", sessionMessage.updatedTimestamp().toString())
                         .put("sessionId", sessionMessage.sessionId())
-                        .put("message", sessionMessage.message());
+                        .set("message", objectMapper.readTree(sessionMessage.message()));
             } catch (Exception e) {
                 LOG.warnf("Error parsing the track status message into a Json tree structure. Error: %s",
                         e.getMessage());
