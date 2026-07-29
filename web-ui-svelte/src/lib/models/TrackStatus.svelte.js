@@ -2,7 +2,11 @@ export class TrackStatus {
     /**
      * @type {TrackStatusRecord}
      */
-    #trackStatus = $state({});
+    #trackStatus = $state({
+        timestamp: new Date(),
+        status: "-1",
+        message: "unknown"
+    });
 
     get trackStatus() {
         return this.#trackStatus;
@@ -12,7 +16,11 @@ export class TrackStatus {
      * Clear state cleanly on reset
      */
     clear() {
-        this.#trackStatus = {};
+        this.#trackStatus = {
+            timestamp: new Date(),
+            status: "-1",
+            message: "unknown"
+        };
     }
 
     /**
@@ -25,8 +33,8 @@ export class TrackStatus {
             return;            
         }
 
-        this.#trackStatus.timestamp = new Date();
-        this.#trackStatus.status = initialData.status ? initialData.status : -1;
+        this.#trackStatus.timestamp = initialData.timestamp ? new Date(initialData.timestamp) : new Date();
+        this.#trackStatus.status = initialData.status ? initialData.status : "-1";
         this.#trackStatus.message = initialData.message ? initialData.message : "unknown";
     }
 
@@ -40,6 +48,8 @@ export class TrackStatus {
             this.#trackStatus.timestamp = new Date(messageContainer.timestamp);
             this.#trackStatus.status = messageContainer.message.status;
             this.#trackStatus.message = messageContainer.message.message;
+        } else {
+            console.error("Unexpected message category or streaming state for track status: ", messageContainer.category, messageContainer.isStreaming);
         }
     }
 }

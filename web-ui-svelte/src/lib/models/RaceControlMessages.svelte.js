@@ -53,7 +53,9 @@ export class RaceControlMessages {
                     this.#raceControlMessages.push(this.#parseLiveRaceMessageRecord(messageContainer, element));
                 });   
             }
-        }      
+        }  else {
+            console.error("Unexpected message category or streaming state for race control messages: ", messageContainer.category, messageContainer.isStreaming);
+        }    
     }
 
     /**

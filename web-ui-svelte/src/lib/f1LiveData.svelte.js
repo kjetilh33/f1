@@ -20,6 +20,7 @@ class F1LiveData {
     #sessionInfoUrl = `${this.#urlPrefix}/session-info`;
     #raceMessagesUrl = `${this.#urlPrefix}/race-control-messages`;
     #driverListUrl = `${this.#urlPrefix}/driver-list`;
+    #trackStatusUrl = `${this.#urlPrefix}/track-status`;
     #weatherDataUrl = `${this.#urlPrefix}/weather-data`;
     #timingDataUrl = `${this.#urlPrefix}/timing-data`;
 
@@ -87,6 +88,7 @@ class F1LiveData {
             this.#sessionStatus = await this.#getLiveTimingData(this.#sessionStatusUrl);
             this.#sessionData = await this.#getLiveTimingData(this.#sessionInfoUrl);
             this.#driverList = await this.#getLiveTimingData(this.#driverListUrl);
+            this.#trackStatus.initializeData(await this.#getLiveTimingData(this.#trackStatusUrl));
             this.#raceControlMessages.initializeData(await this.#getLiveTimingData(this.#raceMessagesUrl));
             this.#weatherData = await this.#getLiveTimingData(this.#weatherDataUrl);
             this.#timingData = await this.#getLiveTimingData(this.#timingDataUrl);
