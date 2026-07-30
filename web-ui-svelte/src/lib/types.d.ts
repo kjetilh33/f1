@@ -23,3 +23,14 @@ interface TrackStatusRecord {
     status: string;
     message: string;
 }
+
+interface WeatherRecord {
+    timestamp: Date;
+    airTemp: string;
+    humidity: string;
+    pressure: string;
+    rainfall: string;
+    trackTemp: string;
+    windDirection: string;
+    windSpeed: string;        
+}
