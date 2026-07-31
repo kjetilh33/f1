@@ -34,3 +34,19 @@ interface WeatherRecord {
     windSpeed: string;
     windDirection: string;            
 }
+
+interface DriverRecord {
+    timestamp: Date;
+    tla: string;
+    line: string;
+    fullName: string;
+    lastName: string;
+    firstName: string;
+    teamName: string;
+    reference: string;
+    teamColour: string;
+    headshotUrl: string;
+    racingNumber: string;
+    broadcastName: string;
+    publicIdRight: string;
+}
