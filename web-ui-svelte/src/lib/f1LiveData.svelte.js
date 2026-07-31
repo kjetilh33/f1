@@ -1,6 +1,7 @@
 import { SseStreamHandler } from './sseStreamHandler.svelte.js';
-import { RaceControlMessages } from './models/RaceControlMessages.svelte.js';
-import { TrackStatus } from './models/TrackStatus.svelte.js';
+import { RaceControlMessages } from './models/raceControlMessages.svelte.js';
+import { TrackStatus } from './models/trackStatus.svelte.js';
+import { WeatherData } from './models/weatherData.svelte.js';
 
 class F1LiveData {
     // main data structures
@@ -12,7 +13,7 @@ class F1LiveData {
     #timingData = $state({});
     #timingAppData = $state({});
     #timingStats = $state({});
-    #weatherData = $state({});
+    #weatherData = new WeatherData();
 
     // API endpoints for fetching data
     #urlPrefix = "/../api/v1/live";
@@ -79,7 +80,7 @@ class F1LiveData {
     }
 
     get weatherData() {
-        return this.#weatherData;
+        return this.#weatherData.weatherData;
     }
 
     async initialize() {
@@ -90,7 +91,7 @@ class F1LiveData {
             this.#driverList = await this.#getLiveTimingData(this.#driverListUrl);
             this.#trackStatus.initializeData(await this.#getLiveTimingData(this.#trackStatusUrl));
             this.#raceControlMessages.initializeData(await this.#getLiveTimingData(this.#raceMessagesUrl));
-            this.#weatherData = await this.#getLiveTimingData(this.#weatherDataUrl);
+            this.#weatherData.initializeData(await this.#getLiveTimingData(this.#weatherDataUrl));
             this.#timingData = await this.#getLiveTimingData(this.#timingDataUrl);
             // TODO TrackStatus
 
@@ -124,7 +125,7 @@ class F1LiveData {
         this.#timingData = {};
         this.#timingAppData = {};
         this.#timingStats = {};
-        this.#weatherData = {};
+        this.#weatherData.clear();
         this.#sse.clearMessages();
     }
 
@@ -172,6 +173,10 @@ class F1LiveData {
             case "TrackStatus":
                 this.#trackStatus.update(message);
                 break;
+
+            case "WeatherData":
+            this.#weatherData.update(message);
+            break;
 /*
             case "TimingData":
                 this.#updateTimingData(message);

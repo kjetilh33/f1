@@ -31,6 +31,6 @@ interface WeatherRecord {
     pressure: string;
     rainfall: string;
     trackTemp: string;
-    windDirection: string;
-    windSpeed: string;        
+    windSpeed: string;
+    windDirection: string;            
 }
