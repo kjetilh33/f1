@@ -33,7 +33,7 @@ export class TrackStatus {
             return;            
         }
 
-        this.#trackStatus.timestamp = initialData.timestamp ? new Date(initialData.timestamp) : new Date();
+        this.#trackStatus.timestamp = initialData.updatedTimestamp ? new Date(initialData.updatedTimestamp) : new Date();
         this.#trackStatus.status = initialData.status ? initialData.status : "-1";
         this.#trackStatus.message = initialData.message ? initialData.message : "unknown";
     }
