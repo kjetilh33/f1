@@ -138,7 +138,16 @@ class F1LiveData {
     }
 
     /**
-     * 
+     * Allows external modules (like your AppStateManager) to tap directly into raw stream ticks
+     * @param {function (LiveTimingRecord) : void } listener
+     * @returns {() => void} Unsubscribe cleanup function
+     */
+    subscribeSse(listener) {
+        return this.#sse.subscribe(listener);
+    }
+
+    /**
+     * Fetches live timing data from the specified URL.
      * @param {String} url 
      */
     async #getLiveTimingData(url) {
@@ -175,8 +184,8 @@ class F1LiveData {
                 break;
 
             case "WeatherData":
-            this.#weatherData.update(message);
-            break;
+                this.#weatherData.update(message);
+                break;
 /*
             case "TimingData":
                 this.#updateTimingData(message);
