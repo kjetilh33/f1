@@ -1,6 +1,5 @@
 <script>
   import { Card } from "flowbite-svelte";
-  import { InfoCircleSolid } from "flowbite-svelte-icons";
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-4 sm:px-4 lg:px-4 lg:mt-8">
