@@ -1,5 +1,5 @@
 <script>
-    import { subscribeSSE } from "./sse-client.svelte";
+    import { f1LiveData } from "$lib/f1LiveData.svelte";
     import { Toast, ToastContainer } from "flowbite-svelte";
     import { BellRingOutline } from "flowbite-svelte-icons";
     import { fly } from "svelte/transition";
@@ -59,7 +59,7 @@
     * Subscribe to SSE messages
     */
     onMount(() => {
-        const unsubscribe = subscribeSSE((message) => {
+        const unsubscribe = f1LiveData.subscribeSSE((message) => {
             if (message.category === "RaceControlMessages"
                 && message.isStreaming
             ) {

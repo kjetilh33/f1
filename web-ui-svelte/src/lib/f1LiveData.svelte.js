@@ -142,7 +142,7 @@ class F1LiveData {
      * @param {function (LiveTimingRecord) : void } listener
      * @returns {() => void} Unsubscribe cleanup function
      */
-    subscribeSse(listener) {
+    subscribeSSE(listener) {
         return this.#sse.subscribe(listener);
     }
 
