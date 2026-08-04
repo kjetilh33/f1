@@ -161,7 +161,7 @@
 
 <ToastContainer position="top-right">
   {#each toasts as toast (toast.id)}
-    <Toast align={false} dismissable={true} transition={fly} params={{ x: 200, duration: 800 }} onclose={handleClose(toast.id)} bind:toastStatus={toast.visible}>
+    <Toast align={false} dismissable={true} transition={fly} transitionParams={{ x: 200, duration: 800 }} onclose={handleClose(toast.id)} bind:toastStatus={toast.visible}>
         {#snippet icon()}
             <BellRingOutline class="h-6 w-6" />
         {/snippet}
