@@ -1,5 +1,5 @@
 <script>
-    import { subscribeSSE, sseStore } from "./sse-client.svelte";
+    import { f1LiveData } from "$lib/f1LiveData.svelte";
     import { Badge, Popover } from "flowbite-svelte";
     import { DownloadSolid } from "flowbite-svelte-icons";
     import { Chart } from "@flowbite-svelte-plugins/chart";
@@ -105,9 +105,9 @@
      * @type {BadgeProps["color"]}
      */
     let connectionBadgeColor = $derived.by(() => {
-        if (sseStore.status === "connected") {
+        if (f1LiveData.sseConnectionStatus === "connected") {
             return "green";
-        } else if (sseStore.status === "connecting") {
+        } else if (f1LiveData.sseConnectionStatus === "connecting") {
             return "yellow";
         } else {
             return "gray";
@@ -176,7 +176,7 @@
     * Manage life cycle events and prevent memory leaks
     */
     onMount(() => {
-        const unsubscribe = subscribeSSE((message) => {
+        const unsubscribe = f1LiveData.subscribeSSE((message) => {
             messageCounter++;
         });
 
@@ -197,7 +197,7 @@
 <div >
     <Badge color={connectionBadgeColor} border>
         <DownloadSolid class="me-1.5 h-2.5 w-2.5" />
-        {sseStore.status}
+        {f1LiveData.sseConnectionStatus}
     </Badge>
     <Popover class="w-48 text-sm font-light" >
         <div class="space-y-2">
