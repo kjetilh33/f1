@@ -6,6 +6,7 @@
   import LivetimingMessages from "./LivetimingMessages.svelte";
   import RaceMessageUpdates from "./RaceMessageUpdates.svelte";
   import RaceMessages from "./RaceMessages.svelte";
+	import TrackStatusCurrent from "./TrackStatusCurrent.svelte";
 
   let { data } = $props();
 
@@ -42,6 +43,7 @@
         <div class="grid grid-flow-col grid-rows-4 gap-4">
           <div class="bg-gray-400">
             <p>"Status"</p>
+            <TrackStatusCurrent />
           </div>
           <div class="bg-gray-400">
             <p>"Clock"</p>

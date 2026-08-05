@@ -1,65 +1,11 @@
 <script>
-    import { subscribeSSE } from "./sse-client.svelte";
+    import { f1LiveData } from "$lib/f1LiveData.svelte";
     import { Badge } from "flowbite-svelte";
     import { FlagOutline, TruckOutline } from "flowbite-svelte-icons";
-    import { onMount } from "svelte";
     
     /** @import { BadgeProps  } from "flowbite-svelte" */
 
-
-    /*
-    * Track status messages
-    * {"category":"TrackStatus",
-    * "message":"{
-        "_kf": true,
-        "Status": "1",
-        "Message": "AllClear"
-        }",
-    * "timestamp":1765479570.948033200,
-    * "isStreaming":true
-    * }
-    * 
-    * {
-        {
-            "_kf": true,
-            "Status": "6",
-            "Message": "VSCDeployed"
-        }
-      }
-    */
-
-    /**
-     * @typedef {Object} TrackStatusItem
-     * @property {Date} timestamp - The timestamp of the record
-     * @property {string} category - Record category
-     * @property {string} message - track status message
-     * @property {string} status - track status 
-     */
-
-     // Formatter defined outside the map for performance
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-        hour12: false,
-        timeZoneName: 'short',
-        timeZone: 'UTC'
-    });
-
-
-    /**
-	 * @type {TrackStatusItem}
-	 */
-    let trackStatus = $state(
-        {
-            timestamp: new Date(),
-            category: "TrackStatus",
-            message: "Unknown",
-            status: "-1"            
-        }
-    );
+    let trackStatus = f1LiveData.trackStatus;
 
     /**
      * @type {BadgeProps["color"]}
@@ -75,33 +21,18 @@
             return "yellow";
         }
     });
-    
-    /*
-    * Subscribe to SSE messages
-    */
-    onMount(() => {
-        const unsubscribe = subscribeSSE((message) => {
-            if (message.category === "TrackStatus"
-                && message.isStreaming
-            ) {
-                processMessage(message);
-            }        
-        });
-        return unsubscribe;
+
+     // Formatter defined outside the map for performance
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false,
+        timeZoneName: 'short',
+        timeZone: 'UTC'
     });
-
-    /**
-     * @param {LiveTimingRecord} message
-    */
-    function processMessage(message) {
-        trackStatus = {
-            timestamp: message.timestamp,
-            category: message.category,
-            message: message.message.Message,
-            status: message.message.Status
-        };
-    }
-
 </script>
 
 <div class="mb-4 flex justify-between w-sm">
