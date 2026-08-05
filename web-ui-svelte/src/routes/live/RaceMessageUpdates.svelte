@@ -53,7 +53,7 @@
 	 * @type {ToastItem[]}
 	 */
     let toasts = $state([]);
-    let nextId = $state(1);
+    let nextId = 1;
     
     /*
     * Subscribe to SSE messages
