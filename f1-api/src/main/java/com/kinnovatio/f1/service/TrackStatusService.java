@@ -1,12 +1,10 @@
 package com.kinnovatio.f1.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kinnovatio.f1.model.SessionMessage;
-import com.kinnovatio.f1.repository.RaceControlMessagesRepository;
 import com.kinnovatio.f1.repository.TrackStatusRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -15,7 +13,6 @@ import org.jboss.logging.Logger;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @ApplicationScoped
