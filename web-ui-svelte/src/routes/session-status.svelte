@@ -1,9 +1,9 @@
 <script>
-    import { page } from '$app/state';
+	import { page } from '$app/state';
 
-    console.log(page.data);
+	console.log(page.data);
 </script>
 
 <div>
-    { JSON.stringify(page.data.sessionStatus) }
+	{JSON.stringify(page.data.sessionStatus)}
 </div>

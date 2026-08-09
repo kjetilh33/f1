@@ -1,131 +1,139 @@
+import { SvelteDate } from 'svelte/reactivity';
+
 export class RaceControlMessages {
-    /**
-     * @type {RaceMessageRecord[]}
-     */
-    #raceControlMessages = $state([]);
+	/**
+	 * @type {RaceMessageRecord[]}
+	 */
+	#raceControlMessages = $state([]);
 
-    get raceControlMessages() {
-        return this.#raceControlMessages;
-    }
+	/**
+	 * @type {((message: RaceMessageRecord) => void)[]}
+	 */
+	#listeners = [];
 
-    /**
-     * Clear state cleanly on reset
-     */
-    clear() {
-        this.#raceControlMessages = [];
-    }
+	get raceControlMessages() {
+		return this.#raceControlMessages;
+	}
 
-    /**
-     * 
-     * @param {Object<string, any>} initialData 
-     */
-    initializeData(initialData) {
-        if (!initialData) {
-            console.error("No initial data for the race control messages.");
-            return;            
-        }
+	/**
+	 * Clear state cleanly on reset
+	 */
+	clear() {
+		this.#raceControlMessages = [];
+	}
 
-        if (Array.isArray(initialData.messages)) {
-            this.#raceControlMessages = initialData.messages.map(element => this.#parseInitialRaceMessageRecord(element));
-        } else {
-            console.error("Initial data for race control messages is not in the expected format: ", initialData);
-        }
-    }
+	/**
+	 * Subscribe to newly received live streaming race control messages
+	 * @param {(message: RaceMessageRecord) => void} listener
+	 * @returns {() => void} Unsubscribe cleanup function
+	 */
+	onMessage(listener) {
+		this.#listeners.push(listener);
+		return () => {
+			const index = this.#listeners.indexOf(listener);
+			if (index !== -1) {
+				this.#listeners.splice(index, 1);
+			}
+		};
+	}
 
-    /**
-     * Update the collection with a new race message
-     * 
-     * @param {LiveTimingRecord} messageContainer 
-     */
-    update (messageContainer) {
-        if (messageContainer.category === "RaceControlMessages" && messageContainer.isStreaming) {
+	/**
+	 *
+	 * @param {Object<string, any>} initialData
+	 */
+	initializeData(initialData) {
+		if (!initialData) {
+			console.error('No initial data for the race control messages.');
+			return;
+		}
 
-            // Check if there are more than one race control message in the event record.
-            // Typically these will be presented in object notation, but we need to handle both
-            // array and object notation.
-            if (Array.isArray(messageContainer.message.messages)) {
-                messageContainer.message.messages.forEach((/** @type {Object<string, any>} */ element) => {
-                    this.#raceControlMessages.push(this.#parseLiveRaceMessageRecord(messageContainer, element));
-                });
+		if (Array.isArray(initialData.messages)) {
+			this.#raceControlMessages = initialData.messages.map((element) =>
+				this.#parseInitialRaceMessageRecord(element)
+			);
+		} else {
+			console.error(
+				'Initial data for race control messages is not in the expected format: ',
+				initialData
+			);
+		}
+	}
 
-            } else {
-                Object.values(messageContainer.message.messages).forEach((/** @type {Object<string, any>} */ element) => {
-                    this.#raceControlMessages.push(this.#parseLiveRaceMessageRecord(messageContainer, element));
-                });   
-            }
-        }  else {
-            console.error("Unexpected message category or streaming state for race control messages: ", messageContainer.category, messageContainer.isStreaming);
-        }    
-    }
+	/**
+	 * Update the collection with a new race message
+	 *
+	 * @param {LiveTimingRecord} messageContainer
+	 */
+	update(messageContainer) {
+		if (messageContainer.category === 'RaceControlMessages' && messageContainer.isStreaming) {
+			/** @type {RaceMessageRecord[]} */
+			const newRecords = [];
 
-    /**
-    * @param {LiveTimingRecord} messageContainer
-    * @param {Object<string, any>} element
-    * @returns {RaceMessageRecord}
-    */
-    #parseLiveRaceMessageRecord(messageContainer, element) {
-      return {
-                timestamp: element.utc ? new Date(element.utc) : new Date(messageContainer.timestamp),
-                category: element.category,
-                message: element.message,
-                lap: element.lap,
-                flag: element.flag,
-                scope: element.scope,
-                sector: element.sector,
-                mode: element.mode,
-                status: element.status
-              };
-    }
+			const rawMessages = messageContainer.message.messages || messageContainer.message.Messages;
 
-    /**
-    * @param {Object<string, any>} element
-    * @returns {RaceMessageRecord}
-    */
-    #parseInitialRaceMessageRecord(element) {
-      return {
-                timestamp: element.utc ? new Date(element.utc) : new Date(),
-                category: element.category,
-                message: element.message,
-                lap: element.lap,
-                flag: element.flag,
-                scope: element.scope,
-                sector: element.sector,
-                mode: element.mode,
-                status: element.status
-              };
-    }
+			if (Array.isArray(rawMessages)) {
+				rawMessages.forEach((element) => {
+					const record = this.#parseLiveRaceMessageRecord(messageContainer, element);
+					this.#raceControlMessages.push(record);
+					newRecords.push(record);
+				});
+			} else if (rawMessages && typeof rawMessages === 'object') {
+				Object.values(rawMessages).forEach((element) => {
+					const record = this.#parseLiveRaceMessageRecord(messageContainer, element);
+					this.#raceControlMessages.push(record);
+					newRecords.push(record);
+				});
+			}
+
+			// Notify subscribers of newly streamed live messages
+			newRecords.forEach((record) => {
+				this.#listeners.forEach((listener) => listener(record));
+			});
+		} else {
+			console.error(
+				'Unexpected message category or streaming state for race control messages: ',
+				messageContainer.category,
+				messageContainer.isStreaming
+			);
+		}
+	}
+
+	/**
+	 * @param {LiveTimingRecord} messageContainer
+	 * @param {Object<string, any>} element
+	 * @returns {RaceMessageRecord}
+	 */
+	#parseLiveRaceMessageRecord(messageContainer, element) {
+		return {
+			timestamp: element.utc
+				? new SvelteDate(element.utc)
+				: new SvelteDate(messageContainer.timestamp),
+			category: element.category,
+			message: element.message,
+			lap: element.lap,
+			flag: element.flag,
+			scope: element.scope,
+			sector: element.sector,
+			mode: element.mode,
+			status: element.status
+		};
+	}
+
+	/**
+	 * @param {Object<string, any>} element
+	 * @returns {RaceMessageRecord}
+	 */
+	#parseInitialRaceMessageRecord(element) {
+		return {
+			timestamp: element.utc ? new SvelteDate(element.utc) : new SvelteDate(),
+			category: element.category,
+			message: element.message,
+			lap: element.lap,
+			flag: element.flag,
+			scope: element.scope,
+			sector: element.sector,
+			mode: element.mode,
+			status: element.status
+		};
+	}
 }
-
-/*
-    * Add some test data
-    */
-    let testData = [
-      {
-        timestamp: new Date("2026-02-13T16:56:58Z"),
-        category: "Flag",
-        message: "YELLOW IN TRACK SECTOR 15",
-        id: 9999,
-        flag: "YELLOW",
-        scope: "Sector",
-        sector: 15
-      },
-      {
-        timestamp: new Date("2026-02-13T16:57:00Z"),
-        category: "Flag",
-        message: "DOUBLE YELLOW IN TRACK SECTOR 16",
-        id: 9999,
-        flag: "DOUBLE YELLOW",
-        scope: "Sector",
-        sector: 16
-      },
-      {
-        timestamp: new Date("2026-02-13T16:57:39Z"),
-        category: "Flag",
-        message: "CLEAR IN TRACK SECTOR 15",
-        id: 9999,
-        flag: "CLEAR",
-        scope: "Sector",
-        sector: 15
-      }
-
-    ];

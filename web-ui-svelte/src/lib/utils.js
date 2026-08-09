@@ -1,7 +1,6 @@
-
 /**
  * @param {number} timestamp
  */
 export function parseNanoTimestamp(timestamp) {
-    return new Date(Math.floor(timestamp * 1000))
+	return new Date(Math.floor(timestamp * 1000));
 }

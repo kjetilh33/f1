@@ -5,8 +5,8 @@ export const ssr = false;
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ fetch }) {
-    const driverList = await getDriverList(fetch); 
-    const timingData = await getTimingData(fetch);
-    
-    return { driverList, timingData };
+	const driverList = await getDriverList(fetch);
+	const timingData = await getTimingData(fetch);
+
+	return { driverList, timingData };
 }

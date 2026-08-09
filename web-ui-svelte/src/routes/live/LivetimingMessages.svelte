@@ -1,30 +1,29 @@
 <script>
-    import { f1LiveData } from "$lib/f1LiveData.svelte";
-    import { Table } from "flowbite-svelte";  
+	import { f1LiveData } from '$lib/f1LiveData.svelte';
+	import { Table } from 'flowbite-svelte';
 
-    // Formatter defined outside the map for performance
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-        fractionalSecondDigits: 2,
-        hour12: false,
-        timeZoneName: 'short',
-        timeZone: 'UTC'
-    });
+	// Formatter defined outside the map for performance
+	const formatter = new Intl.DateTimeFormat('en-US', {
+		month: 'short',
+		day: 'numeric',
+		hour: 'numeric',
+		minute: 'numeric',
+		second: 'numeric',
+		fractionalSecondDigits: 2,
+		hour12: false,
+		timeZoneName: 'short',
+		timeZone: 'UTC'
+	});
 
-    let tableData = $derived(f1LiveData.sseMessages.map(element => (
-        {
-            //id: messageIndex++,
-            timeStamp: formatter.format(element.timestamp),
-            category: element.category,
-            message: JSON.stringify(element.message),
-            isStreaming: element.isStreaming
-        }))
-    );
-
+	let tableData = $derived(
+		f1LiveData.sseMessages.map((element) => ({
+			//id: messageIndex++,
+			timeStamp: formatter.format(element.timestamp),
+			category: element.category,
+			message: JSON.stringify(element.message),
+			isStreaming: element.isStreaming
+		}))
+	);
 </script>
 
 <Table items={tableData} hoverable={true}></Table>
