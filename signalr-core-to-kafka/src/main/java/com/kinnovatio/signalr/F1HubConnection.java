@@ -211,7 +211,7 @@ public final class F1HubConnection {
                 JsonElement.class, JsonElement.class, JsonElement.class);
 
         hubConnection.start()
-                .blockingAwait();
+                .blockingAwait(15, TimeUnit.SECONDS);
         LOG.info("Connected to SignalR hub with connection id {}", hubConnection.getConnectionId());
 
         Single<JsonElement> response = hubConnection.invoke(JsonElement.class, "Subscribe", List.of(dataStreams));
