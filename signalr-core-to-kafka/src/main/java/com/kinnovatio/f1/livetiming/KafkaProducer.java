@@ -91,10 +91,12 @@ public class KafkaProducer {
         headers.add(new RecordHeader("messageType", "LiveTimingMessage".getBytes()));
 
         try {
-                publish(message.category(), objectMapper.writeValueAsString(message), headers);
-            } catch (JacksonException e) {
-                LOG.error("Error writing message to kafka: {}", e);
-            }
+            publish(message.category(), objectMapper.writeValueAsString(message), headers);
+        } catch (JacksonException e) {
+            LOG.error("Error writing message to kafka: {}", e.getMessage());
+        } catch (Exception e) {
+            LOG.error("Error sending message to Kafka: {}", e.getMessage());
+        }
     }
 
     /// Asynchronously sends a record to a Kafka topic.
@@ -114,5 +116,17 @@ public class KafkaProducer {
                 LOG.error("Failed to send message to Kafka: {}", exception.getMessage());
             }
         });
+    }
+
+    public void close() {
+        if (producer != null) {
+            try {
+                LOG.info("Flushing and closing Kafka producer...");
+                producer.flush();
+                producer.close(java.time.Duration.ofSeconds(5));
+            } catch (Exception e) {
+                LOG.warn("Error closing Kafka producer: {}", e.getMessage());
+            }
+        }
     }
 }
