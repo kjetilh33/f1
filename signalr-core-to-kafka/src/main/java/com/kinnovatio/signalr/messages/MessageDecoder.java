@@ -3,7 +3,8 @@ package com.kinnovatio.signalr.messages;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.prometheus.metrics.core.metrics.Counter;
-import org.jboss.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -18,7 +19,7 @@ import java.util.zip.Inflater;
 /// parse the raw JSON envelopes, and extract the underlying live timing data. It also handles the
 /// decompression of gzipped message payloads, which are common in the F1 live timing feed.
 public class MessageDecoder {
-    private static final Logger LOG = Logger.getLogger(MessageDecoder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageDecoder.class);
 
     // Metrics fields
     static final Counter deflatedMessageCounter = Counter.builder()
@@ -43,7 +44,7 @@ public class MessageDecoder {
     ///         message is not a data-carrying message (e.g., keep-alive).
     public static List<? extends LiveTimingRecord> parseLiveTimingMessages(JsonElement messageJson) {
         if (messageJson == null || messageJson.isJsonNull()) {
-            LOG.warnf("parseLiveTimingMessages() - Received a null object instead of the expected valid Json element");
+            LOG.warn("parseLiveTimingMessages() - Received a null object instead of the expected valid Json element");
             return Collections.emptyList();
         }
 
@@ -66,13 +67,13 @@ public class MessageDecoder {
 
         // Check input data types
         if (categoryJson == null || categoryJson.isJsonNull()) {
-            LOG.warnf("parseMessageFeed() - Received a null object instead of the expected valid message category");
+            LOG.warn("parseMessageFeed() - Received a null object instead of the expected valid message category");
             messageParsingErrorCounter.labelValues("noCategory").inc();
             return Optional.empty();
         }
         if (messageJson == null || messageJson.isJsonNull()) {
             messageParsingErrorCounter.labelValues("noMessage").inc();
-            LOG.warnf("parseMessageFeed() - Received a null object instead of the expected valid message");
+            LOG.warn("parseMessageFeed() - Received a null object instead of the expected valid message");
             return Optional.empty();
         }
 
@@ -81,14 +82,14 @@ public class MessageDecoder {
             category = categoryJson.getAsString();
         } else {
             messageParsingErrorCounter.labelValues("invalidCategory").inc();
-            LOG.warnf("parseMessageFeed() - The message category is not the expected string. Will skip parsing it. Received data: %s", categoryJson.toString());
+            LOG.warn("parseMessageFeed() - The message category is not the expected string. Will skip parsing it. Received data: {}}", categoryJson.toString());
         }
 
         if (messageJson.isJsonObject()) {
             messageValue = messageJson.toString();
         } else {
             messageParsingErrorCounter.labelValues("invalidMessage").inc();
-            LOG.warnf("parseMessageFeed() - The message is not the expected Json object. Will skip parsing it. Received data: %s", messageJson.toString());
+            LOG.warn("parseMessageFeed() - The message is not the expected Json object. Will skip parsing it. Received data: {}", messageJson.toString());
         }
 
         if (timeStampJson.isJsonPrimitive()) {
@@ -105,14 +106,14 @@ public class MessageDecoder {
                         messageParsingErrorCounter.labelValues("utcHeartbeat").inc();
                     } catch (DateTimeParseException ex) {
                         messageParsingErrorCounter.labelValues("heartbeatInvalidTimestamp").inc();
-                        LOG.warnf("parseMessageFeed() - The message timestamp is not in a valid format: %s. Will use current clock time. Message category: %s. Message summary: %s",
+                        LOG.warn("parseMessageFeed() - The message timestamp is not in a valid format: {}. Will use current clock time. Message category: {}. Message summary: {}",
                                 timeStampJson.getAsString(),
                                 category,
                                 messageJson.toString().substring(0, Math.min(400, messageJson.toString().length())));
                     }
                 } else {
                     messageParsingErrorCounter.labelValues("invalidTimestamp").inc();
-                    LOG.warnf("parseMessageFeed() - The message timestamp is not in a valid format: %s. Will use current clock time. Message category: %s. Message summary: %s",
+                    LOG.warn("parseMessageFeed() - The message timestamp is not in a valid format: {}. Will use current clock time. Message category: {}. Message summary: {}",
                             timeStampJson.getAsString(),
                             category,
                             messageJson.toString().substring(0, Math.min(400, messageJson.toString().length())));
@@ -120,7 +121,7 @@ public class MessageDecoder {
             }
         } else {
             messageParsingErrorCounter.labelValues("invalidTimestamp").inc();
-            LOG.warnf("parseMessageFeed() - The timestamp is not the expected string. Will skip parsing it. Received data: %s", timeStampJson.toString());
+            LOG.warn("parseMessageFeed() - The timestamp is not the expected string. Will skip parsing it. Received data: {}", timeStampJson.toString());
         }
 
         // Check if the message body is compressed
@@ -129,7 +130,7 @@ public class MessageDecoder {
                 messageValue = inflate(messageValue);
             } catch (DataFormatException ex) {
                 messageParsingErrorCounter.labelValues("deflateError").inc();
-                LOG.warnf("Error while deflating data in message with category %s. Error message: %s", category, ex.toString());
+                LOG.warn("Error while deflating data in message with category {}. Error message: {}", category, ex.toString());
             }
         }
 
@@ -142,7 +143,7 @@ public class MessageDecoder {
     /// @return A list of parsed [LiveTimingMessage]s.
     public static Optional<LiveTimingHubResponseMessage> parseHubResponseMessage(JsonElement root) {
         if (root == null || root.isJsonNull()) {
-            LOG.warnf("parseHubResponseMesasge() - Received a null object instead of the expected valid Json element");
+            LOG.warn("parseHubResponseMesasge() - Received a null object instead of the expected valid Json element");
             return Optional.empty();
         }
         Optional<LiveTimingHubResponseMessage> returnValue = Optional.empty();
@@ -159,11 +160,11 @@ public class MessageDecoder {
                     timeStamp = Instant.parse(objectRoot.get("ExtrapolatedClock").getAsJsonObject().get("Utc").getAsString());
                 } catch (DateTimeParseException e) {
                     messageParsingErrorCounter.labelValues("invalidTimestamp").inc();
-                    LOG.warnf("parseHubResponseMessage() - The message timestamp is not in a valid format: %s. Will use current clock time.",
+                    LOG.warn("parseHubResponseMessage() - The message timestamp is not in a valid format: {}. Will use current clock time.",
                             objectRoot.get("ExtrapolatedClock").getAsJsonObject().get("Utc").getAsString());
                 }
             } else {
-                LOG.warnf("parseHubResponseMessage() - Could not find a valid timestamp. Will use current clock time.");
+                LOG.warn("parseHubResponseMessage() - Could not find a valid timestamp. Will use current clock time.");
             }
 
             // Iterate over all fields in the JSON object (e.g., "CarData.z", "SessionInfo").
@@ -176,7 +177,7 @@ public class MessageDecoder {
                         messageValue = inflate(entry.getValue().getAsString());
                     } catch (DataFormatException e) {
                         messageParsingErrorCounter.labelValues("deflateError").inc();
-                        LOG.warnf("Error while deflating data in message with category %s: %s",
+                        LOG.warn("Error while deflating data in message with category {}: {}",
                                 entry.getKey(),
                                 e.toString());
                     }
@@ -186,7 +187,7 @@ public class MessageDecoder {
             });
             returnValue = Optional.of(new LiveTimingHubResponseMessage(LiveTimingMessages, timeStamp));
         } else {
-            LOG.warnf("parseHubResponseMessage() - The received hub response is not an expected Json object. Will skip parsing it.");
+            LOG.warn("parseHubResponseMessage() - The received hub response is not an expected Json object. Will skip parsing it.");
         }
 
         return returnValue;
