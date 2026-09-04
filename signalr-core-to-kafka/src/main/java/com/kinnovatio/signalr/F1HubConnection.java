@@ -21,13 +21,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /// Represents a connection to the Formula 1 SignalR live timing hub.
@@ -173,7 +172,7 @@ public final class F1HubConnection {
     /// which prevents the background keep-alive task from attempting any new reconnections.
     public synchronized void close() {
         if (null != hubConnection) {
-            hubConnection.stop().blockingAwait();
+            hubConnection.stop().blockingAwait(10, TimeUnit.SECONDS);
             hubConnection = null;
         }
         setOperationalState(OperationalState.CLOSED);
@@ -184,7 +183,7 @@ public final class F1HubConnection {
         if (hubConnection != null && forceConnect) {
             try {
                 LOG.info("Closing existing connection before initializing new one.");
-                hubConnection.stop().blockingAwait();
+                hubConnection.stop().blockingAwait(10, TimeUnit.SECONDS);
             } catch (Exception e) {
                 LOG.warn("Failed to stop previous hub connection: {}", e.toString());
             }
