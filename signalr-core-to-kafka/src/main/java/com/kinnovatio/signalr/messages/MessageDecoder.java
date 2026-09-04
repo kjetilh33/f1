@@ -6,6 +6,8 @@ import io.prometheus.metrics.core.metrics.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -82,7 +84,7 @@ public class MessageDecoder {
             category = categoryJson.getAsString();
         } else {
             messageParsingErrorCounter.labelValues("invalidCategory").inc();
-            LOG.warn("parseMessageFeed() - The message category is not the expected string. Will skip parsing it. Received data: {}}", categoryJson.toString());
+            LOG.warn("parseMessageFeed() - The message category is not the expected string. Will skip parsing it. Received data: {}", categoryJson.toString());
         }
 
         if (messageJson.isJsonObject()) {
@@ -205,18 +207,22 @@ public class MessageDecoder {
         // Use Inflater with 'nowrap = true' for raw DEFLATE data, which is what F1 uses.
         Inflater inflater = new Inflater(true);
         inflater.setInput(Base64.getDecoder().decode(compressedStringData));
+        byte[] buffer = new byte[1024];
 
-        while (!inflater.finished()) {
-            byte[] outputBytes = new byte[1024];
-            int resultLength = inflater.inflate(outputBytes);
-            if (resultLength == 0) {
-                // This can happen if the buffer is full but inflater needs more input,
-                // or if the stream is done. The !inflater.finished() check handles the latter.
-                break;
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            while (!inflater.finished()) {
+                int resultLength = inflater.inflate(buffer);
+                if (resultLength == 0 && inflater.needsInput()) {
+                    break;
+                }
+                outputStream.write(buffer, 0, resultLength);
             }
-            result.append(new String(outputBytes, 0, resultLength, StandardCharsets.UTF_8));
+            // Decode the complete byte array at once to preserve UTF-8 boundaries
+            return outputStream.toString(StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to extract decompressed byte stream", e);
+        } finally {
+            inflater.end(); // Release resources
         }
-        inflater.end(); // Release resources
-        return result.toString();
     }
 }
