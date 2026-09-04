@@ -125,6 +125,7 @@ public class Client {
         } catch (Exception e) {
             LOG.error("Unrecoverable error. Will exit. {}", e.toString());
             errorGauge.inc();
+            System.exit(1);
         }
     }
 
@@ -353,52 +354,56 @@ public class Client {
     /// based on whether an F1 session is active, starting soon, or has finished. This helps to conserve
     /// resources by not maintaining a connection when no data is expected.
     private static void asyncKeepAliveLoop() {
-        final String loggingPrefix = "Connector connection loop - ";
-        Duration timeSinceLastMessage = Duration.between(lastMessageReceived, Instant.now());
-        LOG.debug(loggingPrefix + "Connector state = {}", connectorState);
-        LOG.debug(loggingPrefix + "Session info = {}", sessionInfo);
-        LOG.debug(loggingPrefix + "F1 connection hub operational state = {}", hubConnection.getOperationalState());
+        try {
+            final String loggingPrefix = "Connector connection loop - ";
+            Duration timeSinceLastMessage = Duration.between(lastMessageReceived, Instant.now());
+            LOG.debug(loggingPrefix + "Connector state = {}", connectorState);
+            LOG.debug(loggingPrefix + "Session info = {}", sessionInfo);
+            LOG.debug(loggingPrefix + "F1 connection hub operational state = {}", hubConnection.getOperationalState());
 
-        if (connectorState == State.UNKNOWN && Duration.between(lastSessionCheck, Instant.now()).compareTo(Duration.ofSeconds(60)) < 0) {
-            // Let's wait for 60 seconds for the connector to connect and evaluate the session state.
-            return;
-        }
+            if (connectorState == State.UNKNOWN && Duration.between(lastSessionCheck, Instant.now()).compareTo(Duration.ofSeconds(60)) < 0) {
+                // Let's wait for 60 seconds for the connector to connect and evaluate the session state.
+                return;
+            }
 
-        if (connectorState == State.LIVE_SESSION || timeSinceLastMessage.compareTo(Duration.ofSeconds(30)) < 0) {
-            // We have an ongoing session (or we have messages flowing through)
-            if (hubConnection.isConnected()) {
-                // All is good. We have a race session and the connector is running. Do nothing.
+            if (connectorState == State.LIVE_SESSION || timeSinceLastMessage.compareTo(Duration.ofSeconds(30)) < 0) {
+                // We have an ongoing session (or we have messages flowing through)
+                if (hubConnection.isConnected()) {
+                    // All is good. We have a race session and the connector is running. Do nothing.
+                } else {
+                    LOG.info(loggingPrefix + "Looks like we don't have a connection to the F1 hub. Will try to reconnect...");
+                    try {
+                        hubConnection.connect();
+                    } catch (Exception e) {
+                        LOG.warn(loggingPrefix + "Error connecting to hub: {}", e.toString());
+                    }
+                }
+            } else if (connectorState == State.NO_SESSION) {
+                if (hubConnection.isConnected()) {
+                    // The session is over, so we can disconnect from the F1 live hub.
+                    LOG.info(loggingPrefix + "There is no race session currently, but our live timing connection is open. Will close it...");
+                    hubConnection.close();
+                } else if (Duration.between(lastSessionCheck, Instant.now()).compareTo(Duration.ofMinutes(10)) > 0) {
+                    // It has been 10 mins since we last checked if there is a session starting
+                    LOG.info(loggingPrefix + "Checking to see if a session will start soon. Will try to reconnect...");
+                    try {
+                        hubConnection.connect();
+                    } catch (Exception e) {
+                        LOG.warn(loggingPrefix + "Error connecting to hub: {}", e.toString());
+                    }
+                }
             } else {
-                LOG.info(loggingPrefix + "Looks like we don't have a connection to the F1 hub. Will try to reconnect...");
-                try {
-                    hubConnection.connect();
-                } catch (Exception e) {
-                    LOG.warn(loggingPrefix + "Error connecting to hub: {}", e.toString());
-                }
-            }
-        } else if (connectorState == State.NO_SESSION) {
-            if (hubConnection.isConnected()) {
-                // The session is over, so we can disconnect from the F1 live hub.
-                LOG.info(loggingPrefix + "There is no race session currently, but our live timing connection is open. Will close it...");
+                // We are in "unknown", and have been in over 60 sec. Let's disconnect and reconnect
+                LOG.info(loggingPrefix + "Not able to determine if we have a race session ongoing or now. Will restart the connection.");
                 hubConnection.close();
-            } else if (Duration.between(lastSessionCheck, Instant.now()).compareTo(Duration.ofMinutes(10)) > 0) {
-                // It has been 10 mins since we last checked if there is a session starting
-                LOG.info(loggingPrefix + "Checking to see if a session will start soon. Will try to reconnect...");
                 try {
                     hubConnection.connect();
                 } catch (Exception e) {
                     LOG.warn(loggingPrefix + "Error connecting to hub: {}", e.toString());
                 }
             }
-        } else {
-            // We are in "unknown", and have been in over 60 sec. Let's disconnect and reconnect
-            LOG.info(loggingPrefix + "Not able to determine if we have a race session ongoing or now. Will restart the connection.");
-            hubConnection.close();
-            try {
-                hubConnection.connect();
-            } catch (Exception e) {
-                LOG.warn(loggingPrefix + "Error connecting to hub: {}", e.toString());
-            }
+        } catch (Throwable t) {
+            LOG.error("Unexpected error in keep-alive loop: ", t);
         }
     }
 
