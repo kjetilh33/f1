@@ -1,8 +1,6 @@
 package com.kinnovatio.f1.livetiming;
 
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.ArrayDeque;
