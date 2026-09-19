@@ -1,6 +1,5 @@
 package com.kinnovatio.f1.livetiming.source;
 
-
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
 import org.eclipse.microprofile.config.ConfigProvider;
