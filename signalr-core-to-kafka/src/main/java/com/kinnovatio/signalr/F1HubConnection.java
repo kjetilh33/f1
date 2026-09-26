@@ -275,7 +275,7 @@ public final class F1HubConnection {
     private void onHubResponse(JsonElement response) {
         // Store the messages on disk if logging is enabled
         if (isMessageLogEnabled()) {
-            logMessage(response.toString());
+            logMessageToFile(response.toString());
         }
 
         Optional<LiveTimingHubResponseMessage> liveTimingHubResponseMessage = MessageDecoder.parseHubResponseMessage(response);
@@ -302,7 +302,7 @@ public final class F1HubConnection {
             jsonArray.add(category);
             jsonArray.add(message);
             jsonArray.add(timeStamp);
-            logMessage(jsonArray.toString());
+            logMessageToFile(jsonArray.toString());
         }
 
         Optional<LiveTimingMessage> liveTimingMessage = MessageDecoder.parseMessageFeed(category, message, timeStamp);
@@ -314,7 +314,7 @@ public final class F1HubConnection {
         }
     }
 
-    private void logMessage(String message) {
+    private void logMessageToFile(String message) {
         try {
             Files.writeString(defaultPathMessageLog, message + "\n",
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND);
