@@ -142,16 +142,12 @@ public final class F1HubConnection {
     ///
     /// @return The current operational state as a string (e.g., "OPEN", "CLOSED").
     public String getOperationalState() {
-        return operationalState.toString();
-    }
 
-    /// Sets the high-level operational state of the client and updates the corresponding metric.
-    ///
-    /// @param operationalState The new operational state.
-    private void setOperationalState(OperationalState operationalState) {
-        LOG.info("F1HubConnection - changing operational state from {} to {}", this.operationalState, operationalState);
-        this.operationalState = operationalState;
-        connectorOperationalState.set(operationalState.getStatusValue());
+        return switch (hubConnection.getConnectionState()) {
+            case CONNECTED, CONNECTING -> OperationalState.OPEN.toString();
+            case DISCONNECTED ->  OperationalState.CLOSED.toString();
+            case null -> OperationalState.CLOSED.toString();
+        };
     }
 
     private synchronized boolean connect(boolean forceConnect) {
@@ -162,8 +158,7 @@ public final class F1HubConnection {
             return true;
         }
 
-        connectSignalR(forceConnect);
-        return true;
+        return connectSignalR(forceConnect);
     }
 
     /// Gracefully closes the connection to the F1 SignalR hub and cleans up resources.
@@ -172,7 +167,6 @@ public final class F1HubConnection {
     /// which prevents the background keep-alive task from attempting any new reconnections.
     public synchronized void close() {
         cleanupExistingConnection();
-        setOperationalState(OperationalState.CLOSED);
     }
 
     private boolean connectSignalR(boolean forceConnect) {
@@ -199,7 +193,6 @@ public final class F1HubConnection {
             } else {
                 LOG.info("Closed the connection to the hub.");
             }
-            setOperationalState(F1HubConnection.OperationalState.CLOSED);
         });
 
         // Register the main handler for the livetiming feed
@@ -213,7 +206,6 @@ public final class F1HubConnection {
         if (!connected) {
             LOG.error("Timeout while attempting to start SignalR connection.");
             hubConnection.close();
-            setOperationalState(OperationalState.CLOSED);
             return false;
         }
         LOG.info("Connected to SignalR hub with connection id {}", hubConnection.getConnectionId());
@@ -239,7 +231,6 @@ public final class F1HubConnection {
             }
         });
 
-        setOperationalState(OperationalState.OPEN);
         return true;
     }
 
