@@ -1,25 +1,3 @@
-Ran command: `Get-ChildItem -Recurse -File | Select-Object -ExpandProperty FullName`
-Viewed pom.xml:1-100
-Viewed F1HubConnection.java:1-348
-Viewed Client.java:1-442
-Ran command: `mvn compile`
-Ran command: `mvn dependency:build-classpath -Dmdep.outputFile=cp.txt; $cp = Get-Content cp.txt; javap -cp $cp com.microsoft.signalr.HubConnection`
-Ran command: `mvn dependency:build-classpath "-Dmdep.outputFile=cp.txt"; $cp = Get-Content cp.txt; javap -cp $cp com.microsoft.signalr.HubConnection`
-Ran command: `$cp = Get-Content cp.txt; javap -cp $cp com.microsoft.signalr.HubConnectionBuilder`
-Ran command: `$cp = Get-Content cp.txt; javap -cp $cp com.microsoft.signalr.HttpHubConnectionBuilder`
-Ran command: `$cp = Get-Content cp.txt; javap -p -cp $cp com.microsoft.signalr.HubConnection | Select-String -Pattern "reconnect|close|stop|start|error|fail|state|timeout"`
-Ran command: `$cp = Get-Content cp.txt; javap -c -cp $cp com.microsoft.signalr.HubConnection | Select-String -Pattern "void close\(\)" -Context 0,15`
-Ran command: `$cp = Get-Content cp.txt; javap -c -cp $cp com.microsoft.signalr.HubConnection | Select-String -Pattern "start\(" -Context 0,25`
-Ran command: `$cp = Get-Content cp.txt; javap -p -cp $cp com.microsoft.signalr.HttpHubConnectionBuilder | Select-String -Pattern "reconnect|Auto"`
-Ran command: `$cp = Get-Content cp.txt; javap -p -cp $cp "com.microsoft.signalr.HubConnection`$ReconnectingConnectionState"`
-Ran command: `$cp = Get-Content cp.txt; javap -c -cp $cp com.microsoft.signalr.HubConnection | Select-String -Pattern "startNegotiate" -Context 0,20`
-Ran command: `$cp = Get-Content cp.txt; javap -c -cp $cp com.microsoft.signalr.HttpHubConnectionBuilder | Select-String -Pattern "shouldSkipNegotiate" -Context 0,10`
-Ran command: `$cp = Get-Content cp.txt; javap -c -cp $cp com.microsoft.signalr.HttpHubConnectionBuilder | Select-String -Pattern "build\(\)" -Context 0,25`
-Ran command: `$cp = Get-Content cp.txt; javap -c -cp $cp com.microsoft.signalr.HubConnection | Select-String -Pattern "dispatch" -Context 0,20`
-Ran command: `$cp = Get-Content cp.txt; javap -c -cp $cp com.microsoft.signalr.HubConnection | Select-String -Pattern "InvocationMessage" -Context 0,25`
-Viewed logback.xml:1-36
-Viewed api-notes.md:1-194
-
 An analysis of your codebase reveals that while the high-level separation of concerns (hub communication, decoding, Kafka forwarding, and state monitoring) is cleanly structured, there are several **critical exception handling gaps, threading pitfalls, and resource management issues** when using the Microsoft SignalR Core Java library (`com.microsoft.signalr:signalr`).
 
 ---
