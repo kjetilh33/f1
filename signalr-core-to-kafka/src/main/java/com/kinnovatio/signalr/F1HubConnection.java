@@ -171,14 +171,11 @@ public final class F1HubConnection {
     /// This method signals the client to shut down by setting the operational state to `CLOSED`,
     /// which prevents the background keep-alive task from attempting any new reconnections.
     public synchronized void close() {
-        if (null != hubConnection) {
-            hubConnection.stop().blockingAwait(10, TimeUnit.SECONDS);
-            hubConnection = null;
-        }
+        cleanupExistingConnection();
         setOperationalState(OperationalState.CLOSED);
     }
 
-    private void connectSignalR(boolean forceConnect) {
+    private boolean connectSignalR(boolean forceConnect) {
         // Fix for potential leak: close any existing connection before opening a new one
         if (hubConnection != null && forceConnect) {
             try {
@@ -210,10 +207,18 @@ public final class F1HubConnection {
                 this::onFeed,
                 JsonElement.class, JsonElement.class, JsonElement.class);
 
-        hubConnection.start()
+        // Connect to the hub with a timeout of 15 seconds
+        boolean connected = hubConnection.start()
                 .blockingAwait(15, TimeUnit.SECONDS);
+        if (!connected) {
+            LOG.error("Timeout while attempting to start SignalR connection.");
+            hubConnection.close();
+            setOperationalState(OperationalState.CLOSED);
+            return false;
+        }
         LOG.info("Connected to SignalR hub with connection id {}", hubConnection.getConnectionId());
 
+        // Subscribe to the data streams
         Single<JsonElement> response = hubConnection.invoke(JsonElement.class, "Subscribe", List.of(dataStreams));
         response.subscribeWith(new DisposableSingleObserver<JsonElement>() {
             @Override
@@ -235,6 +240,7 @@ public final class F1HubConnection {
         });
 
         setOperationalState(OperationalState.OPEN);
+        return true;
     }
 
     /// Obtain an Amazon load balancer cookie.
@@ -269,6 +275,18 @@ public final class F1HubConnection {
         } catch (Exception e) {
             LOG.warn(loggingPrefix + "Error getting cookie: {}", e.toString());
             return Optional.empty();
+        }
+    }
+
+    private synchronized void cleanupExistingConnection() {
+        if (hubConnection != null) {
+            try {
+                hubConnection.close();
+            } catch (Exception e) {
+                LOG.warn("Exception closing existing HubConnection: {}", e.getMessage());
+            } finally {
+                hubConnection = null;
+            }
         }
     }
 
