@@ -57,9 +57,6 @@ public final class F1HubConnection {
             "PitStopSeries", "PitStop"
     };
 
-    // Internal state management
-    private OperationalState operationalState = OperationalState.CLOSED;
-
     // Signalr connection management
     private final HttpClient httpClient = HttpClient.newBuilder().build();
     private HubConnection hubConnection = null;
@@ -124,8 +121,7 @@ public final class F1HubConnection {
     ///
     /// @return `true` if the connection was set up successfully. `false` otherwise.
     public boolean connect() {
-        connect(false);
-        return true;
+        return connect(false);
     }
 
     /// Checks if the client is currently connected to the SignalR hub.
@@ -153,12 +149,12 @@ public final class F1HubConnection {
     private synchronized boolean connect(boolean forceConnect) {
         String loggingPrefix = "connect() - ";
 
-        if (operationalState == OperationalState.OPEN && !forceConnect) {
+        if (hubConnection.getConnectionState() == HubConnectionState.CONNECTED && !forceConnect) {
             LOG.warn(loggingPrefix + "The connection is already open. Connect() has no effect.");
             return true;
         }
 
-        return connectSignalR(forceConnect);
+        return connectSignalR();
     }
 
     /// Gracefully closes the connection to the F1 SignalR hub and cleans up resources.
@@ -169,15 +165,10 @@ public final class F1HubConnection {
         cleanupExistingConnection();
     }
 
-    private boolean connectSignalR(boolean forceConnect) {
+    private boolean connectSignalR() {
         // Fix for potential leak: close any existing connection before opening a new one
-        if (hubConnection != null && forceConnect) {
-            try {
-                LOG.info("Closing existing connection before initializing new one.");
-                hubConnection.stop().blockingAwait(10, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                LOG.warn("Failed to stop previous hub connection: {}", e.toString());
-            }
+        if (hubConnection != null) {
+            cleanupExistingConnection();
         }
 
         // Get the necessary cookie headers
@@ -188,8 +179,10 @@ public final class F1HubConnection {
                 .build();
 
         hubConnection.onClosed(exception -> {
+            connectorOperationalState.set(OperationalState.CLOSED.getStatusValue());
             if (exception != null) {
-                LOG.warn("The hub closed the connection: {}", exception.getMessage());
+                String message = exception.getMessage() != null ? exception.getMessage() : exception.getClass().getSimpleName();
+                LOG.warn("The hub closed the connection with an error: {}", message);
             } else {
                 LOG.info("Closed the connection to the hub.");
             }
@@ -205,10 +198,11 @@ public final class F1HubConnection {
                 .blockingAwait(15, TimeUnit.SECONDS);
         if (!connected) {
             LOG.error("Timeout while attempting to start SignalR connection.");
-            hubConnection.close();
+            cleanupExistingConnection();
             return false;
         }
         LOG.info("Connected to SignalR hub with connection id {}", hubConnection.getConnectionId());
+        connectorOperationalState.set(OperationalState.OPEN.getStatusValue());
 
         // Subscribe to the data streams
         Single<JsonElement> response = hubConnection.invoke(JsonElement.class, "Subscribe", List.of(dataStreams));
