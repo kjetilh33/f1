@@ -1,5 +1,5 @@
 <script>
-	import { f1LiveData } from '$lib/f1LiveData.svelte';
+	import { f1LiveData } from '#lib/f1LiveData.svelte.js';
 	import { Card } from 'flowbite-svelte';
 
 	let weather = $derived(f1LiveData.weatherData);

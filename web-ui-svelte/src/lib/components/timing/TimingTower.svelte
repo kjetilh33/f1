@@ -1,5 +1,5 @@
 <script>
-	import { f1LiveData } from '$lib/f1LiveData.svelte';
+	import { f1LiveData } from '#lib/f1LiveData.svelte.js';
 	import DriverRow from './DriverRow.svelte';
 
 	let leaderboard = $derived(f1LiveData.leaderboard);

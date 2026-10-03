@@ -1,14 +1,14 @@
 <script>
 	import { Tabs, TabItem } from 'flowbite-svelte';
 	import { onMount } from 'svelte';
-	import { f1LiveData } from '$lib/f1LiveData.svelte.js';
+	import { f1LiveData } from '#lib/f1LiveData.svelte.js';
 	import SseStatus from './SseStatus.svelte';
 	import LivetimingMessages from './LivetimingMessages.svelte';
 	import RaceMessageUpdates from './RaceMessageUpdates.svelte';
 	import RaceMessages from './RaceMessages.svelte';
 	import TrackStatusCurrent from './TrackStatusCurrent.svelte';
-	import TimingTower from '$lib/components/timing/TimingTower.svelte';
-	import WeatherWidget from '$lib/components/common/WeatherWidget.svelte';
+	import TimingTower from '#lib/components/timing/TimingTower.svelte';
+	import WeatherWidget from '#lib/components/common/WeatherWidget.svelte';
 
 	onMount(() => {
 		// The data api uses EventSource which is a browser API and runs only on the client

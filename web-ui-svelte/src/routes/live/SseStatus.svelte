@@ -1,5 +1,5 @@
 <script>
-	import { f1LiveData } from '$lib/f1LiveData.svelte';
+	import { f1LiveData } from '#lib/f1LiveData.svelte.js';
 	import { Badge, Popover } from 'flowbite-svelte';
 	import { DownloadSolid } from 'flowbite-svelte-icons';
 	import { Chart } from '@flowbite-svelte-plugins/chart';

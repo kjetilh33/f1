@@ -1,4 +1,4 @@
-import { getSessionStatus, getSessionInfo } from '$lib/live-api.js';
+import { getSessionStatus, getSessionInfo } from '#lib/live-api.js';
 
 /** @type {import('./$types').LayoutLoad} */
 export async function load({ fetch }) {

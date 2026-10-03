@@ -1,5 +1,5 @@
 <script>
-	import { f1LiveData } from '$lib/f1LiveData.svelte';
+	import { f1LiveData } from '#lib/f1LiveData.svelte.js';
 	import { Table } from 'flowbite-svelte';
 
 	// Formatter defined outside the map for performance

@@ -1,5 +1,5 @@
 <script>
-	import { f1LiveData } from '$lib/f1LiveData.svelte';
+	import { f1LiveData } from '#lib/f1LiveData.svelte.js';
 	import { Card, Listgroup } from 'flowbite-svelte';
 	import { FlagOutline, TruckOutline } from 'flowbite-svelte-icons';
 

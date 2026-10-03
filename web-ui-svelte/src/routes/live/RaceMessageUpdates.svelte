@@ -1,5 +1,5 @@
 <script>
-	import { f1LiveData } from '$lib/f1LiveData.svelte';
+	import { f1LiveData } from '#lib/f1LiveData.svelte.js';
 	import { Toast, ToastContainer } from 'flowbite-svelte';
 	import { BellRingOutline } from 'flowbite-svelte-icons';
 	import { fly } from 'svelte/transition';
