@@ -197,8 +197,15 @@ public final class F1HubConnection {
                 JsonElement.class, JsonElement.class, JsonElement.class);
 
         // Connect to the hub with a timeout of 15 seconds
-        boolean connected = hubConnection.start()
-                .blockingAwait(15, TimeUnit.SECONDS);
+        boolean connected = false;
+        try {
+            connected = hubConnection.start()
+                    .blockingAwait(15, TimeUnit.SECONDS);
+        } catch (RuntimeException e) {
+            LOG.error("Failed to connect to the hub. Error: {}", e.getMessage());
+            return false;
+        }
+
         if (!connected) {
             LOG.error("Timeout while attempting to start SignalR connection.");
             cleanupExistingConnection();
