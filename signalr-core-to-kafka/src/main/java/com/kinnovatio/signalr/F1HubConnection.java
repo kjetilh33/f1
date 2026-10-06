@@ -204,6 +204,7 @@ public final class F1HubConnection {
                     .blockingAwait(15, TimeUnit.SECONDS);
         } catch (RuntimeException e) {
             LOG.error("Failed to connect to the hub. Error: {}", e.getMessage());
+            cleanupExistingConnection();
             return false;
         }
 
@@ -218,6 +219,7 @@ public final class F1HubConnection {
         // Subscribe to the data streams
         try {
             JsonElement response = hubConnection.invoke(JsonElement.class, "Subscribe", List.of(dataStreams))
+                    .timeout(15, TimeUnit.SECONDS)
                     .blockingGet();
             onHubResponse(response);
             return true;
