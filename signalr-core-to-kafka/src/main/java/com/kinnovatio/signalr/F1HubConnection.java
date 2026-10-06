@@ -57,9 +57,9 @@ public final class F1HubConnection {
             "PitStopSeries", "PitStop"
     };
 
-    // Signalr connection management
+    // SignalR connection management
     private final HttpClient httpClient = HttpClient.newBuilder().build();
-    private HubConnection hubConnection = null;
+    private volatile HubConnection hubConnection = null;
 
     private final Consumer<LiveTimingRecord> consumer;
     private final boolean messageLogEnabled;
@@ -166,6 +166,7 @@ public final class F1HubConnection {
     /// which prevents the background keep-alive task from attempting any new reconnections.
     public synchronized void close() {
         cleanupExistingConnection();
+        connectorOperationalState.set(OperationalState.CLOSED.getStatusValue());
     }
 
     private boolean connectSignalR() {
@@ -215,27 +216,16 @@ public final class F1HubConnection {
         connectorOperationalState.set(OperationalState.OPEN.getStatusValue());
 
         // Subscribe to the data streams
-        Single<JsonElement> response = hubConnection.invoke(JsonElement.class, "Subscribe", List.of(dataStreams));
-        response.subscribeWith(new DisposableSingleObserver<JsonElement>() {
-            @Override
-            public void onStart() {
-                LOG.info("Calling hub to start subscribing to messages...");
-            }
-
-            @Override
-            public void onSuccess(JsonElement value) {
-                LOG.info("Successfully started subscribing to messages from the hub.");
-                onHubResponse(value);
-            }
-
-            @Override
-            public void onError(Throwable error) {
-                LOG.error("Error while subscribing to messages from the hub: " + error.toString());
-                close();
-            }
-        });
-
-        return true;
+        try {
+            JsonElement response = hubConnection.invoke(JsonElement.class, "Subscribe", List.of(dataStreams))
+                    .blockingGet();
+            onHubResponse(response);
+            return true;
+        } catch (Exception e) {
+            LOG.error("Failed to subscribe to data streams: {}", e.getMessage());
+            cleanupExistingConnection();
+            return false;
+        }
     }
 
     /// Obtain an Amazon load balancer cookie.
