@@ -138,6 +138,9 @@ public final class F1HubConnection {
     ///
     /// @return The current operational state as a string (e.g., "OPEN", "CLOSED").
     public String getOperationalState() {
+        if (hubConnection == null) {
+            return OperationalState.CLOSED.toString();
+        }
 
         return switch (hubConnection.getConnectionState()) {
             case CONNECTED, CONNECTING -> OperationalState.OPEN.toString();
@@ -149,7 +152,7 @@ public final class F1HubConnection {
     private synchronized boolean connect(boolean forceConnect) {
         String loggingPrefix = "connect() - ";
 
-        if (hubConnection.getConnectionState() == HubConnectionState.CONNECTED && !forceConnect) {
+        if (isConnected() && !forceConnect) {
             LOG.warn(loggingPrefix + "The connection is already open. Connect() has no effect.");
             return true;
         }
