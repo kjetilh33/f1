@@ -176,10 +176,17 @@ public final class F1HubConnection {
         }
 
         // Get the necessary cookie headers
-        String cookie = getCookie(negotiateUrl).orElse("");
+        Optional<String> cookie = getCookie(negotiateUrl);
+        if (cookie.isEmpty()) {
+            LOG.error("Failed to obtain ALB session cookie from negotiate URL.");
+            return false;
+        }
 
         hubConnection = HubConnectionBuilder.create(wssConnect)
-                .withHeader("Cookie", cookie)
+                .withHeader("Cookie", cookie.get())
+                .withHandshakeResponseTimeout(15_000)
+                .withServerTimeout(45_000)     // default is 30s
+                .withKeepAliveInterval(15_000) // default is 15s
                 .build();
 
         hubConnection.onClosed(exception -> {
