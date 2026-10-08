@@ -143,7 +143,8 @@ public class DbDataFeed implements Runnable {
                             new LiveTimingMessage(category, message, messageTimestamp, isStreaming);
 
                     // Detect session start transition
-                    if (inPreRace && "SessionData".equals(category) && message.contains("\"SessionStatus\":\"Started\"")) {
+                    if (inPreRace && "SessionData".equals(category) && message.contains("\"SessionStatus\"")
+                            && message.contains("\"Started\"")) {
                         LOG.info("Race start detected! Switching from high-speed pre-race to real-time replay.");
                         inPreRace = false;
                         queryStart = Instant.now();
