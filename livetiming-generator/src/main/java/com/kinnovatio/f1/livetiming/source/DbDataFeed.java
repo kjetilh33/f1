@@ -129,6 +129,8 @@ public class DbDataFeed implements Runnable {
                 ResultSet rs = stmt.executeQuery();
 
                 Instant queryStart = Instant.now();
+                Instant raceRecordStart = null;
+                boolean inPreRace = true;
                 Instant firstRecord = null;
                 LOG.info("Start processing records...");
                 while (run.get() && rs.next()) {
@@ -137,21 +139,30 @@ public class DbDataFeed implements Runnable {
                     String message = rs.getString("message");
                     Instant messageTimestamp =
                             rs.getObject("message_timestamp", OffsetDateTime.class).toInstant();
-                    LiveTimingMessage liveTimingMessage = new LiveTimingMessage(category, message, messageTimestamp, isStreaming);
+                    LiveTimingMessage liveTimingMessage =
+                            new LiveTimingMessage(category, message, messageTimestamp, isStreaming);
+
+                    // Detect session start transition
+                    if (inPreRace && "SessionData".equals(category) && message.contains("\"SessionStatus\":\"Started\"")) {
+                        LOG.info("Race start detected! Switching from high-speed pre-race to real-time replay.");
+                        inPreRace = false;
+                        queryStart = Instant.now();
+                        raceRecordStart = liveTimingMessage.timestamp();
+                    }
 
                     if (isStreaming) {
-                        if (firstRecord == null) {
-                            firstRecord = liveTimingMessage.timestamp();
-                            LOG.info("First live record, setting timestamp to {}...", firstRecord.toString());
-                        }
-
-                        // Check the timing, so we keep pace with the original message stream.
-                        Duration queryDuration = Duration.between(queryStart, Instant.now());
-                        Duration recordDuration = Duration.between(firstRecord, liveTimingMessage.timestamp());
-                        if (queryDuration.compareTo(recordDuration) < 0) {
-                            // we need to wait for the record to "catch up"
-                            long sleepMillies = Math.min(2000, recordDuration.toMillis() - queryDuration.toMillis());
-                            Thread.sleep(sleepMillies);
+                        if (inPreRace) {
+                            // Fast-forward pre-race events.
+                            Thread.sleep(10);
+                        } else {
+                            // Real-time race pacing relative to the race start anchor
+                            Duration queryDuration = Duration.between(queryStart, Instant.now());
+                            Duration recordDuration = Duration.between(raceRecordStart, liveTimingMessage.timestamp());
+                            if (queryDuration.compareTo(recordDuration) < 0) {
+                                // we need to wait for the record to "catch up"
+                                long sleepMillies = Math.min(2000, recordDuration.toMillis() - queryDuration.toMillis());
+                                Thread.sleep(sleepMillies);
+                            }
                         }
 
                         consumer.accept(liveTimingMessage);
