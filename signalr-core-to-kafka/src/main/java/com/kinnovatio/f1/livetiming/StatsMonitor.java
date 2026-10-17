@@ -18,21 +18,35 @@ import java.util.concurrent.atomic.AtomicInteger;
 /// and maintains a queue of the most recent messages.
 /// It is designed to be thread-safe.
 public final class StatsMonitor {
+    /// The default maximum number of historical time units to retain for rate tracking.
     private static final int DEFAULT_MAX_TIME_UNITS = 120;
+    /// The default capacity of the recent message queue.
     private static final int DEFAULT_MESSAGE_QUEUE_SIZE = 20;
 
+    /// The maximum number of historical time unit entries to store.
     private final int maxTimeUnits;
+    /// The maximum capacity of the recent message queue.
     private final int messageQueueSize;
 
+    /// Queue containing the most recently processed live timing messages.
     private final Deque<LiveTimingMessage> messageQueue;
+    /// Historical rate measurements recorded on a per-second basis.
     private final Deque<RateTuple> messageCounterHistorySeconds;
+    /// Historical rate measurements recorded on a per-minute basis.
     private final Deque<RateTuple> messageCounterHistoryMinutes;
 
+    /// In-flight counter for messages received within the current second.
     private final AtomicInteger messageCounterPerSecond = new AtomicInteger(0);
+    /// In-flight counter for messages received within the current minute.
     private final AtomicInteger messageCounterPerMinute = new AtomicInteger(0);
 
+    /// Scheduled executor service managing the rate calculation tasks.
     private ScheduledExecutorService executorService = null;
 
+    /// Private constructor to initialize a new [StatsMonitor] with custom settings.
+    ///
+    /// @param maxTimeUnits The maximum number of historical rate entries to keep.
+    /// @param messageQueueSize The maximum capacity of recent messages to retain in memory.
     private StatsMonitor(int maxTimeUnits, int messageQueueSize) {
         this.maxTimeUnits = maxTimeUnits;
         this.messageQueueSize = messageQueueSize;
@@ -48,10 +62,16 @@ public final class StatsMonitor {
         return new StatsMonitor(DEFAULT_MAX_TIME_UNITS, DEFAULT_MESSAGE_QUEUE_SIZE);
     }
 
+    /// Gets the maximum number of historical rate entries retained.
+    ///
+    /// @return The maximum number of time units.
     public int getMaxTimeUnits() {
         return maxTimeUnits;
     }
 
+    /// Gets the maximum number of recent messages retained in the queue.
+    ///
+    /// @return The message queue size.
     public int getMessageQueueSize() {
         return messageQueueSize;
     }

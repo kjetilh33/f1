@@ -199,6 +199,11 @@ public class ConnectorStatusHttpServer {
 
     /// An [HttpHandler] that provides a simple health check endpoint for Kubernetes liveness/readiness probes.
     private static class HealthCheckHandler implements HttpHandler {
+        /// Handles incoming HTTP GET requests for the `/healthz` endpoint,
+        /// returning a JSON `{"status":"UP"}` payload.
+        ///
+        /// @param exchange The [HttpExchange] representing the client request and server response.
+        /// @throws IOException if an I/O error occurs while handling the request or sending the response.
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             try (exchange) {

@@ -39,10 +39,13 @@ import java.util.function.Consumer;
 /// call [#connect()] to establish the connection.
 public final class F1HubConnection {
     private static final Logger LOG = LoggerFactory.getLogger(F1HubConnection.class);
+    /// Default path for the file where raw received messages are logged when message logging is enabled.
     private static final Path defaultPathMessageLog = Path.of("./received-messages.log");
 
     // Constants for the F1 SignalR service
+    /// The WebSocket endpoint URL for the F1 SignalR live timing hub.
     private static final String wssConnect = "wss://livetiming.formula1.com/signalrcore";
+    /// The negotiation endpoint URL used to retrieve the required load balancer session cookies.
     private static final String negotiateUrl = "https://livetiming.formula1.com/signalrcore/negotiate";
 
     /// The data streams to subscribe to for receiving all live timing data.
@@ -58,29 +61,41 @@ public final class F1HubConnection {
     };
 
     // SignalR connection management
+    /// HTTP client used for performing the initial cookie negotiation handshake.
     private final HttpClient httpClient = HttpClient.newBuilder().build();
+    /// The active SignalR hub connection instance.
     private volatile HubConnection hubConnection = null;
 
+    /// The callback consumer invoked when live timing records are received.
     private final Consumer<LiveTimingRecord> consumer;
+    /// Flag indicating whether raw incoming messages should be written to a log file.
     private final boolean messageLogEnabled;
 
     // Metrics fields
+    /// A Prometheus counter for the total number of live timing records received from the WebSocket,
+    /// partitioned by message category.
     static final Counter recordReceivedCounter = Counter.builder()
             .name("livetiming_connector_websocket_record_received_total")
             .help("Total number of live timing records received")
             .labelNames("category")
             .register();
 
+    /// A Prometheus counter for invalid or unparseable records received from the WebSocket.
     static final Counter invalidRecordReceivedCounter = Counter.builder()
             .name("livetiming_connector_websocket_record_received_invalid_total")
             .help("Total number of live timing records received")
             .register();
 
+    /// A Prometheus gauge representing the current operational state of the connector (0 = CLOSED, 1 = OPEN).
     static final Gauge connectorOperationalState = Gauge.builder()
             .name("livetiming_connector_operational_state")
             .help("Connector operational state")
             .register();
 
+    /// Private constructor for configuring an [F1HubConnection].
+    ///
+    /// @param consumer The consumer to receive incoming live timing records.
+    /// @param messageLogEnabled Whether to log raw messages to a file.
     private F1HubConnection(Consumer<LiveTimingRecord> consumer, boolean messageLogEnabled) {
         this.consumer = consumer;
         this.messageLogEnabled = messageLogEnabled;
@@ -93,10 +108,16 @@ public final class F1HubConnection {
         return new F1HubConnection(null, false);
     }
 
+    /// Gets the registered consumer that processes incoming live timing records.
+    ///
+    /// @return The consumer, or `null` if none is configured.
     public Consumer<LiveTimingRecord> getConsumer() {
         return consumer;
     }
 
+    /// Checks whether message logging to disk is currently enabled.
+    ///
+    /// @return `true` if raw messages are being logged to file, `false` otherwise.
     public boolean isMessageLogEnabled() {
         return messageLogEnabled;
     }
@@ -149,6 +170,10 @@ public final class F1HubConnection {
         };
     }
 
+    /// Connects to the SignalR hub, optionally forcing reconnection even if already connected.
+    ///
+    /// @param forceConnect If `true`, closes any existing connection and reconnects.
+    /// @return `true` if connection succeeded, `false` otherwise.
     private synchronized boolean connect(boolean forceConnect) {
         String loggingPrefix = "connect() - ";
 
@@ -169,6 +194,10 @@ public final class F1HubConnection {
         connectorOperationalState.set(OperationalState.CLOSED.getStatusValue());
     }
 
+    /// Performs the SignalR connection handshake, registers event handlers,
+    /// starts the connection, and subscribes to the live timing data streams.
+    ///
+    /// @return `true` if the connection and stream subscriptions succeeded, `false` otherwise.
     private boolean connectSignalR() {
         // Fix for potential leak: close any existing connection before opening a new one
         if (hubConnection != null) {
@@ -272,6 +301,7 @@ public final class F1HubConnection {
         }
     }
 
+    /// Closes and cleans up any existing SignalR hub connection.
     private synchronized void cleanupExistingConnection() {
         if (hubConnection != null) {
             try {
@@ -284,6 +314,9 @@ public final class F1HubConnection {
         }
     }
 
+    /// Callback handler for processing responses received from SignalR hub method invocations.
+    ///
+    /// @param response The JSON payload returned from the hub method call.
     private void onHubResponse(JsonElement response) {
         // Store the messages on disk if logging is enabled
         if (isMessageLogEnabled()) {
@@ -301,6 +334,11 @@ public final class F1HubConnection {
         }
     }
 
+    /// Callback handler for the SignalR "feed" method invoked by the server.
+    ///
+    /// @param category The data category of the feed message.
+    /// @param message The feed message payload.
+    /// @param timeStamp The timestamp associated with the feed message.
     private void onFeed(JsonElement category, JsonElement message, JsonElement timeStamp) {
         LOG.debug("onFeed() - Received {} characters feed messages.", message.toString().length());
         LOG.debug("onFeed() -  1: {}...", category.toString().substring(0, Math.min(200, category.toString().length())));
@@ -326,6 +364,9 @@ public final class F1HubConnection {
         }
     }
 
+    /// Appends a raw message string to the default message log file.
+    ///
+    /// @param message The message string to append to the log file.
     private void logMessageToFile(String message) {
         try {
             Files.writeString(defaultPathMessageLog, message + "\n",
@@ -335,6 +376,9 @@ public final class F1HubConnection {
         }
     }
 
+    /// Dispatches a live timing record to the registered consumer if one is configured.
+    ///
+    /// @param record The [LiveTimingRecord] to deliver to the consumer.
     private void notifySubscribers(LiveTimingRecord record) {
         if (null != getConsumer()) {
             getConsumer().accept(record);
@@ -343,15 +387,23 @@ public final class F1HubConnection {
 
     /// Defines the high-level operational state of the F1HubConnection client.
     enum OperationalState {
+        /// The connection is closed or disconnected.
         CLOSED(0),
+        /// The connection is active or attempting to connect.
         OPEN(1);
 
         private final int statusValue;
 
+        /// Gets the integer status value of this operational state.
+        ///
+        /// @return The integer representation of the state.
         public int getStatusValue() {
             return statusValue;
         }
 
+        /// Constructs an OperationalState with its integer status value.
+        ///
+        /// @param statusValue The integer value associated with this state.
         OperationalState(int statusValue) {
             this.statusValue = statusValue;
         }

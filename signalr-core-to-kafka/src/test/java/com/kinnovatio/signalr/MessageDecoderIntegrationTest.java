@@ -9,9 +9,13 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/// Integration tests for [MessageDecoder], verifying message feed parsing and DEFLATE decompression.
 public class MessageDecoderIntegrationTest {
-    final Logger LOG = LoggerFactory.getLogger(this.getClass());
+    private final Logger LOG = LoggerFactory.getLogger(this.getClass());
 
+    /// Tests parsing of a single live timing stream feed message for "TimingData".
+    ///
+    /// @throws Exception if message decoding fails.
     @Test
     void messageDecoderTest() throws Exception {
         final JsonElement category = new JsonPrimitive("TimingData");
@@ -32,6 +36,9 @@ public class MessageDecoderIntegrationTest {
         LOG.info("Parsed message: \n {}", messageObject);
     }
 
+    /// Tests decompression of live timing telemetry and position data encoded with raw DEFLATE.
+    ///
+    /// @throws Exception if decompression fails.
     @Test
     void unzipTest() throws Exception {
         final String carDataZ = "pZjNbhwhDMffhfMmss33XKO+QXtp1UNURWqlKoc2tyjvXgZMSoJhJuxlV5vM34A/ftjzrD49Pv359fBXbd+e1ZenH2pTBKRvEG8wfIawgdtsvDXOI5n4VV3U3f2f9PSzwv3j7uf94+PD7/wHUFskxIsitSHQRWm1pU+jNu0vyqoN0o/0FV5e8jOdOq2AMf9L74okD1mOAK0eaTegRQPoXTGAkB/xYwNGMgCmHiCGbMDmB63pDoAg6p0zZQMQxicoBkQHOqKyvtZZr4sDYy+X908esp4CNOtHQe9EvTe+6HfJPAIYBAs+C5OB6Of7J9l/Nmpe3x74j6QU8hBL/Hxs8g+pV0v5E6ItqyOV1U2Wl7XzHv7rRfcn/3nOPzzavpf9j5zA0Ppf2oGW8md3YDUwcSCaXAHSGSJyBZBpa9D1J7BWcqF2xQO4H+Q1AXq1EwsYfCjpQ1Tqxw0d6GUHBlvOnwthRIBsIIgFGPfQ7/q95l/1fQCShRkwUx1B0PYEMAMD0zcJa/AsMAkYmBPcTIHp4DpgIgIDExtgSgk7ImYM1xGTKx51SxwjyOUD6JpxoS3ZcJqYwfKdxVfeh4lpfeQUMM0BrICMgQMtZ2w8cqCMTKQSAL4xGJn6JDIDcPzRdvV+Cpk5bjkDJ/4bIzMVLN8YjtaI6WxNQHcUwAExDTExW2a7/tKRiYnRsAdxgZh7AZXVuWP4KDFTAHj7PqwQMz3oKwLsNciMyY6NdITMYCsysU1YI9zxMjL5gtD6sMORkUm69pi4gsyoA+8/+DVieqw95uQEY2LuAbMSMu1ZZBpuUt4hs4/ACJmcMPMeZYzMQLyBd8gUmDVAZh0TANaQGbyAzN5/IjJ9dBWZtIhM565B5n5pMzONW2RmQHbg4aA2YGaEK5jpY3zLgOLCXj1gJnlGnnZrzCS+tJaZSbVtCm6RmX4DuE0wAIr6kJmvBYPtWHmamZan0mVmosE3GfthZvKLAQx6lZn2Omai48HctBm318/JNlMHgZlWYK7MzMhNxrRNnjHTgxXaDHt6Mvd11Jj1uRNm5vZqZya2zBTeDInMNJqbJOjHylPMpJrCaBaZWd+MIKwxswbgRARHzKyjaZtCvp8VB5M5Vhe2tz718gE0DfctZPBKaIZJ4zRtNC2Pep4OoPn95R8=";

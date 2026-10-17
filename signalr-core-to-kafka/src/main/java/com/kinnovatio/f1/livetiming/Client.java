@@ -27,8 +27,7 @@ import java.util.concurrent.TimeUnit;
 /// This class is responsible for initializing and orchestrating all the major components:
 ///
 ///   - Connecting to the F1 SignalR hub using [F1HubConnection].
-///   - Processing incoming live timing messages and forwarding them to Kafka if enabled.
-///   - Managing the application's lifecycle and connection state based on F1 session activity.
+///   - Processing incoming live timing messages and forwarding them to Kafka if enabled.\n///   - Managing the application's lifecycle and connection state based on F1 session activity.
 ///   - Exposing application status and metrics via HTTP endpoints.
 ///
 public class Client {
@@ -49,6 +48,8 @@ public class Client {
     "
      */
     // Connection variables
+    /// The base URL for connecting to the F1 SignalR service.
+    /// Loaded from the "source.baseUrl" configuration property.
     private static final String signalRBaseUrl =
             ConfigProvider.getConfig().getValue("source.baseUrl", String.class);
 
@@ -67,6 +68,7 @@ public class Client {
     private static Instant lastSessionCheck = Instant.now();
     /// Timestamp of the last message received from the F1 hub.
     private static Instant lastMessageReceived = Instant.now();
+    /// Fallback string value used when session information fields are unavailable or null.
     private static final String defaultSessionStringValue = "No information available";
     /// Executor service for the background keep-alive and state management loop.
     private static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
@@ -419,21 +421,34 @@ public class Client {
     /// Represents the high-level operational state of the client application,
     /// primarily concerning its relationship to an F1 session.
     enum State {
+        /// The session state is not yet known or evaluated.
         UNKNOWN (0, "Unknown state."),
+        /// No active race session is currently underway.
         NO_SESSION (1,"Waiting for next session to start."),
+        /// A race session is currently live and streaming data.
         LIVE_SESSION (2,"Streaming live timing data.");
 
         private final int statusValue;
         private final String status;
 
+        /// Gets the integer status value associated with the state.
+        ///
+        /// @return The integer representation of the state.
         public int getStatusValue() {
             return statusValue;
         }
 
+        /// Gets the human-readable description of the state.
+        ///
+        /// @return The description string.
         public String getStatus() {
             return status;
         }
 
+        /// Creates a new State enum constant.
+        ///
+        /// @param statusValue The integer representation of this state.
+        /// @param status The human-readable description of this state.
         State(int statusValue,String status) {
             this.statusValue = statusValue;
             this.status = status;

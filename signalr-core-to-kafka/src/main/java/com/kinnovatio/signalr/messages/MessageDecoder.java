@@ -24,17 +24,22 @@ public class MessageDecoder {
     private static final Logger LOG = LoggerFactory.getLogger(MessageDecoder.class);
 
     // Metrics fields
+    /// A Prometheus counter for the total number of deflated (compressed) messages received and decompressed.
     static final Counter deflatedMessageCounter = Counter.builder()
             .name("livetiming_connector_deflated_message_total")
             .help("Total number messages with compressed data received")
             .register();
 
-    /// A Prometheus counter for mesasge parsing errors with a cotegorization of type of error.
+    /// A Prometheus counter for message parsing errors with a categorization of type of error.
     static final Counter messageParsingErrorCounter = Counter.builder()
             .name("livetiming_connector_message_parsing_error_total")
             .help("Total number of message parsing errors")
             .labelNames("category")
             .register();
+
+    /// Private constructor to prevent instantiation of this utility class.
+    private MessageDecoder() {
+    }
 
     /// Parses a raw SignalR message envelope and extracts the list of [LiveTimingMessage]s it contains.
     ///
@@ -57,10 +62,12 @@ public class MessageDecoder {
         }
     }
 
-    /// Parses a single message body from a stream of live timing messages.
-    /// This method unpacks the envelope, decompresses the data if necessary, and creates a [LiveTimingMessage].
+    /// Parses a single message feed entry from the live timing stream.
+    /// This method unpacks the payload, decompresses the data if necessary, and creates a [LiveTimingMessage].
     ///
-    /// @param messageJson The JSON string for a single message within the "M" array.
+    /// @param categoryJson The JSON element containing the message category.
+    /// @param messageJson The JSON element containing the message payload.
+    /// @param timeStampJson The JSON element containing the message timestamp.
     /// @return An [Optional] containing the parsed [LiveTimingMessage], or empty if parsing fails.
     public static Optional<LiveTimingMessage> parseMessageFeed(JsonElement categoryJson, JsonElement messageJson, JsonElement timeStampJson) {
         String category = "";

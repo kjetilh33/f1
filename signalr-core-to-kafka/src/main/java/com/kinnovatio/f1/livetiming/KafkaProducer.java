@@ -42,8 +42,10 @@ public class KafkaProducer {
     private static final String kafkaClientId =
             ConfigProvider.getConfig().getValue("target.kafka.clientId", String.class);
 
+    /// The singleton instance of the [KafkaProducer].
     private static KafkaProducer instance = null;
 
+    /// The underlying Apache Kafka producer client.
     private org.apache.kafka.clients.producer.KafkaProducer<String, String> producer = null;
 
     /// A Prometheus counter to track the total number of messages sent to Kafka,
@@ -118,6 +120,8 @@ public class KafkaProducer {
         });
     }
 
+    /// Flushes pending messages and closes the underlying Kafka producer.
+    /// Waits up to 5 seconds for completion before timing out.
     public void close() {
         if (producer != null) {
             try {
