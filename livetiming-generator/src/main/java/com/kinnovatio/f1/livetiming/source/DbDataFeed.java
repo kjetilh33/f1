@@ -131,7 +131,6 @@ public class DbDataFeed implements Runnable {
                 Instant queryStart = Instant.now();
                 Instant raceRecordStart = null;
                 boolean inPreRace = true;
-                Instant firstRecord = null;
                 LOG.info("Start processing records...");
                 while (run.get() && rs.next()) {
                     String category = rs.getString("category");
