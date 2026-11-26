@@ -1,6 +1,6 @@
 package com.kinnovatio.livetiming.processor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.livetiming.model.SessionStateUpdate;
 import com.kinnovatio.livetiming.repository.RepositoryUtilities;

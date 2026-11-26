@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.time.Duration;
 import java.time.Instant;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.smallrye.reactive.messaging.kafka.companion.ProducerTask;
 import org.apache.kafka.clients.producer.ProducerRecord;

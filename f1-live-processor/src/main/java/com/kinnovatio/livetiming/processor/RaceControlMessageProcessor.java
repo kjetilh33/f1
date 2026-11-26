@@ -1,9 +1,8 @@
 package com.kinnovatio.livetiming.processor;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.livetiming.model.SessionStateUpdate;
 import com.kinnovatio.livetiming.repository.RepositoryUtilities;
@@ -68,10 +67,10 @@ public class RaceControlMessageProcessor {
         JsonNode root = objectMapper.readTree(message.message());
         List<String> raceControlMessages = new ArrayList<>();
         if (root.path("messages").isObject() || root.path("messages").isArray()) {
-            root.path("messages").elements().forEachRemaining(node -> {
+            root.path("messages").values().forEach(node -> {
                 try {
                     raceControlMessages.add(objectMapper.writeValueAsString(node));
-                } catch (JsonProcessingException e) {
+                } catch (JacksonException e) {
                     throw new RuntimeException(e);
                 }
             });
@@ -79,7 +78,7 @@ public class RaceControlMessageProcessor {
         } else {
             LOG.warnf("Error when trying to parse race control message. Could not find message in payload: %s",
                     message.message());
-            throw new JsonParseException("Error when trying to parse race control message.");
+            throw new IllegalArgumentException("Error when trying to parse race control message.");
         }
 
         try (Connection connection = storageDataSource.getConnection();

@@ -1,10 +1,10 @@
 package com.kinnovatio.livetiming.processor;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import io.micrometer.core.instrument.Counter;
@@ -138,7 +138,7 @@ public class KafkaLivetimingProcessor {
                 }
             }
 
-        } catch (JsonParseException e) {
+        } catch (JacksonException e) {
             LOG.warnf("Failed parsing livetiming record: %s. Record content: %s", e, record.value());
         }
     }

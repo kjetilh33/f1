@@ -1,8 +1,8 @@
 package com.kinnovatio.f1.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import com.kinnovatio.f1.model.SessionKeyedMessage;
 import com.kinnovatio.f1.repository.TimingAppDataRepository;
 import jakarta.enterprise.context.ApplicationScoped;
