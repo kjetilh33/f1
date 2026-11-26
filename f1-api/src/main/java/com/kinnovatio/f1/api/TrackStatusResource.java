@@ -1,7 +1,7 @@
 package com.kinnovatio.f1.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.kinnovatio.f1.service.RaceControlMessageService;
 import com.kinnovatio.f1.service.TrackStatusService;
 import io.smallrye.common.annotation.RunOnVirtualThread;
@@ -30,7 +30,7 @@ public class TrackStatusResource {
     public String getTrackStatus() {
         try {
             return objectMapper.writeValueAsString(trackStatusService.getTrackStatus());
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOG.warnf("Error getting track status messages: %s", e.getMessage());
             throw new jakarta.ws.rs.ProcessingException("Error getting track status.");
         }
@@ -41,7 +41,7 @@ public class TrackStatusResource {
     public String getTrackStatusHistory() {
         try {
             return objectMapper.writeValueAsString(trackStatusService.getTrackStatusHistory());
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOG.warnf("Error getting track status messages: %s", e.getMessage());
             throw new jakarta.ws.rs.ProcessingException("Error getting track status messages.");
         }

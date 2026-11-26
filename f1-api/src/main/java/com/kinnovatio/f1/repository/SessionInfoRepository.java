@@ -1,6 +1,6 @@
 package com.kinnovatio.f1.repository;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.kinnovatio.f1.model.SessionInfoRaw;
 import com.kinnovatio.f1.model.SessionStatus;
 import io.agroal.api.AgroalDataSource;

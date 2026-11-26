@@ -1,7 +1,7 @@
 package com.kinnovatio.f1.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.kinnovatio.f1.service.RaceControlMessageService;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -29,7 +29,7 @@ public class RaceControlMessagesResource {
     public String getRaceControlMessages() {
         try {
             return objectMapper.writeValueAsString(raceControlMessageService.getRaceControlMessages());
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOG.warnf("Error getting race control messages: %s", e.getMessage());
             throw new jakarta.ws.rs.ProcessingException("Error getting race control messages");
         }

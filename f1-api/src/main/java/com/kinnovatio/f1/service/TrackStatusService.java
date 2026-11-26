@@ -1,9 +1,9 @@
 package com.kinnovatio.f1.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import com.kinnovatio.f1.model.SessionMessage;
 import com.kinnovatio.f1.repository.TrackStatusRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -58,7 +58,7 @@ public class TrackStatusService {
             try {
                 messages.add(objectMapper.readTree(message.message()));
                 sessionIds.add(message.sessionId());
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 LOG.warnf("Error parsing the raw track status message into a Json tree structure. Error: %s",
                         e.getMessage());
                 throw new RuntimeException(e);

@@ -1,10 +1,10 @@
 package com.kinnovatio.livetiming.processor;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.livetiming.model.SessionStateUpdate;
 import com.kinnovatio.livetiming.repository.RepositoryUtilities;
@@ -98,7 +98,7 @@ public class TimingDataProcessor {
                 try {
                     // readerForUpdating modifies 'current' in-place or returns updated version
                     return objectMapper.readerForUpdating(current).readValue(update);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     return current; // Fallback on error
                 }
             });
@@ -155,13 +155,13 @@ public class TimingDataProcessor {
                     message.timestamp(),
                     message.isStreaming());
 
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }
 
     /// Check if the sector node contains a segment array, and convert it to object notation
-    private void processSectorNode(ObjectNode sectorNode) throws JsonProcessingException {
+    private void processSectorNode(ObjectNode sectorNode) {
         if (sectorNode.path("segments").isArray()) {
             ArrayNode segmentsArray = (ArrayNode) sectorNode.path("segments");
             ObjectNode segments = objectMapper.createObjectNode();

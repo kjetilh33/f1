@@ -1,7 +1,7 @@
 package com.kinnovatio.livetiming.processor;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.livetiming.model.SessionStateUpdate;
 import com.kinnovatio.livetiming.repository.RepositoryUtilities;
@@ -93,7 +93,7 @@ public class DriverListProcessor {
                 try {
                     // readerForUpdating modifies 'current' in-place or returns updated version
                     return objectMapper.readerForUpdating(current).readValue(update);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     return current; // Fallback on error
                 }
             });

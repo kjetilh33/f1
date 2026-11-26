@@ -1,15 +1,15 @@
 package com.kinnovatio.livetiming.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import jakarta.enterprise.context.ApplicationScoped;
+import tools.jackson.databind.json.JsonMapper;
 
 @ApplicationScoped
-public class JacksonConfig implements ObjectMapperCustomizer {
+public class JacksonConfig implements JsonMapperBuilderCustomizer {
 
     @Override
-    public void customize(ObjectMapper objectMapper) {
-        objectMapper.setDefaultMergeable(true);
+    public void customize(JsonMapper.Builder builder) {
+        builder.defaultMergeable(true);
     }
 
 }
