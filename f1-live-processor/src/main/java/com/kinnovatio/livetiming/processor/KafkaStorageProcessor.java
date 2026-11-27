@@ -47,7 +47,6 @@ public class KafkaStorageProcessor {
     @Inject
     MeterRegistry registry;
 
-
     @Inject
     @OnOverflow(value = OnOverflow.Strategy.DROP)
     @Channel("status-out")
@@ -85,7 +84,7 @@ public class KafkaStorageProcessor {
                 LiveTimingMessage message = objectMapper.readValue(record.value(), LiveTimingMessage.class);
 
                 if (message.message().isEmpty() || excludeCategories.contains(message.category())) {
-                    Counter.builder("livetiming_storage_processor_record_discarded_total")
+                    Counter.builder("livetiming.storage.processor.record.discarded.total")
                             .description("Total number of live timing records discarded.")
                             .tag("category" , message.category())
                             .register(registry)
@@ -102,7 +101,7 @@ public class KafkaStorageProcessor {
                 statement.setString(5, message.message() + message.timestamp().toString());
                 statement.addBatch();
 
-                Counter.builder("livetiming_storage_processor_record_stored_total")
+                Counter.builder("livetiming.storage.processor.record.stored.total")
                         .description("Total number of live timing records written to storage.")
                         .tag("category" , message.category())
                         .register(registry)
