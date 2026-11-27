@@ -6,15 +6,12 @@ import com.kinnovatio.f1.livetiming.source.FileDataFeed;
 import com.kinnovatio.signalr.messages.LiveTimingHubResponseMessage;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
 import com.kinnovatio.signalr.messages.LiveTimingRecord;
-import io.prometheus.metrics.instrumentation.jvm.JvmMetrics;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class Generator {
     private static final Logger LOG = LoggerFactory.getLogger(Generator.class);

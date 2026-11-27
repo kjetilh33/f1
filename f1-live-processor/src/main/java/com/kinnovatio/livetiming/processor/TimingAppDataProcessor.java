@@ -9,7 +9,6 @@ import com.kinnovatio.livetiming.GlobalStateManager;
 import com.kinnovatio.livetiming.model.SessionStateUpdate;
 import com.kinnovatio.livetiming.repository.RepositoryUtilities;
 import com.kinnovatio.signalr.messages.LiveTimingMessage;
-import io.agroal.api.AgroalDataSource;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.annotation.PostConstruct;
@@ -21,7 +20,6 @@ import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;

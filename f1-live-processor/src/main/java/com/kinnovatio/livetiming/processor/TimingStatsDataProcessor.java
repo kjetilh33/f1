@@ -20,7 +20,6 @@ import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
